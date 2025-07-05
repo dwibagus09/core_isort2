@@ -1,0 +1,1185 @@
+<?php
+require_once('actionControllerBase.php');
+
+class SecurityController extends actionControllerBase
+{
+	public function addAction() {
+		$this->view->ident = $this->ident;
+		$this->view->title = "Add Security Report";
+		
+		Zend_Loader::LoadClass('shiftClass', $this->modelDir);
+		$shiftClass = new shiftClass();
+		$this->view->shift = $shiftClass->getShift();
+		$this->renderTemplate('form_daily_security.tpl'); 
+	}
+	
+	public function insertAction() {
+		$params = $this->_getAllParams();
+		$params['user_id'] = $this->ident['user_id'];
+		Zend_Loader::LoadClass('securityClass', $this->modelDir);
+		$securityClass = new securityClass();
+		$report = $securityClass->getSecurityReportByShift(date("Y-m-d"), $params['shift']);
+		if(empty($params['security_id']) && !empty($report))
+		{
+			$this->view->title = "Add Security Report";
+			$this->view->message="Report is already exist for this shift";
+			$this->view->security = $params; 
+			Zend_Loader::LoadClass('shiftClass', $this->modelDir);
+			$shiftClass = new shiftClass();
+			$this->view->shift = $shiftClass->getShift();
+			$this->renderTemplate('form_daily_security.tpl'); 
+			exit();
+		}
+		$params['role_id'] = $this->ident['role_id'];
+		if(!empty($params['security_id']))	$security_id = $securityClass->updateSecurity($params);
+		else $security_id = $securityClass->addSecurity($params);
+		$i = 0;
+		$securityClass->deleteDefectListBySecurityId($security_id);
+		if(!empty($params['area-defect-list']))
+		{
+			foreach($params['area-defect-list'] as $area)
+			{
+				$dt['security_id'] = $security_id;
+				$dt['sdl_id'] = $params['id-defect-list'][$i];
+				$dt['area'] = $area;
+				$dt['detail'] = $params['detil-defect-list'][$i];
+				$dt['follow_up'] = $params['followup-defect-list'][$i];
+
+				if(empty($dt['area'] ) && empty($dt['detail']) && empty($dt['follow_up'])) ;
+				else {
+					$securityClass->addDefectList($dt);
+				}
+				$i++;
+			}
+		}
+		
+		$j = 0;
+		$securityClass->deleteIncidentBySecurityId($security_id);
+		if(!empty($params['id-incident']))
+		{
+			foreach($params['id-incident'] as $id_incident)
+			{
+				$dt['security_id'] = $security_id;
+				$dt['issue_id'] = $id_incident;
+				$dt['status'] = $params['status-incident'][$j];
+				if(!empty($dt['issue_id'] ))
+				{
+					$securityClass->addIncident($dt);
+				}
+				$j++;
+			}
+		}
+		
+		$k = 0;
+		$securityClass->deleteGlitchBySecurityId($security_id);
+		if(!empty($params['id-glitch']))
+		{
+			foreach($params['id-glitch'] as $id_glitch)
+			{
+				$dt['security_id'] = $security_id;
+				$dt['issue_id'] = $id_glitch;
+				$dt['status'] = $params['status-glitch'][$k];
+				if(!empty($dt['issue_id']))
+				{
+					$securityClass->addGlitch($dt);
+				}
+				$k++;
+			}
+		}
+		
+		$l = 0;
+		$securityClass->deleteLostFoundBySecurityId($security_id);
+		if(!empty($params['id-lost-found']))
+		{
+			foreach($params['id-lost-found'] as $id_lost_found)
+			{
+				$dt['security_id'] = $security_id;
+				$dt['issue_id'] = $id_lost_found;
+				$dt['status'] = $params['status-lost-found'][$l];
+				if(!empty($dt['issue_id']))
+				{
+					$securityClass->addLostFound($dt);
+				}
+				$l++;
+			}
+		}
+		$this->_response->setRedirect($this->baseUrl.'/default/security/view');
+		$this->_response->sendResponse();
+		exit();
+	}
+	
+	public function viewAction() {
+		Zend_Loader::LoadClass('securityClass', $this->modelDir);
+		$securityClass = new securityClass();
+		Zend_Loader::LoadClass('securitycommentsClass', $this->modelDir);
+		$securitycommentsClass = new securitycommentsClass();
+		$security = $securityClass->getSecurityReports();
+		foreach($security as &$s)
+		{
+			$report_date = explode(" ",$s['created_date']);
+			$s['report_date'] = $report_date[0];
+			$s['comments'] = $securitycommentsClass->getCommentsByReportDate($report_date[0], '3');
+		}
+		$this->view->security = $security;
+    	$this->renderTemplate('view_daily_security.tpl');  
+	}
+	
+	public function editAction() {
+		$this->view->ident = $this->ident;
+		$params = $this->_getAllParams();
+		Zend_Loader::LoadClass('securityClass', $this->modelDir);
+		$securityClass = new securityClass();
+		$security = $securityClass->getSecurityReportById($params['id']);
+    	$security['defect_list'] = $securityClass->getDefectListBySecurityId($params['id']);
+		$security['incident'] = $securityClass->getIncidentBySecurityId($params['id']);
+		$security['glitch'] = $securityClass->getGlitchBySecurityId($params['id']);
+		$security['lost_found'] = $securityClass->getLostFoundBySecurityId($params['id']);
+		$datetime = explode(" ",$security['created_date']);
+		$date = explode("-",$datetime[0]);
+		$r_date = mktime(0, 0, 0, intval($date[1]), intval($date[2]), intval($date[0]));
+		$security['report_date'] = date("l, j F Y", $r_date);
+		$this->view->security = $security;
+		
+		Zend_Loader::LoadClass('shiftClass', $this->modelDir);
+		$shiftClass = new shiftClass();
+		$this->view->shift = $shiftClass->getShift();
+		
+		$this->view->title = "Edit Daily Security Report";
+		$this->renderTemplate('form_daily_security.tpl');  
+	}
+	
+	public function deleteAction() {
+		$params = $this->_getAllParams();
+		Zend_Loader::LoadClass('securityClass', $this->modelDir);
+		$securityClass = new securityClass();
+		
+		$securityClass->deleteSecurityById($params['id']);
+		$securityClass->deleteDefectListBySecurityId($params['id']);
+		$securityClass->deleteIncidentBySecurityId($params['id']);
+		$securityClass->deleteGlitchBySecurityId($params['id']);
+		$securityClass->deleteLostFoundBySecurityId($params['id']);
+		Zend_Loader::LoadClass('securitycommentsClass', $this->modelDir);
+		$securitycommentsClass = new securitycommentsClass();
+		$securitycommentsClass->deleteCommentsBySecurityId($params['id']);
+		
+		self::viewAction();
+	}
+	
+	public function exporttopdfAction() {
+		$params = $this->_getAllParams();
+		Zend_Loader::LoadClass('securityClass', $this->modelDir);
+		$securityClass = new securityClass();
+		$security = $securityClass->getSecurityReportById($params['id']);
+		$datetime = explode(" ",$security['created_date']);
+		$date = explode("-",$datetime[0]);
+		$r_date = mktime(0, 0, 0, intval($date[1]), intval($date[2]), intval($date[0]));
+		$report_date = date("l, j F Y", $r_date);
+		
+		
+		$defect_list = $securityClass->getDefectListBySecurityId($params['id']);
+		$incident = $securityClass->getIncidentBySecurityId($params['id']);
+		$glitch = $securityClass->getGlitchBySecurityId($params['id']);
+		$lost_found = $securityClass->getLostFoundBySecurityId($params['id']);
+
+		require('PHPpdf/html2fpdf.php');
+
+
+		$html= '<html>
+		<head>
+		<title>Security Daily Report</title>
+		 
+		</head>
+		<body>
+		<h1>Daily Report (Security Report)</h1>
+		<h3>Security</h3>
+		PT. Artisan Wahyu Gandaria City
+		
+		<h3>1. Date / Shift</h3>
+		<table width="100%" cellspacing="6" cellpadding="5" align="center" border="1" valign="top">
+			<tr><td><strong>Day / Date</strong></td><td>'.$report_date.'</td></tr>
+			<tr><td><strong>Shift</strong></td><td>'.$security['shift'].'</td></tr>
+			<tr><td></td><td>'.$security['name'].'</td></tr>
+		</table>
+		
+		<h3>2. Man Power</h3>
+		<table width="100%" cellspacing="6" cellpadding="5" align="center" border="1" valign="top">
+			<tr bgcolor="#afd9af"><th><strong>IN HOUSE</strong></th><th><strong>SPD</strong></th><th><strong>ARMY</strong></th></tr>
+			<tr>
+				<td><strong>Spv</strong> : '.$security['supervisor'].'<br><strong>Posko</strong> : '.$security['staff_posko'].'<br><strong>CCTV</strong> : '.$security['staff_cctv'].'<br><strong>Safety</strong> : '.$security['safety'].'</td>
+				<td><strong>Waka</strong> : '.$security['chief_spd'].'<br><strong>Panwas</strong> : '.$security['panwas_spd'].'<br><strong>Danton</strong> : '.$security['danton_spd'].'<br><strong>Jumlah</strong> : '.$security['jumlah_spd'].'</td><td><strong>Chief</strong> : '.$security['chief_army'].'<br><strong>Panwas</strong> : '.$security['panwas_army'].'<br><strong>Danton</strong> : '.$security['danton_army'].'<br><strong>Jumlah</strong> : '.$security['jumlah_army'].'</td>
+			</tr>
+		</table>
+		
+		<h3>3. Briefing</h3>
+		<div>'.$security['briefing'].'</div>
+		 
+		<h3>4. Defect List</h3>
+		<table width="100%" cellspacing="6" cellpadding="5" align="center" border="1" valign="top">
+			<tr bgcolor="#afd9af"><th>Area</th><th>Details</th><th>Follow up</th></tr>';
+		if(!empty($defect_list))
+		{
+			foreach($defect_list as $dl)
+			{
+				$html .= '<tr><td>'.$dl['area'].'</td><td>'.$dl['detail'].'</td><td>'.$dl['follow_up'].'</td></tr>';
+			}
+		}
+		$html .= '</table>
+		
+		<h3>5. Incident Report</h3>
+		<table width="100%" cellspacing="6" cellpadding="5" align="center" border="1" valign="top">
+			<tr bgcolor="#afd9af"><th><strong>Time</strong></th><th><strong>Description</strong></th><th><strong>Status</strong></th></tr>';
+		if(!empty($incident))
+		{
+			foreach($incident as $i)
+			{
+				$issue_date_time = explode(" ",$i['issue_date']);
+				$html .= '<tr><td>'.$issue_date_time[1].'</td><td>'.$i['description'].'</td><td>'.$i['status'].'</td></tr>';
+			}
+		}
+		
+		$html .= '</table>
+		
+		<h3>6. Glitch</h3>
+		<table width="100%" cellspacing="6" cellpadding="5" align="center" border="1" valign="top">
+			<tr bgcolor="#afd9af"><th><strong>Time</strong></th><th><strong>Description</strong></th><th><strong>Status</strong></th></tr>';
+		if(!empty($glitch))
+		{
+			foreach($glitch as $g)
+			{
+				$issue_date_time = explode(" ",$g['issue_date']);
+				$html .= '<tr><td>'.$issue_date_time[1].'</td><td>'.$g['description'].'</td><td>'.$g['status'].'</td></tr>';
+			}
+		}
+		
+		$html .= '</table>
+		
+		<h3>7. Lost & Found</h3>
+		<table width="100%" cellspacing="6" cellpadding="5" align="center" border="1" valign="top">
+			<tr bgcolor="#afd9af"><th><strong>Time</strong></th><th><strong>Description</strong></th><th><strong>Status</strong></th></tr>';
+		if(!empty($lost_found))
+		{
+			foreach($lost_found as $lf)
+			{
+				$issue_date_time = explode(" ",$lf['issue_date']);
+				$html .= '<tr><td>'.$issue_date_time[1].'</td><td>'.$lf['description'].'</td><td>'.$lf['status'].'</td></tr>';
+			}
+		}
+		
+		$html .= '</table>
+		
+		</body>
+		</html>'; 
+		
+		$pdf=new HTML2FPDF();
+		$pdf->AddPage();
+		$pdf->WriteHTML($html);
+		if (preg_match("/MSIE/i", $_SERVER["HTTP_USER_AGENT"])){
+			header("Content-type: application/PDF");
+		} else {
+			header("Content-type: application/PDF");
+			header("Content-Type: application/pdf");
+		}
+		$pdf->Output("sample2.pdf","I");
+
+	}
+	
+	public function exporttopdf2Action() {
+		require('fpdf/html_table.php');
+		$params = $this->_getAllParams();
+		Zend_Loader::LoadClass('securityClass', $this->modelDir);
+		$securityClass = new securityClass();
+		$security = $securityClass->getSecurityReportById($params['id']);
+		$datetime = explode(" ",$security['created_date']);
+		$date = explode("-",$datetime[0]);
+		$r_date = mktime(0, 0, 0, intval($date[1]), intval($date[2]), intval($date[0]));
+		$report_date = date("l, j F Y", $r_date);
+		
+		
+		$defect_list = $securityClass->getDefectListBySecurityId($params['id']);
+		$incident = $securityClass->getIncidentBySecurityId($params['id']);
+		$glitch = $securityClass->getGlitchBySecurityId($params['id']);
+		$lost_found = $securityClass->getLostFoundBySecurityId($params['id']);
+
+		$pdf = new FPDF();
+		$pdf->AddPage();
+		$pdf->SetFont('Arial','B',16);
+		$pdf->Write(10,'Daily Report (Security Report)');
+		$pdf->ln();
+		$pdf->SetFont('Arial','B',10);
+		$pdf->Write(5,'Security');
+		$pdf->ln();
+		$pdf->Write(5,'PT. Artisan Wahyu Gandaria City');
+		$pdf->ln();
+		$pdf->ln();
+		
+		$pdf->SetFont('Arial','B',12);
+		$pdf->Write(10,'1. Date / Shift');
+		$pdf->Ln();
+		$pdf->SetFont('Arial','',10);
+		$pdf->Cell(40,7,'Day / Date',1,0,'L');
+		$pdf->Cell(50,7,$report_date,1,0,'L');
+		$pdf->Ln();
+		$pdf->Cell(40,7,'Shift',1,0,'L');
+		$pdf->Cell(50,7,$security['shift'],1,0,'L');
+		$pdf->Ln();
+		$pdf->Cell(40,7,'',1,0,'L');
+		$pdf->Cell(50,7,$security['name'],1,0,'L');
+		$pdf->Ln();
+		$pdf->ln();
+		
+		$pdf->SetFont('Arial','B',12);
+		$pdf->Write(10,'2. Man Power');
+		$pdf->Ln();
+		$pdf->SetFont('Arial','',10);
+		$pdf->SetFillColor(224,235,255);
+		$pdf->SetFont('','B');
+		$pdf->Cell(63,7,'In House',1,0,'L',true);
+		$pdf->Cell(63,7,'SPD',1,0,'L',true);
+		$pdf->Cell(63,7,'ARMY',1,0,'L',true);
+		$pdf->Ln();
+		$pdf->SetFont('');
+		$y = $pdf->GetY();
+		$x = $pdf->GetX();
+		$pdf->MultiCell(63,6,'Spv : '.$security['supervisor'],'LR');
+		$pdf->SetXY($x + 63, $y);
+		$pdf->MultiCell(63,6,'Waka : '.$security['chief_spd'],'LR');
+		$pdf->SetXY($x + 63 + 63, $y);
+		$pdf->MultiCell(63,6,'Chief : '.$security['chief_army'],'LR');
+		$pdf->Ln();
+		$y = $pdf->GetY();
+		$x = $pdf->GetX();
+		$pdf->MultiCell(63,6,'Posko : '.$security['staff_posko'],'LR');
+		$pdf->SetXY($x + 63, $y);
+		$pdf->MultiCell(63,6,'Panwas : '.$security['panwas_spd'],'LR');
+		$pdf->SetXY($x + 63 + 63, $y);
+		$pdf->MultiCell(63,6,'Panwas : '.$security['panwas_army'],'LR');
+		$pdf->Ln();
+		$y = $pdf->GetY();
+		$x = $pdf->GetX();
+		$pdf->MultiCell(63,6,'CCTV : '.$security['staff_cctv'],'LR');
+		$pdf->SetXY($x + 63, $y);
+		$pdf->MultiCell(63,6,'Danton : '.$security['danton_spd'],'LR');
+		$pdf->SetXY($x + 63 + 63, $y);
+		$pdf->MultiCell(63,6,'Danton : '.$security['danton_army'],'LR');
+		$y = $pdf->GetY();
+		$x = $pdf->GetX();
+		$pdf->MultiCell(63,6,'Safety : '.$security['safety'],'LRB');
+		$pdf->SetXY($x + 63, $y);
+		$pdf->MultiCell(63,6,'Jumlah : '.$security['jumlah_spd'],'LRB');
+		$pdf->SetXY($x + 63 + 63, $y);
+		$pdf->MultiCell(63,6,'Jumlah : '.$security['jumlah_army'],'LRB');
+		$pdf->Ln();
+		$pdf->ln();
+		
+		$pdf->SetFont('Arial','B',12);
+		$pdf->Write(10,'3. Briefing');
+		$pdf->ln();
+		$pdf->SetFont('');
+		$pdf->Write(5,$security['briefing']);
+		$pdf->Ln();
+		$pdf->Ln();
+	
+		$pdf->SetFont('Arial','B',12);
+		$pdf->Write(10,'4. Defect List');
+		$pdf->Ln();
+		$pdf->SetFont('Arial','',10);
+		$pdf->SetFillColor(224,235,255);
+		$pdf->SetFont('','B');
+		$pdf->Cell(63,7,'Area',1,0,'L',true);
+		$pdf->Cell(63,7,'Details',1,0,'L',true);
+		$pdf->Cell(63,7,'Follow up',1,0,'L',true);
+		$pdf->Ln();
+		$pdf->SetFont('');		
+		if(!empty($defect_list))
+		{
+			foreach($defect_list as $dl)
+			{
+				$pdf->Cell(63,6,$dl['area'],1,0,'L');
+				$pdf->Cell(63,6,$dl['detail'],1,0,'L');
+				$pdf->Cell(63,6,$dl['follow_up'],1,0,'L');
+				$pdf->Ln();
+			}
+		}
+		$pdf->Ln();
+		
+		$pdf->SetFont('Arial','B',12);
+		$pdf->Write(10,'5. Incident Report');
+		$pdf->Ln();
+		$pdf->SetFont('Arial','',10);
+		$pdf->SetFillColor(224,235,255);
+		$pdf->SetFont('','B');
+		$pdf->Cell(63,7,'Time',1,0,'L',true);
+		$pdf->Cell(63,7,'Description',1,0,'L',true);
+		$pdf->Cell(63,7,'Status',1,0,'L',true);
+		$pdf->Ln();
+		$pdf->SetFont('');		
+		if(!empty($incident))
+		{
+			foreach($incident as $i)
+			{
+				$issue_date_time = explode(" ",$i['issue_date']);
+				$pdf->Cell(63,6,$issue_date_time[1],1,0,'L');
+				$pdf->Cell(63,6,$i['description'],1,0,'L');
+				$pdf->Cell(63,6,$i['status'],1,0,'L');
+				$pdf->Ln();
+			}
+		}
+		$pdf->Ln();
+		
+		$pdf->SetFont('Arial','B',12);
+		$pdf->Write(10,'6. Glitch');
+		$pdf->Ln();
+		$pdf->SetFont('Arial','',10);
+		$pdf->SetFillColor(224,235,255);
+		$pdf->SetFont('','B');
+		$pdf->Cell(63,7,'Time',1,0,'L',true);
+		$pdf->Cell(63,7,'Description',1,0,'L',true);
+		$pdf->Cell(63,7,'Status',1,0,'L',true);
+		$pdf->Ln();
+		$pdf->SetFont('');		
+		if(!empty($glitch))
+		{
+			foreach($glitch as $g)
+			{
+				$issue_date_time = explode(" ",$g['issue_date']);
+				$pdf->Cell(63,6,$issue_date_time[1],1,0,'L');
+				$pdf->Cell(63,6,$g['description'],1,0,'L');
+				$pdf->Cell(63,6,$g['status'],1,0,'L');
+				$pdf->Ln();
+			}
+		}
+		$pdf->Ln();
+		
+		$pdf->SetFont('Arial','B',12);
+		$pdf->Write(10,'7. Lost & Found');
+		$pdf->Ln();
+		$pdf->SetFont('Arial','',10);
+		$pdf->SetFillColor(224,235,255);
+		$pdf->SetFont('','B');
+		$pdf->Cell(63,7,'Time',1,0,'L',true);
+		$pdf->Cell(63,7,'Description',1,0,'L',true);
+		$pdf->Cell(63,7,'Status',1,0,'L',true);
+		$pdf->Ln();
+		$pdf->SetFont('');		
+		if(!empty($lost_found))
+		{
+			foreach($lost_found as $lf)
+			{
+				$issue_date_time = explode(" ",$lf['issue_date']);
+				$pdf->Cell(63,6,$issue_date_time[1],1,0,'L');
+				$pdf->Cell(63,6,$lf['description'],1,0,'L');
+				$pdf->Cell(63,6,$lf['status'],1,0,'L');
+				$pdf->Ln();
+			}
+		}
+		$pdf->Ln();
+		
+		$pdf->Output();
+	}
+	
+	function getcommentsbysecurityidAction()
+	{
+		$params = $this->_getAllParams();
+		$this->view->ident = $this->ident;
+		$category = $this->loadModel('category');
+		$securityCommentsTable = $this->loadModel('securitycomments');
+		$comments = $securityCommentsTable->getCommentsBySecurityId($params['id']);
+		$commentText = "";
+		if(!empty($comments)) {
+			foreach($comments as $comment)
+			{
+				$commentText .= '<div style="border-bottom:1px solid #ccc; text-align:left; clear:both; margin-bottom:5px; padding-bottom:5px;">'.$comment['comment'].'<br/><div style="font-size:10px; color:#aaa; text-align:right;">'.$comment['comment_date']."</div></div>";
+			}
+		}
+		
+		echo $commentText;	
+	}
+	
+	function addcommentAction() {
+		$params = $this->_getAllParams();
+		
+		$commentsTable = $this->loadModel('securitycomments');
+		$params['user_id'] = $this->ident['user_id'];
+		$commentsTable->addComment($params);
+		
+		/*Zend_Loader::LoadClass('securityClass', $this->modelDir);
+		$securityClass = new securityClass();
+		$security = $securityClass->getSecurityReportById($params['security_id']);
+		
+		$datetime = explode(" ",$security['created_date']);
+		$date = explode("-",$datetime[0]);
+		$r_date = mktime(0, 0, 0, intval($date[1]), intval($date[2]), intval($date[0]));
+		$report_date = date("l, j F Y", $r_date);*/
+		
+		$categoryClass = $this->loadModel('category');
+		$category = $categoryClass->getCategoryById('1');	
+					
+		$botToken = '476346623:AAFlB9X5-bShAkdTK9ziNDrfZ0TCePXl2cY';
+		$website="https://api.telegram.org/bot".$botToken;
+		$chatId=$category['telegram_channel_id'];  //Receiver Chat Id 
+		$txt = '[NEW COMMENT] 
+'.$this->ident['username']." said: ".$params['comment'].'
+
+[SECURITY REPORT]
+Report Date : '.$params['report_date'];
+		$params=array(
+			'chat_id'=>$chatId,
+			'text'=>$txt
+		);
+		$ch = curl_init($website . '/sendMessage');
+		curl_setopt($ch, CURLOPT_HEADER, false);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($ch, CURLOPT_POST, 1);
+		curl_setopt($ch, CURLOPT_POSTFIELDS, ($params));
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+		$result = curl_exec($ch);
+		curl_close($ch);
+		echo json_encode($params);
+	}	
+	
+	function getupdatedcommentsAction()
+	{
+		$params = $this->_getAllParams();
+	
+		Zend_Loader::LoadClass('securityClass', $this->modelDir);
+		$securityClass = new securityClass();
+		
+		$data= array();
+		$security = $securityClass->getSecurityReports();	
+		$commentsTable = $this->loadModel('securitycomments');
+		$i=0;
+		foreach($security as $s) {
+			$created_date = explode(" ",$s['created_date']);
+			$data[$i]['report_date'] = $created_date[0];
+			$data[$i]['security_id'] = $s['security_id'];
+			//$comments = $commentsTable->getCommentsByChiefSecurityId( $s['chief_security_report_id'], '3');
+			$comments = $commentsTable->getCommentsByReportDate($created_date[0], '3');
+			if(!empty($comments)) { 
+				$comment_content = "";
+				foreach($comments as $comment)
+				{
+					$comment_content .= '<div style="border-bottom:1px solid #ccc; text-align:left; clear:both; margin-bottom:5px; padding-bottom:5px;"><strong>'.$comment['username'].' said :</strong> '.$comment['comment'].'<br/><div style="font-size:10px; color:#aaa; text-align:right;">'.$comment['comment_date']."</div></div>";
+				}
+				$data[$i]['comment'] = $comment_content;
+			}
+			$i++;
+		}
+				
+		echo json_encode($data);
+	}
+	
+	public function addchiefreportAction() {		
+		$trainingActivityTable = $this->loadModel('trainingactivity');
+		$this->view->training_activity = $trainingActivityTable->getTrainingActivity();
+		
+		$issueTypeTable = $this->loadModel('issuetype');
+		$this->view->issue_type = $issueTypeTable->getIssueType();
+		
+		$settingTable = $this->loadModel('setting');
+		$this->view->setting = $settingTable->getOtherSetting();
+		
+		$equipmentTable = $this->loadModel('equipment');
+		$this->view->equipments = $equipmentTable->getSecurityEquipments();
+		
+		$this->view->title = "Add Chief Security Report";
+		$this->renderTemplate('form_chief_security.tpl'); 
+	}
+	
+	public function savechiefreportAction() {
+		$params = $this->_getAllParams();
+		$params['user_id'] = $this->ident['user_id'];
+		Zend_Loader::LoadClass('securityClass', $this->modelDir);
+		$securityClass = new securityClass();
+		
+		$params['chief_security_report_id'] = $securityClass->saveChiefReport($params);
+		
+		/*** Save Morning Security Report Id ***/
+		$paramsMorning["shift"] = '1';
+		$paramsMorning["supervisor-inhouse"] = $params['supervisor_inhouse_pagi'];
+		$paramsMorning["staff-posko-inhouse"] = $params['staff_posko_inhouse_pagi'];
+		$paramsMorning["staff-cctv-inhouse"] = $params['staff_cctv_inhouse_pagi'];
+		$paramsMorning["safety-inhouse"] = $params['safety_inhouse_pagi'];
+		$paramsMorning["briefing"] = $params['morning_briefing1'];
+		$paramsMorning["briefing2"] = $params['morning_briefing2'];
+		$paramsMorning["briefing3"] = $params['morning_briefing3'];
+		$paramsMorning["user_id"] = $params['user_id'];
+		$paramsMorning["security_id"] = $params['morning_security_report_id'];
+		$paramsMorning["chief_security_report_id"] = $params['chief_security_report_id'];
+		$paramsMorning["report_date"] = $params['report_date'];
+		if(empty($params['morning_security_report_id'])) $securityClass->addSecurity($paramsMorning, '1');
+		elseif(!empty($params['morning_security_report_id'])) $securityClass->updateSecurity($paramsMorning, '1');
+		
+		/*** Save Afternoon Security Report Id ***/
+		$paramsAfternoon["shift"] = '2';
+		$paramsAfternoon["supervisor-inhouse"] = $params['supervisor_inhouse_siang'];
+		$paramsAfternoon["staff-posko-inhouse"] = $params['staff_posko_inhouse_siang'];
+		$paramsAfternoon["staff-cctv-inhouse"] = $params['staff_cctv_inhouse_siang'];
+		$paramsAfternoon["safety-inhouse"] = $params['safety_inhouse_siang'];
+		$paramsAfternoon["briefing"] = $params['afternoon_briefing1'];
+		$paramsAfternoon["briefing2"] = $params['afternoon_briefing2'];
+		$paramsAfternoon["briefing3"] = $params['afternoon_briefing3'];
+		$paramsAfternoon["user_id"] = $params['user_id'];
+		$paramsAfternoon["security_id"] = $params['afternoon_security_report_id'];
+		$paramsAfternoon["chief_security_report_id"] = $params['chief_security_report_id'];
+		$paramsAfternoon["report_date"] = $params['report_date'];
+		if(empty($params['afternoon_security_report_id'])) $securityClass->addSecurity($paramsAfternoon, '1');
+		elseif(!empty($params['afternoon_security_report_id'])) $securityClass->updateSecurity($paramsAfternoon, '1');
+		
+		/*** Save Night Security Report Id ***/
+		$paramsNight["shift"] = '3';
+		$paramsNight["supervisor-inhouse"] = $params['supervisor_inhouse_malam'];
+		$paramsNight["staff-posko-inhouse"] = $params['staff_posko_inhouse_malam'];
+		$paramsNight["staff-cctv-inhouse"] = $params['staff_cctv_inhouse_malam'];
+		$paramsNight["safety-inhouse"] = $params['safety_inhouse_malam'];
+		$paramsNight["briefing"] = $params['night_briefing1'];
+		$paramsNight["briefing2"] = $params['night_briefing2'];
+		$paramsNight["briefing3"] = $params['night_briefing3'];
+		$paramsNight["user_id"] = $params['user_id'];
+		$paramsNight["security_id"] = $params['night_security_report_id'];
+		$paramsNight["chief_security_report_id"] = $params['chief_security_report_id'];
+		$paramsNight["report_date"] = $params['report_date'];
+		if(empty($params['night_security_report_id'])) $securityClass->addSecurity($paramsNight, '1');
+		elseif(!empty($params['night_security_report_id'])) $securityClass->updateSecurity($paramsNight, '1');
+		
+		$equipmentTable = $this->loadModel('equipment');
+		$equipmentTable->deletePerlengkapanByChiefSecurityId($params['chief_security_report_id']);
+		if(!empty($params['id_equipment_list']))
+		{
+			$i = 0;
+			foreach($params['id_equipment_list'] as $id_equipment_list)
+			{
+				if(!empty($params['total_equipment'][$i]) || !empty($params['ok_condition'][$i]) || !empty($params['bad_condition'][$i]) || !empty($params['description'][$i])) {
+					$dt['chief_security_report_id'] = $params['chief_security_report_id'];
+					$dt['security_equipment_list_id'] = $id_equipment_list;
+					$dt['vendor'] = $params['vendor_equipment'][$i];
+					$dt['total_equipment'] = $params['total_equipment'][$i];
+					$dt['ok_condition'] = $params['ok_condition'][$i];
+					$dt['bad_condition'] = $params['bad_condition'][$i];
+					$dt['description'] = $params['description'][$i];
+					$equipmentTable->addPerlengkapan($dt);
+				}
+				$i++;
+			}
+		}
+
+		$securityClass->deleteSpecificReportByChiefSecurityId($params['chief_security_report_id']);
+		$securityClass->deleteDefectListBySecurityId($params['morning_security_report_id']);
+		$securityClass->deleteIncidentBySecurityId($params['morning_security_report_id']);
+		$securityClass->deleteGlitchBySecurityId($params['morning_security_report_id']);
+		$securityClass->deleteLostFoundBySecurityId($params['morning_security_report_id']);
+		$securityClass->deleteDefectListBySecurityId($params['afternoon_security_report_id']);
+		$securityClass->deleteIncidentBySecurityId($params['afternoon_security_report_id']);
+		$securityClass->deleteGlitchBySecurityId($params['afternoon_security_report_id']);
+		$securityClass->deleteLostFoundBySecurityId($params['afternoon_security_report_id']);
+		$securityClass->deleteDefectListBySecurityId($params['night_security_report_id']);
+		$securityClass->deleteIncidentBySecurityId($params['night_security_report_id']);
+		$securityClass->deleteGlitchBySecurityId($params['night_security_report_id']);
+		$securityClass->deleteLostFoundBySecurityId($params['night_security_report_id']);
+		if(!empty($params['issue_type']))
+		{		
+			$j = 0;
+			foreach($params['issue_type'] as $issue_type)
+			{
+				$dt=array();
+				if($issue_type == 1) {
+					$dt['security_id'] = $params['security-id-sr'][$j];
+					$dt['issue_id'] = $params['id-issue-sr'][$j];
+					$dt['status'] = $params['status-sr'][$j];
+					$securityClass->addIncident($dt);
+				}
+				elseif($issue_type == 2) {
+					$dt['security_id'] = $params['security-id-sr'][$j];
+					$dt['issue_id'] = $params['id-issue-sr'][$j];
+					$dt['status'] = $params['status-sr'][$j];
+					$securityClass->addGlitch($dt);
+				}
+				elseif($issue_type == 3) {
+					$dt['security_id'] = $params['security-id-sr'][$j];
+					$dt['issue_id'] = $params['id-issue-sr'][$j];
+					$dt['status'] = $params['status-sr'][$j];
+					$securityClass->addLostFound($dt);
+				}
+				elseif($issue_type == 4) {
+					$dt['security_id'] = $params['security-id-sr'][$j];
+					$dt['issue_id'] = $params['id-issue-sr'][$j];
+					$dt['area'] = $params['time-sr'][$j];
+					$dt['detail'] = $params['description-sr'][$j];
+					$dt['follow_up'] = $params['status-sr'][$j];
+					$securityClass->addDefectList($dt);
+				}
+				else {
+					$dt['chief_security_report_id'] = $params['chief_security_report_id'];
+					$dt['issue_type'] = $issue_type;
+					$dt['time'] = $params['time-sr'][$j];
+					$dt['detail'] = $params['description-sr'][$j];
+					$dt['status'] = $params['status-sr'][$j];
+					$securityClass->addSpecificReport($dt);
+				}
+				$j++;
+			}			
+		}
+		
+		$this->_response->setRedirect($this->baseUrl.'/default/security/viewchiefreport');
+		$this->_response->sendResponse();
+		exit();
+	}
+	
+	public function viewchiefreportAction() {
+		Zend_Loader::LoadClass('securityClass', $this->modelDir);
+		$securityClass = new securityClass();
+		Zend_Loader::LoadClass('securitycommentsClass', $this->modelDir);
+		$securitycommentsClass = new securitycommentsClass();
+		$security = $securityClass->getChiefSecurityReports();
+		foreach($security as &$s)
+		{
+			$date = explode(" ", $s['created_date']);
+			$arr_date = explode("-",$date[0]);
+			$s['day_date'] = date("l, j F Y", mktime(0, 0, 0, $arr_date[1], $arr_date[2], $arr_date[0]));
+			$s['report_date'] = $date[0];
+			$s['comments'] = $securitycommentsClass->getCommentsByReportDate($s['report_date'], '3');
+			//$s['comments'] = $securitycommentsClass->getCommentsByChiefSecurityId($s['chief_security_report_id'], '3');
+		}
+		$this->view->security = $security;
+		
+		$specific_report['glitch'] = $securityClass->getGlitchByDate(date("Y-m-d"));
+		
+		
+    	$this->renderTemplate('view_chief_security.tpl');  
+	}
+	
+	public function editchiefreportAction() {
+		$params = $this->_getAllParams();
+		Zend_Loader::LoadClass('securityClass', $this->modelDir);
+		$securityClass = new securityClass();
+		
+		$sec['morning'] = $securityClass->getSecurityReportByShift($params['dt'], '1');
+		$sec['afternoon'] = $securityClass->getSecurityReportByShift($params['dt'], '2');
+		$sec['night'] = $securityClass->getSecurityReportByShift($params['dt'], '3');
+		
+		if($sec['morning']['chief_security_report_id'] > 0) $sec['chief_security_report_id'] = $sec['morning']['chief_security_report_id'];
+		elseif($sec['afternoon']['chief_security_report_id'] > 0) $sec['chief_security_report_id'] = $sec['afternoon']['chief_security_report_id'];
+		elseif($sec['night']['chief_security_report_id'] > 0) $sec['chief_security_report_id'] = $sec['night']['chief_security_report_id'];
+		if(!empty($sec['chief_security_report_id'])) $security = $securityClass->getChiefSecurityReportById($sec['chief_security_report_id']);
+		$security['morning'] = $sec['morning'];
+		$security['afternoon'] = $sec['afternoon'];
+		$security['night'] = $sec['night'];
+		
+		$date = explode("-",$params['dt']);
+		$r_date = mktime(0, 0, 0, intval($date[1]), intval($date[2]), intval($date[0]));
+		$security['created_date'] = date("l, j F Y", $r_date);
+		$security['report_date'] = $params['dt'];
+		/*$security['chief_spd'] = $security['morning']['chief_spd'] + $security['afternoon']['chief_spd'] + $security['night']['chief_spd'];
+		$security['chief_army'] = $security['morning']['chief_army'] + $security['afternoon']['chief_army'] + $security['night']['chief_army'];
+		$security['panwas_spd'] = $security['morning']['panwas_spd'] + $security['afternoon']['panwas_spd'] + $security['night']['panwas_spd'];
+		$security['panwas_army'] = $security['morning']['panwas_army'] + $security['afternoon']['panwas_army'] + $security['night']['panwas_army'];
+		$security['danton_pagi_spd'] = $security['morning']['danton_spd'] + $security['afternoon']['danton_spd'] + $security['night']['danton_spd'];
+		$security['danton_pagi_army'] = $security['morning']['danton_army'] + $security['afternoon']['danton_army'] + $security['night']['danton_army'];*/
+		
+		$trainingActivityTable = $this->loadModel('trainingactivity');
+		$this->view->training_activity = $trainingActivityTable->getTrainingActivity();
+		
+		$issueTypeTable = $this->loadModel('issuetype');
+		$this->view->issue_type = $issueTypeTable->getIssueType();
+		
+		$settingTable = $this->loadModel('setting');
+		$this->view->setting = $settingTable->getOtherSetting();
+		
+		if(empty($sec['chief_security_report_id'])) $tempId = '0';
+		else $tempId = $sec['chief_security_report_id'];
+		$equipmentTable = $this->loadModel('equipment');
+		$this->view->equipments = $equipmentTable->getPerlengkapanByChiefSecurityReport($tempId);
+		
+		$security_ids = "";
+		if(!empty($security['morning']['security_id'])) $security_ids .= $security['morning']['security_id'].",";
+		if(!empty($security['afternoon']['security_id'])) $security_ids .= $security['afternoon']['security_id'].",";
+		if(!empty($security['night']['security_id'])) $security_ids .= $security['night']['security_id'].",";
+		$security_ids = substr($security_ids,0,-1);
+		$issueTable = $this->loadModel('issue');
+		if(!empty($security_ids))
+		{
+			$incident_report = $issueTable->getIssuesByIds('security_incident',$security_ids);
+			$lost_found_report = $issueTable->getIssuesByIds('security_lost_found',$security_ids);
+			$glitch = $issueTable->getIssuesByIds('security_glitch',$security_ids);			
+			$defect_list = $securityClass->getDefectListByIds($security_ids);
+		}
+		
+		Zend_Loader::LoadClass('shiftClass', $this->modelDir);
+		$shiftClass = new shiftClass();
+		$this->view->shift = $shiftClass->getShift();
+		
+		if(!empty($tempId)) $spec_report = $securityClass->getSpecificReportByChiefSecurityReport($tempId);
+		$specific_report = array_merge($incident_report,$lost_found_report, $glitch, $defect_list, $spec_report);
+		$this->view->specific_report = $specific_report;
+		
+		$this->view->security = $security;
+		$this->view->title = "Edit Chief Security Report";
+		$this->renderTemplate('form_chief_security.tpl');  
+	}
+	
+	public function deletechiefreportAction() {
+		$params = $this->_getAllParams();
+		Zend_Loader::LoadClass('securityClass', $this->modelDir);
+		$securityClass = new securityClass();
+		
+		$securityClass->deleteChiefSecurityReportById($params['id']);
+		$securityClass->deleteSpecificReportByChiefSecurityId($params['id']);
+		
+		Zend_Loader::LoadClass('equipmentClass', $this->modelDir);
+		$equipmentClass = new equipmentClass();
+		$equipmentClass->deletePerlengkapanByChiefSecurityId($params['id']);
+
+		Zend_Loader::LoadClass('securitycommentsClass', $this->modelDir);
+		$securitycommentsClass = new securitycommentsClass();
+		$securitycommentsClass->deleteChiefCommentsById($params['id']);
+		
+		self::viewchiefreportAction();
+	}
+	
+	function getsecuritycommentsbyreportdateAction()
+	{
+		$params = $this->_getAllParams();
+		$this->view->ident = $this->ident;
+		$category = $this->loadModel('category');
+		$securityCommentsTable = $this->loadModel('securitycomments');
+		//$comments = $securityCommentsTable->getCommentsByChiefSecurityId($params['id']);
+		$comments = $securityCommentsTable->getCommentsByReportDate($params['report_date']);
+		$commentText = "";
+		if(!empty($comments)) {
+			foreach($comments as $comment)
+			{
+				$commentText .= '<div style="border-bottom:1px solid #ccc; text-align:left; clear:both; margin-bottom:5px; padding-bottom:5px;">'.$comment['comment'].'<br/><div style="font-size:10px; color:#aaa; text-align:right;">'.$comment['comment_date']."</div></div>";
+			}
+		}
+		
+		echo $commentText;	
+	}
+	
+	function addchiefcommentAction() {
+		$params = $this->_getAllParams();
+		$commentsTable = $this->loadModel('securitycomments');
+		$params['user_id'] = $this->ident['user_id'];
+		$commentsTable->addChiefComment($params);
+		
+		Zend_Loader::LoadClass('securityClass', $this->modelDir);
+		$securityClass = new securityClass();
+		$security = $securityClass->getChiefSecurityReportById($params['chief_security_report_id']);
+		
+		$datetime = explode(" ",$security['created_date']);
+		$date = explode("-",$datetime[0]);
+		$r_date = mktime(0, 0, 0, intval($date[1]), intval($date[2]), intval($date[0]));
+		$report_date = date("l, j F Y", $r_date);
+		
+		$categoryClass = $this->loadModel('category');
+		$category = $categoryClass->getCategoryById('1');	
+					
+		$botToken = '476346623:AAFlB9X5-bShAkdTK9ziNDrfZ0TCePXl2cY';
+		$website="https://api.telegram.org/bot".$botToken;
+		$chatId=$category['telegram_channel_id'];  //Receiver Chat Id 
+		$txt = '[NEW COMMENT] 
+'.$params['comment'].'
+
+[CHIEF SECURITY REPORT]
+Submitted by : '.$security['name'].' 
+Date : '.$report_date;
+		$params=array(
+			'chat_id'=>$chatId,
+			'text'=>$txt
+		);
+		$ch = curl_init($website . '/sendMessage');
+		curl_setopt($ch, CURLOPT_HEADER, false);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($ch, CURLOPT_POST, 1);
+		curl_setopt($ch, CURLOPT_POSTFIELDS, ($params));
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+		$result = curl_exec($ch);
+		curl_close($ch);
+		echo $params['chief_security_report_id'];
+	}	
+	
+	function getupdatedchiefcommentsAction()
+	{
+		$params = $this->_getAllParams();
+	
+		Zend_Loader::LoadClass('securityClass', $this->modelDir);
+		$securityClass = new securityClass();
+		
+		$data= array();
+		$security = $securityClass->getChiefSecurityReports();	
+		$commentsTable = $this->loadModel('securitycomments');
+		$i=0;
+		foreach($security as $s) {
+			$created_date = explode(" ",$s['created_date']);
+			$data[$i]['report_date'] = $created_date[0];
+			//$comments = $commentsTable->getCommentsByChiefSecurityId( $s['chief_security_report_id'], '3');
+			$comments = $commentsTable->getCommentsByReportDate($created_date[0], '3');
+			if(!empty($comments)) { 
+				$comment_content = "";
+				foreach($comments as $comment)
+				{
+					$comment_content .= '<div style="border-bottom:1px solid #ccc; text-align:left; clear:both; margin-bottom:5px; padding-bottom:5px;"><strong>'.$comment['username'].' said : </strong>'.$comment['comment'].'<br/><div style="font-size:10px; color:#aaa; text-align:right;">'.$comment['comment_date']."</div></div>";
+				}
+				$data[$i]['comment'] = $comment_content;
+			}
+			$i++;
+		}
+				
+		echo json_encode($data);
+	}
+	
+	public function exportchiefreporttopdfAction() {
+		$params = $this->_getAllParams();
+		Zend_Loader::LoadClass('securityClass', $this->modelDir);
+		$securityClass = new securityClass();
+		
+		$sec['morning'] = $securityClass->getSecurityReportByShift($params['dt'], '1');
+		$sec['afternoon'] = $securityClass->getSecurityReportByShift($params['dt'], '2');
+		$sec['night'] = $securityClass->getSecurityReportByShift($params['dt'], '3');
+		
+		if($sec['morning']['chief_security_report_id'] > 0) $sec['chief_security_report_id'] = $sec['morning']['chief_security_report_id'];
+		elseif($sec['afternoon']['chief_security_report_id'] > 0) $sec['chief_security_report_id'] = $sec['afternoon']['chief_security_report_id'];
+		elseif($sec['night']['chief_security_report_id'] > 0) $sec['chief_security_report_id'] = $sec['night']['chief_security_report_id'];
+		if(!empty($sec['chief_security_report_id'])) $security = $securityClass->getChiefSecurityReportById($sec['chief_security_report_id']);
+		$security['morning'] = $sec['morning'];
+		$security['afternoon'] = $sec['afternoon'];
+		$security['night'] = $sec['night'];
+		
+		$date = explode("-",$params['dt']);
+		$r_date = mktime(0, 0, 0, intval($date[1]), intval($date[2]), intval($date[0]));
+		$security['created_date'] = date("l, j F Y", $r_date);
+		$security['report_date'] = $params['dt'];
+		
+		if(empty($sec['chief_security_report_id'])) $tempId = '0';
+		else $tempId = $sec['chief_security_report_id'];
+		$equipmentTable = $this->loadModel('equipment');
+		$equipments = $equipmentTable->getPerlengkapanByChiefSecurityReport($tempId);
+		
+		$trainingActivityTable = $this->loadModel('trainingactivity');
+		$training_activity = $trainingActivityTable->getTrainingActivity();
+		
+		$settingTable = $this->loadModel('setting');
+		$setting = $settingTable->getOtherSetting();
+		
+		/*** SPECIFIC REPORT ***/
+		
+		$security_ids = "";
+		if(!empty($security['morning']['security_id'])) $security_ids .= $security['morning']['security_id'].",";
+		if(!empty($security['afternoon']['security_id'])) $security_ids .= $security['afternoon']['security_id'].",";
+		if(!empty($security['night']['security_id'])) $security_ids .= $security['night']['security_id'].",";
+		$security_ids = substr($security_ids,0,-1);
+		$issueTable = $this->loadModel('issue');
+		if(!empty($security_ids))
+		{
+			$incident_report = $issueTable->getIssuesByIds('security_incident',$security_ids);
+			$lost_found_report = $issueTable->getIssuesByIds('security_lost_found',$security_ids);
+			$glitch = $issueTable->getIssuesByIds('security_glitch',$security_ids);			
+			$defect_list = $securityClass->getDefectListByIds($security_ids);
+		}
+		
+		Zend_Loader::LoadClass('shiftClass', $this->modelDir);
+		$shiftClass = new shiftClass();
+		$shift = $shiftClass->getShift();
+		
+		if(!empty($tempId)) $spec_report = $securityClass->getSpecificReportByChiefSecurityReport($tempId);
+		$specific_reports = array_merge($incident_report,$lost_found_report, $glitch, $defect_list, $spec_report);
+		
+		/*** END OF SPECIFIC REPORT ***/
+		
+		require('PHPpdf/html2fpdf.php');
+
+
+		$html= '<html>
+		<head>
+		<title>Chief Security Report</title>
+		 
+		</head>
+		<body>
+		<h1>Chief Security Report</h1>
+		<h3>Security</h3>
+		PT. Artisan Wahyu Gandaria City
+		
+		<h3>Day / Date</h3>
+		<table width="100%" cellspacing="6" cellpadding="5" align="center" border="1" valign="top">
+			<tr><td><strong>Day / Date</strong></td><td>'.$security['created_date'].'</td></tr>
+			<tr><td><strong>Reporting Time</strong></td><td>'.$setting['chief_security_reporting_time'].'</td></tr>
+		</table>
+		
+		<h3>Man Power</h3>
+		<table width="100%" cellspacing="6" cellpadding="5" align="center" border="1" valign="top">
+			<tr bgcolor="#afd9af"><th><strong>IN HOUSE</strong></th><th><strong>Vendor</strong></th></tr>
+			<tr>
+				<td>SUPERVISOR<br>
+					Malam : '.$security['night']['supervisor'].'<br>
+					Pagi : '.$security['morning']['supervisor'].'<br>
+					Siang : '.$security['afternoon']['supervisor'].'<br>&nbsp;<br>
+					STAFF POSKO<br>
+					Malam : '.$security['night']['staff_posko'].'<br>
+					Pagi : '.$security['morning']['staff_posko'].'<br>
+					Siang : '.$security['afternoon']['staff_posko'].'<br>&nbsp;<br>
+					STAFF CCTV<br>
+					Malam : '.$security['night']['staff_cctv'].'<br>
+					Pagi : '.$security['morning']['staff_cctv'].'<br>
+					Siang : '.$security['afternoon']['staff_cctv'].'<br>&nbsp;<br>
+					SAFETY<br>
+					Malam : '.$security['night']['safety'].'<br>
+					Pagi : '.$security['morning']['safety'].'<br>
+					Siang : '.$security['afternoon']['safety'].'
+				</td>
+				<td>CHIEF / WAKA<br>
+					SPD : '.$security['chief_spd'].'<br>
+					Army : '.$security['chief_army'].'<br>&nbsp;<br>&nbsp;<br>
+					PANWAS<br>
+					SPD : '.$security['panwas_spd'].'<br>
+					Army : '.$security['panwas_army'].'<br>&nbsp;<br>&nbsp;<br>
+					DANTON PAGI<br>
+					SPD : '.$security['danton_pagi_spd'].'<br>
+					Army : '.$security['danton_pagi_army'].'<br>&nbsp;<br>&nbsp;<br>
+					KEKUATAN<br>
+					SPD : '.($security['chief_spd']+$security['panwas_spd']+$security['danton_pagi_spd']).'<br>
+					Army : '.($security['chief_army']+$security['panwas_army']+$security['danton_pagi_army']).'
+				</td>
+			</tr>
+		</table>
+		
+		<h3>Perlengkapan</h3>
+		<table width="100%" cellspacing="6" cellpadding="5" align="center" border="1" valign="top">
+			<tr bgcolor="#afd9af">
+			  <th rowspan="2">Nama Perlengkapan</th>
+			  <th rowspan="2">Vendor</th>
+			  <th rowspan="2">Jumlah</th>
+			  <th width="150" colspan="2">Kondisi</th>
+			  <th rowspan="2">Keterangan</th>
+			</tr>
+			<tr bgcolor="#afd9af">
+			  <th width="75">Ok</th>
+			  <th width="75">Tidak Ok</th>
+			</tr>';
+			  
+			if(!empty($equipments)) {
+				$i = 0;
+				foreach($equipments as $equipment) {
+					$html .= '<tr>
+					<td>'.$equipment['equipment_name'].'</td>
+					<td>'.$equipment['vendor'].'</td>
+					<td>'.$equipment['total_equipment'].'</td>
+					<td>'.$equipment['ok_condition'].'</td>
+					<td>'.$equipment['bad_condition'].'</td>
+					<td>'.$equipment['description'].'</td>
+				</tr>';
+				$i++; } 
+				}
+			  $html .= '</table>	
+
+		<h3>Briefing & Training</h3>
+		<table width="100%" cellspacing="6" cellpadding="5" align="center" border="1" valign="top">
+			<tr bgcolor="#afd9af">
+			  <th rowspan="2">Briefing</th>
+			  <th width="400" colspan="2">Training - Activity</th>
+			</tr>
+			<tr bgcolor="#afd9af">
+			  <th width="200">Outsource</th>
+			  <th width="200">In House</th>
+			</tr>
+			<tr id="morning-briefing">
+			  <td>
+				MORNING BRIEFING<br>
+				'.$security['morning']['briefing'].'<br>
+				'.$security['morning']['briefing2'].'<br>
+				'.$security['morning']['briefing3'].'<br>
+			  </td>
+			  <td>';
+			  if(!empty($security['morning']['outsource_training_activity']))
+				$html .= $security['morning']['outsource_training_activity'].'<br>
+				DESKRIPSI TRAINING<br/>'.$security['morning']['description_outsource_training'];
+			$html .= '</td>
+			<td>';
+				if(!empty($security['morning']['inhouse_training_activity'])) 
+					$html .= $security['morning']['inhouse_training_activity'].'<br>
+				  DESKRIPSI TRAINING<br/>'.$security['morning']['description_inhouse_training'];
+			$html .= '</td>
+			</tr>
+			<tr id="afternoon-briefing">
+			  <td>
+				AFTERNOON BRIEFING<br>
+				'.$security['afternoon']['briefing'].'<br>
+				'.$security['afternoon']['briefing2'].'<br>
+				'.$security['afternoon']['briefing3'].'<br>
+			  </td>
+			  <td>';
+				if(!empty($security['afternoon']['outsource_training_activity']))
+					$html .= $security['afternoon']['outsource_training_activity'].'<br>
+				DESKRIPSI TRAINING<br/>'.$security['afternoon']['description_outsource_training'];
+			$html .= '</td>
+			<td>';
+				if(!empty($security['afternoon']['inhouse_training_activity']))
+					$html .= $security['afternoon']['inhouse_training_activity'].'<br>
+				  DESKRIPSI TRAINING<br/>'.$security['afternoon']['description_inhouse_training'];
+			$html .= '</td>
+			</tr>
+			<tr id="night-briefing">
+			  <td>
+				NIGHT BRIEFING<br>
+				'.$security['night']['briefing'].'<br>
+				'.$security['night']['briefing2'].'<br>
+				'.$security['night']['briefing3'].'<br>
+			  </td>
+			  <td>';
+				if(!empty($security['night']['outsource_training_activity']))
+					$html .= $security['night']['outsource_training_activity'].'
+				DESKRIPSI TRAINING<br/>'.$security['night']['description_outsource_training'];
+			$html .= '</td>
+			<td>';
+				if(!empty($security['night']['inhouse_training_activity']))
+					$html .= $security['night']['inhouse_training_activity'].'
+				  DESKRIPSI TRAINING<br/>'.$security['night']['description_inhouse_training'];
+			$html .= '</td>
+			</tr>
+		</table>
+		
+		<h3>SOSIALISASI SOP</h3>
+		'.$security['sosialisasi_sop_a'].'<br>
+		'.$security['sosialisasi_sop_b'].'<br>
+		'.$security['sosialisasi_sop_c'].'<br>';
+			
+		if(!empty($specific_reports)) { 
+		$html .= '<h3>SPECIFIC REPORT</h3>
+		<table width="100%" cellspacing="6" cellpadding="5" align="center" border="1" valign="top">';
+			foreach($specific_reports as $specific_report) {
+				$timeField = "Time";
+				if($specific_report['issue_type_id'] < 4)
+				{
+					$specific_report['detail'] = $specific_report['description'];
+				}
+				if($specific_report['issue_type_id'] == 4)
+				{
+					$specific_report['time'] =  $specific_report['area'];
+					$specific_report['status'] = $specific_report['follow_up'];
+					$specific_report['issue_type_name'] = "Defect List";
+					$timeField = "Area";
+				}
+				$issueDate = explode(" ",$specific_report['issue_date']);
+				$specific_report['time'] = $issueDate[1];
+				$html .= '<tr>
+					<td>'.strtoupper($specific_report['issue_type_name']).'<br>'.$timeField.' : '.$specific_report['time'].'<br>Detail : '.$specific_report['detail'].'</td>
+					<td><br>Status :<br>'.$specific_report['status'].'</td>
+				</tr>';
+			 }
+		$html .= '</table>';
+		}
+		$html .= '</body>
+		</html>'; 
+		
+		$pdf=new HTML2FPDF();
+		$pdf->AddPage();
+		$pdf->WriteHTML($html);
+		if (preg_match("/MSIE/i", $_SERVER["HTTP_USER_AGENT"])){
+			header("Content-type: application/PDF");
+		} else {
+			header("Content-type: application/PDF");
+			header("Content-Type: application/pdf");
+		}
+		$pdf->Output("sample2.pdf","I");
+
+	}
+}
+
+?>

@@ -1,0 +1,51 @@
+body {
+	margin:0px;
+}
+
+header {
+	background-color:rgba(56, 49, 49, 0.13);
+}
+
+nav {
+	width:80%;
+	float:right;
+}
+
+#logout {
+	text-align:right;
+	width:15%;
+	float:right;
+	padding:35px 20px 20px 0px;
+}
+
+#header-title {
+	text-align:left;
+	width:65%;
+	float:left;
+	padding:20px 20px 20px 0px;
+}
+
+#menu {
+	width:15%;
+	float:left;
+}
+
+#menu img {
+	display:none;
+}
+
+#header-title h1 {
+	margin:0px;
+}
+
+#logo {
+	width:200px;
+}
+
+#logo img {
+	width:100%;
+}
+
+footer {
+	clear:both;
+}

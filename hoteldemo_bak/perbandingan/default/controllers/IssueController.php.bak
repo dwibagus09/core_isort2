@@ -1,0 +1,520 @@
+<?php
+require_once('actionControllerBase.php');
+class IssueController extends actionControllerBase
+{
+	function submitissueAction()
+	{
+		set_time_limit(7200);
+		$params = $this->_getAllParams();
+		
+		$magickPath = "/usr/bin/convert";
+		
+		
+		$file = $_FILES['picture'];
+		if ($file["error"] > 0) {
+			$this->view->msg = "Submitting issue failed, please try again";
+			$this->renderTemplate('index.tpl');
+		}
+		else {					
+			$baseDir = dirname(dirname(dirname(dirname(__FILE__))));
+			$baseDir = str_replace("\\", "/", $baseDir);
+			$baseDir = rtrim($baseDir, "/");
+			$baseDir = $baseDir."/sites/default/html/images/issues";
+			if(!is_dir($baseDir)) mkdir($baseDir);
+			$datafolder = $baseDir;
+			
+			$origFileName = $file["name"];
+			$temp = explode(".", $origFileName);
+			$ext = $temp[count($temp)-1];
+			$ext = strtolower($ext);
+				
+			$curDate = 	date("Ymd_his");
+			$fileName = $curDate.'.'.$ext;
+			
+			if (move_uploaded_file($file["tmp_name"],$datafolder."/".$fileName)){
+				$params['picture'] = $fileName;
+				Zend_Loader::LoadClass('issueClass', $this->modelDir);
+				$issueClass = new issueClass();
+				$params['user_id'] = $this->ident['user_id'];
+				$id = $issueClass->saveIssue($params);
+				
+				$new_file_thumb = $curDate."_thumb.".$ext;
+				$new_file_large = $curDate."_large.".$ext;
+				/*** create thumbnail image ***/
+exec($magickPath . ' ' . $datafolder."/".$fileName . ' -resize 3% -pointsize 14 -background "#ffcc00" label:unsolved -gravity Center -append ' . $datafolder."/".$new_file_thumb);
+				/*** create medium image ***/
+exec($magickPath . ' ' . $datafolder."/".$fileName . ' -resize 20% -pointsize 50 -background "#ffcc00" Plum label:unsolved -gravity Center -append ' . $datafolder."/".$new_file_large);
+				
+				imagedestroy($datafolder."/".$fileName);
+				unlink($datafolder."/".$fileName);
+				
+				if($params['sendwa'] == '4')
+				{
+					$categoryTable = $this->loadModel('category');
+					$category = $categoryTable->getCategoryById($params['category']);	
+					
+					//$pic_url = $this->config->general->url."index/issueimage/id/".$id;
+					$pic_url = $this->config->general->url."images/issues/".$new_file_large;
+					$botToken = '476346623:AAFlB9X5-bShAkdTK9ziNDrfZ0TCePXl2cY';
+					$website="https://api.telegram.org/bot".$botToken;
+					$chatId=$category['telegram_channel_id'];  //Receiver Chat Id 
+					$params=array(
+						'chat_id'=>$chatId,
+						'text'=>'[NEW ISSUE] Image : '.$pic_url.' Category : '.$category['category_name'].', Location : '.$params['location'].', Discussion : '.$params['description']
+					);
+					$ch = curl_init($website . '/sendMessage');
+					curl_setopt($ch, CURLOPT_HEADER, false);
+					curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+					curl_setopt($ch, CURLOPT_POST, 1);
+					curl_setopt($ch, CURLOPT_POSTFIELDS, ($params));
+					curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+					$result = curl_exec($ch);
+					curl_close($ch);
+				}
+				
+				if($params['sendwa'] == '1' || $params['sendwa'] == '2') $id = "/id/".$id."/f/".$params['sendwa'];
+				else $id="";
+				
+				$this->view->msg = "Issue successfully submitted";
+				$this->getResponse()->setRedirect($this->config->general->url."/issue/listissues/s/1".$id);
+				$this->getResponse()->sendResponse();
+				exit;
+			}	
+			else {
+				$this->getResponse()->setRedirect($this->config->general->url."/index/index/err/1");
+				$this->getResponse()->sendResponse();
+				exit;			
+			}
+		}
+	}
+	
+	function listissuesAction()
+	{
+		$params = $this->_getAllParams();
+		$this->view->ident = $this->ident;
+		Zend_Loader::LoadClass('issueClass', $this->modelDir);
+    	$issueClass = new issueClass();
+		if(empty($params['start'])) $params['start'] = '0';
+		$params['pagesize'] = 10;
+		$issues = $issueClass->getIssues($params);
+		$totalIssues = $issueClass->getTotalPendingIssues('0');
+		$category = $this->loadModel('category');
+		$commentsTable = $this->loadModel('comments');
+		$newIssue=array();
+		foreach($issues as &$issue)
+		{
+			$pic = explode(".", $issue['picture']);
+			$issue['large_pic'] = $pic[0]."_large.".$pic[1];
+			$issue['thumb_pic'] = $pic[0]."_thumb.".$pic[1];
+			if(!empty($issue['category_id'])) {
+				$issue['category'] = $category->getCategoryById($issue['category_id']);				
+			}
+			if($issue['issue_id'] == $params['id']) $newIssue = $issue;
+			$issue['comments'] = $commentsTable->getCommentsByIssueId($issue['issue_id'], '3');
+		}
+		
+		if(!empty($newIssue))
+		{	
+			//$pic_url = $this->config->general->url."/images/issues/".$newIssue['large_pic'] ;
+			$pic_url = $this->config->general->url."/index/issueimage/id/".$newIssue['issue_id'] ;
+			$this->view->txt = urlencode('*[NEW ISSUE]* Image : '.$pic_url.' Category : _'.$newIssue['category']['category_name'].'_, Location : _'.$newIssue['location'].'_, Discussion : _'.$newIssue['description']).'_';
+			$this->view->phone = '6285885556333'; //'6282260400777'; //'6282111508181';
+			$this->view->f = $params['f'];
+		}
+		
+		if($totalIssues['total'] > 10)
+		{
+			if($params['start'] >= 10)
+			{
+				$this->view->firstPageUrl = "/default/issue/listissues";
+				$this->view->prevUrl = "/default/issue/listissues/start/".($params['start']-$params['pagesize']);
+			}
+			if($params['start'] < (floor($totalIssues['total']/10)*10))
+			{
+				$this->view->nextUrl = "/default/issue/listissues/start/".($params['start']+$params['pagesize']);
+				$this->view->lastPageUrl = "/default/issue/listissues/start/".(floor($totalIssues['total']/10)*10);
+			}
+		}
+		$this->view->issues = $issues;
+		$this->renderTemplate('list_issues.tpl');	
+	}
+	
+	function whatsappAction()
+    {
+		$config['webpassword'] = 'srt_pakuwon';
+		$config['Emma'] = array(
+			'fromNumber'    => '6282260400777',
+			'nick'          => 'Emma',
+			'waPassword'    => '23January2011'
+		);
+		require_once 'whatsapp/whatsprot.class.php';
+		$username = "6282260400777";
+		$password = "23January2011";
+		$w = new WhatsProt($username, "0", "Emma", true); //Name your application by replacing “WhatsApp Messaging”
+		$w->connect();
+		$w->loginWithPassword($password);
+		$target = '6282111508181'; //Target Phone,reciever phone
+		$message = 'Test messagge';
+		$w->SendPresenceSubscription($target); //Let us first send presence to user
+		$w->sendMessage($target,$message ); // Send Message
+		echo "Message Sent Successfully"; exit();
+    }
+	
+	function registrationAction() {
+		require_once('whatsapp/Registration.php');
+ 
+		$debug = false;
+		$username = "6282260400777"; // Phone number with country code but without '+' or '00', ie: 34123456789
+		 
+		if(empty($username)){ 
+		echo "Mobile Number can't be Empty"; 
+		exit(0);
+		}
+		if (!preg_match('!^\d+$!', $username))
+		{
+		  echo "Wrong number. Do NOT use '+' or '00' before your number\n";
+		  exit(0);
+		}
+		$w = new Registration($username, $debug);
+		  try {
+			$resp = $w->checkCredentials();
+			print_r($resp); exit();
+			echo "Verification Code Sent via SMS";
+		  } catch(Exception $e) {
+			echo $e->getMessage();
+			exit(0);
+		 }
+	}
+	
+	function getwhatsapppasswordAction() {
+		require_once('whatsapp/Registration.php');
+		 
+		$debug = false;
+		$username = "6282260400777";   
+		$code = ""; // Received Verification Code
+		 
+		if(empty($username)){ 
+			echo "Mobile Number can't be Empty"; 
+			exit(0);
+		}
+		if (!preg_match('!^\d+$!', $username))
+		{
+		  echo "Wrong number. Do NOT use '+' or '00' before your number\n";
+		  exit(0);
+		}
+		 
+		$identityExists = file_exists("whatsapp/wadata/id.$username.dat");
+		 
+		$w = new Registration($username, $debug);
+		 
+		if (!$identityExists)
+		{
+		echo "Identity Doesn't Exists";
+		}
+		else
+		{	
+		 
+		  try {
+			$result = $w->codeRegister($code);
+			echo "Your username is: ".$result->login."<BR>";
+			echo "Your password is: ".$result->pw."<BR>";
+		  } catch(Exception $e) {
+			echo $e->getMessage();
+			exit(0);
+		  }
+		  
+		}
+	}
+	
+	function sendtelegramAction()
+	{
+		/*Zend_Loader::LoadClass('issueClass', $this->modelDir);
+    	$issueClass = new issueClass();
+		$issues = $issueClass->getIssueById('');*/
+	
+		$botToken = '527863702:AAEHiMc_QexFTvVGVgnumRHPfgNvfWGqS24';
+		$website="https://api.telegram.org/bot".$botToken;
+		$chatId=-1001348929465;  //Receiver Chat Id 
+		$params=array(
+			'chat_id'=>$chatId,
+			'text'=>urlencode('Emma test'),
+			'parse_mode'=>'HTML'
+		);
+		$ch = curl_init($website . '/sendMessage');
+		curl_setopt($ch, CURLOPT_HEADER, false);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($ch, CURLOPT_POST, 1);
+		curl_setopt($ch, CURLOPT_POSTFIELDS, ($params));
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+		$result = curl_exec($ch);
+		curl_close($ch);	
+		echo "result=".$result;
+	}
+	
+	function solvedissuesAction()
+	{
+		$params = $this->_getAllParams();
+		$this->view->ident = $this->ident;
+		Zend_Loader::LoadClass('issueClass', $this->modelDir);
+    	$issueClass = new issueClass();
+		$issues = $issueClass->getSolvedIssues($params);
+		if(empty($params['start'])) $params['start'] = '0';
+		$params['pagesize'] = 10;
+		$totalIssues = $issueClass->getTotalPendingIssues('1');
+		$category = $this->loadModel('category');
+		$commentsTable = $this->loadModel('comments');
+		$newIssue=array();
+		foreach($issues as &$issue)
+		{
+			$pic = explode(".", $issue['picture']);
+			$issue['large_pic'] = $pic[0]."_large.".$pic[1];
+			$issue['thumb_pic'] = $pic[0]."_thumb.".$pic[1];
+			$solved_pic = explode(".", $issue['solved_picture']);
+			$issue['large_solved_pic'] = $solved_pic[0]."_large.".$solved_pic[1];
+			$issue['thumb_solved_pic'] = $solved_pic[0]."_thumb.".$solved_pic[1];
+			if(!empty($issue['category_id'])) {
+				$issue['category'] = $category->getCategoryById($issue['category_id']);				
+			}
+			if($issue['issue_id'] == $params['id']) $newIssue = $issue;
+			$issue['comments'] = $commentsTable->getCommentsByIssueId($issue['issue_id'], '3');
+		}
+		
+		if($totalIssues['total'] > 10)
+		{
+			if($params['start'] >= 10)
+			{
+				$this->view->firstPageUrl = "/default/issue/solvedissues";
+				$this->view->prevUrl = "/default/issue/solvedissues/start/".($params['start']-$params['pagesize']);
+			}
+			if($params['start'] < (floor($totalIssues['total']/10)*10))
+			{
+				$this->view->nextUrl = "/default/issue/solvedissues/start/".($params['start']+$params['pagesize']);
+				$this->view->lastPageUrl = "/default/issue/solvedissues/start/".(floor($totalIssues['total']/10)*10);
+			}
+		}	
+		
+		$this->view->issues = $issues;
+		$this->renderTemplate('solved_issues.tpl');	
+	}
+	
+	function submitsolveissueAction()
+	{
+		set_time_limit(7200);
+		$params = $this->_getAllParams();
+		
+		$magickPath = "/usr/bin/convert";
+		
+		
+		$file = $_FILES['solved-picture'];
+		if ($file["error"] > 0) {
+			$this->view->msg = "Submitting solve issue failed, please try again";
+			$this->renderTemplate('list_issue.tpl');
+		}
+		else {					
+			$baseDir = dirname(dirname(dirname(dirname(__FILE__))));
+			$baseDir = str_replace("\\", "/", $baseDir);
+			$baseDir = rtrim($baseDir, "/");
+			$baseDir = $baseDir."/sites/default/html/images/issues";
+			if(!is_dir($baseDir)) mkdir($baseDir);
+			$datafolder = $baseDir;
+			
+			$origFileName = $file["name"];
+			$temp = explode(".", $origFileName);
+			$ext = $temp[count($temp)-1];
+			$ext = strtolower($ext);
+				
+			$curDate = 	date("Ymd_his");
+			$fileName = $curDate.'.'.$ext;
+			
+			if (move_uploaded_file($file["tmp_name"],$datafolder."/".$fileName)){
+				$params['picture'] = $fileName;
+				Zend_Loader::LoadClass('issueClass', $this->modelDir);
+				$issueClass = new issueClass();
+				$params['user_id'] = $this->ident['user_id'];
+				$id = $issueClass->saveSolveIssue($params);
+				
+				Zend_Loader::LoadClass('commentsClass', $this->modelDir);
+				$commentsClass = new commentsClass();
+				$commentsClass->addComment($params);
+				
+				$new_file_thumb = $curDate."_thumb.".$ext;
+				$new_file_large = $curDate."_large.".$ext;
+				/*** create thumbnail image ***/
+exec($magickPath . ' ' . $datafolder."/".$fileName . ' -resize 3% -pointsize 16 -background YellowGreen label:solved -gravity Center -append ' . $datafolder."/".$new_file_thumb);
+				/*** create medium image ***/
+exec($magickPath . ' ' . $datafolder."/".$fileName . ' -resize 20% -pointsize 50 -background YellowGreen label:solved -gravity Center -append ' . $datafolder."/".$new_file_large);
+				
+				imagedestroy($datafolder."/".$fileName);
+				unlink($datafolder."/".$fileName);
+				$params['sendwa'] = '4';
+				if($params['sendwa'] == '4')
+				{					
+					$issue = $issueClass->getIssueById($params['issue_id']);
+				
+					$categoryTable = $this->loadModel('category');
+					$category = $categoryTable->getCategoryById($issue['category_id']);						
+					
+					//$pic_url = $this->config->general->url."index/issueimage/id/".$id;
+					$pic_url = $this->config->general->url."images/issues/".$new_file_large;
+					$botToken = '476346623:AAFlB9X5-bShAkdTK9ziNDrfZ0TCePXl2cY';
+					$website="https://api.telegram.org/bot".$botToken;
+					$chatId=$category['telegram_channel_id'];  //Receiver Chat Id 
+					$params=array(
+						'chat_id'=>$chatId,
+						'text'=>'[SOLVED ISSUE]
+Solved Image: '.$pic_url.'
+Comment: '.$params['comment'].'
+
+[BEGIN ISSUE]
+Issue Image : '.$this->config->general->url."images/issues/".str_replace(".","_large.",$issue['picture']).'
+Category : '.$category['category_name'].'
+Location : '.$issue['location'].'
+Discussion : '.$issue['description']
+					);
+					$ch = curl_init($website . '/sendMessage');
+					curl_setopt($ch, CURLOPT_HEADER, false);
+					curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+					curl_setopt($ch, CURLOPT_POST, 1);
+					curl_setopt($ch, CURLOPT_POSTFIELDS, ($params));
+					curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+					$result = curl_exec($ch);
+					curl_close($ch);
+				}
+				
+				
+				$this->view->msg = "Issue successfully submitted";
+				$this->getResponse()->setRedirect($this->config->general->url."/issue/solvedissues/s/1");
+				$this->getResponse()->sendResponse();
+				exit;
+			}	
+			else {
+				$this->getResponse()->setRedirect($this->config->general->url."/issue/listissues/err/1");
+				$this->getResponse()->sendResponse();
+				exit;			
+			}
+		}
+	}
+	
+	function getcommentsbyissueidAction()
+	{
+		$params = $this->_getAllParams();
+		$this->view->ident = $this->ident;
+		$category = $this->loadModel('category');
+		$commentsTable = $this->loadModel('comments');
+		$comments = $commentsTable->getCommentsByIssueId($params['id']);
+		$commentText = "";
+		if(!empty($comments)) {
+			foreach($comments as $comment)
+			{
+				$commentText .= '<div style="border-bottom:1px solid #ccc; text-align:left; clear:both; margin-bottom:5px; padding-bottom:5px;">'.$comment['comment'].'<br/><div style="font-size:10px; color:#aaa; text-align:right;">'.$comment['comment_date']."</div></div>";
+			}
+		}
+		
+		echo $commentText;	
+	}
+	
+	function addcommentAction() {
+		$params = $this->_getAllParams();
+		
+		$commentsTable = $this->loadModel('comments');
+		$params['user_id'] = $this->ident['user_id'];
+		$commentsTable->addComment($params);
+		
+		$issueClass = $this->loadModel('issue');
+		$issue = $issueClass->getIssueById($params['issue_id']);
+		
+		$categoryClass = $this->loadModel('category');
+		$category = $categoryClass->getCategoryById($issue['category_id']);	
+		
+		$pic_url = $this->config->general->url."images/issues/".str_replace(".","_large.",$issue['picture']);
+		$botToken = '476346623:AAFlB9X5-bShAkdTK9ziNDrfZ0TCePXl2cY';
+		$website="https://api.telegram.org/bot".$botToken;
+		$chatId=$category['telegram_channel_id'];  //Receiver Chat Id 
+		$txt = '[NEW COMMENT] 
+'.$params['comment'].'
+
+';
+		if(!empty($issue['solved']))
+			$txt .= '[SOLVED ISSUE]
+Solved Image : '.$this->config->general->url."images/issues/".str_replace(".","_large.",$issue['solved_picture']).'
+
+';
+
+		$txt .= '[BEGIN ISSUE]
+Issue Image : '.$pic_url.' 
+Category : '.$category['category_name'].'
+Location : '.$issue['location'].'
+Discussion : '.$issue['description'];
+		$params=array(
+			'chat_id'=>$chatId,
+			'text'=>$txt
+		);
+		$ch = curl_init($website . '/sendMessage');
+		curl_setopt($ch, CURLOPT_HEADER, false);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($ch, CURLOPT_POST, 1);
+		curl_setopt($ch, CURLOPT_POSTFIELDS, ($params));
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+		$result = curl_exec($ch);
+		curl_close($ch);
+		echo $issue['issue_id'];
+		/*$this->_response->setRedirect($this->baseUrl.'/default/bwm/view/id/'.$params['server_id']);
+		$this->_response->sendResponse();
+		exit();
+*/	}	
+	
+	function getupdatedpendingcommentsAction()
+	{
+		$params = $this->_getAllParams();
+	
+		$issueTable = $this->loadModel('issue');
+		
+		$data= array();
+		$issues = $issueTable->getIssues($params);	
+		$commentsTable = $this->loadModel('comments');
+		$i=0;
+		foreach($issues as $issue) {
+			$data[$i]['id'] = $issue['issue_id'];
+			$comments = $commentsTable->getCommentsByIssueId( $issue['issue_id'], '3');
+			if(!empty($comments)) { 
+				$comment_content = "";
+				foreach($comments as $comment)
+				{
+					$comment_content .= '<div style="border-bottom:1px solid #ccc; text-align:left; clear:both; margin-bottom:5px; padding-bottom:5px;">'.$comment['comment'].'<br/><div style="font-size:10px; color:#aaa; text-align:right;">'.$comment['comment_date']."</div></div>";
+				}
+				$data[$i]['comment'] = $comment_content;
+			}
+			$i++;
+		}
+				
+		echo json_encode($data);
+	}
+	
+	function getupdatedsolvedcommentsAction()
+	{
+		$params = $this->_getAllParams();
+	
+		$issueTable = $this->loadModel('issue');
+		
+		$data= array();
+		$issues = $issueTable->getSolvedIssues($params);	
+		$commentsTable = $this->loadModel('comments');
+		$i=0;
+		foreach($issues as $issue) {
+			$data[$i]['id'] = $issue['issue_id'];
+			$comments = $commentsTable->getCommentsByIssueId( $issue['issue_id'], '3');
+			if(!empty($comments)) { 
+				$comment_content = "";
+				foreach($comments as $comment)
+				{
+					$comment_content .= '<div style="border-bottom:1px solid #ccc; text-align:left; clear:both; margin-bottom:5px; padding-bottom:5px;">'.$comment['comment'].'<br/><div style="font-size:10px; color:#aaa; text-align:right;">'.$comment['comment_date']."</div></div>";
+				}
+				$data[$i]['comment'] = $comment_content;
+			}
+			$i++;
+		}
+				
+		echo json_encode($data);
+	}
+}
+?>

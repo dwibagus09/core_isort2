@@ -1,0 +1,105 @@
+<?php
+
+require_once('defaultClass.php');
+require_once('dbClass.php');
+
+class trainingClass extends defaultClass
+{	
+	function getTrainingActivity() {
+		$trainingActivityTable = new security_training_activity(array('db'=>'db'));
+		$select = $trainingActivityTable->select();
+		$activity = $trainingActivityTable->getAdapter()->fetchAll($select);
+		return $activity;
+	}
+	
+	function deleteTrainingByChiefSecurityId($chief_security_report_id)
+	{
+		$securityTrainingTable = new security_training(array('db'=>'db'));
+		
+		if ( is_numeric($chief_security_report_id) && $chief_security_report_id > 0 )
+		{		
+			$where = $securityTrainingTable->getAdapter()->quoteInto('chief_security_report_id = ?', $chief_security_report_id);
+			$securityTrainingTable->delete($where);
+		}
+	}
+	
+	function addTraining($params) {
+		$securityTrainingTable = new security_training(array('db'=>'db'));
+		
+		$data = array(
+			"chief_security_report_id" => intval($params["chief_security_report_id"]),
+			"training_type" => intval($params["training_type"]),
+			"training_activity_id" => intval($params["training_activity"]),
+			"description" => $params["description_training"]
+		);
+		$securityTrainingTable->insert($data);
+		return $this->db->lastInsertId();
+	}
+	
+	function getSecurityTrainingByType($chief_security_report_id, $type_id) {
+		$securityTrainingTable = new security_training(array('db'=>'db'));
+		
+		$select = $securityTrainingTable->getAdapter()->select();
+		$select->from(array("st"=>"security_training"), array("st.*"));
+		$select->joinLeft(array("sta"=>"security_training_activity"), "sta.training_activity_id = st.training_activity_id", array("sta.activity"));
+		$select->where('st.chief_security_report_id = ?', $chief_security_report_id);
+		$select->where('st.training_type = ?', $type_id);
+		$activity = $securityTrainingTable->getAdapter()->fetchAll($select);
+		return $activity;
+	}
+	
+	function getSafetyTrainingActivity() {
+		$trainingActivityTable = new safety_training_activity(array('db'=>'db'));
+		$select = $trainingActivityTable->select();
+		$activity = $trainingActivityTable->getAdapter()->fetchAll($select);
+		return $activity;
+	}
+	
+	function deleteSafetyTrainingBySafetyReportId($safety_report_id)
+	{
+		$trainingTable = new safety_training(array('db'=>'db'));
+		
+		if ( is_numeric($safety_report_id) && $safety_report_id > 0 )
+		{		
+			$where = $trainingTable->getAdapter()->quoteInto('safety_report_id = ?', $safety_report_id);
+			$trainingTable->delete($where);
+		}
+	}
+	
+	function addSafetyTraining($params) {
+		$trainingTable = new safety_training(array('db'=>'db'));
+		
+		$data = array(
+			"safety_report_id" => intval($params["safety_report_id"]),
+			"training_type" => intval($params["training_type"]),
+			"training_activity_id" => intval($params["training_activity"]),
+			"description" => $params["description_training"]
+		);
+		$trainingTable->insert($data);
+		return $this->db->lastInsertId();
+	}
+	
+	function getSafetyTrainingByType($safety_report_id, $type_id) {
+		$trainingTable = new safety_training(array('db'=>'db'));
+		
+		$select = $trainingTable->getAdapter()->select();
+		$select->from(array("st"=>"safety_training"), array("st.*"));
+		$select->joinLeft(array("sta"=>"safety_training_activity"), "sta.training_activity_id = st.training_activity_id", array("sta.activity"));
+		$select->where('st.safety_report_id = ?', $safety_report_id);
+		$select->where('st.training_type = ?', $type_id);
+		$activity = $trainingTable->getAdapter()->fetchAll($select);
+		return $activity;
+	}
+	
+	function deleteSafetyTrainingByReportId($safety_report_id)
+	{
+		$trainingTable = new safety_training(array('db'=>'db'));
+		
+		if ( is_numeric($safety_report_id) && $safety_report_id > 0 )
+		{		
+			$where = $trainingTable->getAdapter()->quoteInto('safety_report_id = ?', $safety_report_id);
+			$trainingTable->delete($where);
+		}
+	}
+}
+?>

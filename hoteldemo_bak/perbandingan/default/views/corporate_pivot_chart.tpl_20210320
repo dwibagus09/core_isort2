@@ -1,0 +1,943 @@
+<link rel="stylesheet" href="/css/jquery-ui.min.css">
+
+<!-- page content -->
+<div id="pivot-chart">
+	<div class="row">
+	  <div class="col-md-12 col-sm-12 col-xs-12">
+	  	<h2 class="pagetitle">Corporate Business Intelligence</h2>
+		<div class="pivot-filter-corporate">
+			<form id="pivot-filter-form" action="/default/pivot/corporate/c/<?php echo $this->cat_id; ?>"  method="post">
+				<input type="hidden" name="c" value="<?php echo $this->cat_id; ?>" />
+				<?php /*<div class="pivot-filter-field-corporate">
+					<div class="field-title">City</div>
+					<div class="field-value">
+						<select id="city" name="city[]" multiple><?php foreach($this->cities as $city) { ?><option value="<?php echo $city['city_id']; ?>" <?php if($this->city[$city['city_id']] == 1) echo "selected"; ?>><?php echo $city['city_name']; ?></option><?php } ?></select>
+					</div>
+				</div> */ ?>
+				<div class="pivot-filter-field-corporate">
+					<div class="field-title">Site</div>
+					<div class="field-value">
+						<select id="site_id" name="site_id[]" multiple><?php foreach($this->sites as $site) { ?><option value="<?php echo $site['site_id']; ?>" <?php if($this->site_id[$site['site_id']] == 1) echo "selected"; ?>><?php echo $site['site_name']; ?></option><?php } ?></select>
+					</div>
+				</div>
+				<div class="pivot-filter-field-corporate">
+					<div class="field-title">Year</div>
+					<div class="field-value">
+						<select id="year" name="year"><?php for($i = 2019; $i<=date("Y");$i++) { ?><option <?php if($this->year == $i) echo "selected"; ?> value="<?php echo $i; ?>"><?php echo $i; ?></option><?php } ?></select>
+					</div>
+				</div>
+				<div class="pivot-filter-field-corporate">
+					<div class="field-title">Month</div>
+					<div class="field-value">
+						<select name="month[]" id="month" multiple>
+							<option value="1" <?php if($this->month[1] == 1) echo "selected"; ?>>January</option>
+							<option value="2" <?php if($this->month[2] == 1) echo "selected"; ?>>February</option>
+							<option value="3" <?php if($this->month[3] == 1) echo "selected"; ?>>March</option>
+							<option value="4" <?php if($this->month[4] == 1) echo "selected"; ?>>April</option>
+							<option value="5" <?php if($this->month[5] == 1) echo "selected"; ?>>May</option>
+							<option value="6" <?php if($this->month[6] == 1) echo "selected"; ?>>June</option>
+							<option value="7" <?php if($this->month[7] == 1) echo "selected"; ?>>July</option>
+							<option value="8" <?php if($this->month[8] == 1) echo "selected"; ?>>August</option>
+							<option value="9" <?php if($this->month[9] == 1) echo "selected"; ?>>September</option>
+							<option value="10" <?php if($this->month[10] == 1) echo "selected"; ?>>October</option>
+							<option value="11" <?php if($this->month[11] == 1) echo "selected"; ?>>November</option>
+							<option value="12" <?php if($this->month[12] == 1) echo "selected"; ?>>December</option>
+						</select>
+					</div>
+				</div>
+				<div class="pivot-filter-field-corporate">
+					<div class="field-title">Day</div>
+					<div class="field-value">
+						<select name="day[]" id="day" multiple>					
+							<option value="1" <?php if($this->day[1] == 1) echo "selected"; ?>>Sunday</option>
+							<option value="2" <?php if($this->day[2] == 1) echo "selected"; ?>>Monday</option>
+							<option value="3" <?php if($this->day[3] == 1) echo "selected"; ?>>Tuesday</option>
+							<option value="4" <?php if($this->day[4] == 1) echo "selected"; ?>>Wednesday</option>
+							<option value="5" <?php if($this->day[5] == 1) echo "selected"; ?>>Thursday</option>
+							<option value="6" <?php if($this->day[6] == 1) echo "selected"; ?>>Friday</option>
+							<option value="7" <?php if($this->day[7] == 1) echo "selected"; ?>>Saturday</option>
+						</select>
+					</div>
+				</div>
+				<div class="pivot-filter-field-corporate">
+					<div class="field-title">Time Period</div>
+					<div class="field-value">	
+						<select name="time_period[]" id="time_period" multiple>					
+							<option value="1" <?php if($this->period[1] == 1) echo "selected"; ?>>09:01 - 12:00</option>
+							<option value="2" <?php if($this->period[2] == 1) echo "selected"; ?>>12:01 - 16:00</option>
+							<option value="3" <?php if($this->period[3] == 1) echo "selected"; ?>>16:01 - 19:00</option>
+							<option value="4" <?php if($this->period[4] == 1) echo "selected"; ?>>19:01 - 23:00</option>
+							<option value="5" <?php if($this->period[5] == 1) echo "selected"; ?>>23:01 - 09:00</option>
+						</select>
+					</div>
+				</div>
+				<div class="pivot-filter-field-corporate">
+					<div class="field-title">
+						Area
+					</div>
+					<div class="field-value">
+						<select name="floor[]" id="floor" multiple>			
+							<?php foreach($this->floor as $floor) { ?>			
+								<option value="<?php echo $floor['floor']; ?>" <?php if($this->floors[$floor['floor']] == 1) echo "selected"; ?>><?php echo $floor['floor']; ?></option>
+							<?php }?>
+						</select>
+					</div>
+				</div>
+				<div class="pivot-filter-field-corporate">
+					<div class="field-title">
+						Area
+					</div>
+					<div class="field-value">
+						<select name="tenant_umum[]" id="tenant_umum" multiple>				
+							<option value="0" <?php if($this->tenant_umum[0] == '1') echo "selected"; ?>>Tenant</option>
+							<option value="1" <?php if($this->tenant_umum[1] == '1') echo "selected"; ?>>Umum</option>
+						</select>
+					</div>
+				</div>
+				<div class="pivot-filter-field-corporate">
+					<div class="field-title">
+						Incident
+					</div>
+					<div class="field-value">
+						<select name="kejadian[]" id="kejadian" multiple>		
+							<?php foreach($this->incident as $kejadian) { ?>			
+								<option value="<?php echo $kejadian['kejadian']; ?>" <?php if($this->incidents[$kejadian['kejadian']] == 1) echo "selected"; ?>><?php echo $kejadian['kejadian']; ?></option>
+							<?php }?>
+						</select>
+					</div>
+				</div>
+				<div id="pivot-modus-field" class="pivot-filter-field-corporate">
+					<div class="field-title">
+						Modus
+					</div>
+					<div class="field-value">
+						<select name="modus[]" id="modus" multiple>					
+							<?php if(!empty($this->modus)) { foreach($this->modus as $modus) { ?>			
+								<option value="<?php echo $modus['modus']; ?>" <?php if($this->mods[$modus['modus']] == 1) echo "selected"; ?>><?php echo $modus['modus']; ?></option>
+							<?php } } ?>
+						</select>
+					</div>
+				</div>
+				<div class="pivot-filter-field-corporate">
+					<input type="submit" id="view-chart" name="view-chart" value="View Chart" style="width:100%; margin-top:5px;">
+					<br/><input type="button" id="reset-chart" name="reset-chart" value="Reset Chart" style="width:100%;"><br/>
+					<div id="exportpivottopdf"><img id="exporttopdf" src="/images/newlogo_pdf.png" style="float: none; cursor:pointer;" width="24"> Export to PDF</div>
+				</div>
+			</form>
+		</div>
+		
+		<div id="pivot-chart-container-corporate">
+			<div class="pivot-chart-small-corporate">
+				<canvas id="totalAllChart"></canvas>
+			</div>
+			<div class="pivot-chart-small-corporate">
+				<canvas id="totalDayChart"></canvas>
+			</div>
+			<div class="pivot-chart-small-corporate">
+				<canvas id="totalEachIncident"></canvas>
+			</div>
+			<div class="pivot-chart-small-corporate">
+				<canvas id="totalEachPeriod"></canvas>
+			</div>
+			<div class="pivot-chart-large-corporate">
+				<canvas id="totalMonthlyChart"></canvas>
+			</div>			
+			<div class="pivot-chart-half-corporate">
+				<canvas id="totalEachArea"></canvas>
+			</div>
+			<div id="pivot-modus" class="pivot-chart-full-corporate">
+				<canvas id="totalEachModus"></canvas>
+			</div>
+		</div>
+		<?php /* if(!empty($this->detailIssues)) { ?>
+			<div id="detail-issue-summary">
+				<div class="paging">
+					<div class="record-indicator">Showing <?php echo $this->startRec." - ".$this->endRec." of ".$this->totalRec; ?> Issues </div>
+					<div class="paging-section">
+						<?php if(!empty($this->firstPageUrl)) { ?><a class="paging-button" data-href="<?php echo $this->firstPageUrl; ?>"><i class="fa fa-angle-double-left" ></i></a><?php } ?>
+						<?php if(!empty($this->prevUrl)) { ?><a class="paging-button" data-href="<?php echo $this->prevUrl; ?>"><i class="fa fa-angle-left" ></i></a><?php } ?>
+						<span class="page-indicator" style="margin-right:10px; margin-left:10px;">Page <?php echo $this->curPage; ?> of <?php echo $this->totalPage; ?></span>
+						<?php if(!empty($this->nextUrl)) { ?><a class="paging-button" data-href="<?php echo $this->nextUrl; ?>"><i class="fa fa-angle-right" ></i></a><?php } ?>
+						<?php if(!empty($this->lastPageUrl)) { ?><a class="paging-button" data-href="<?php echo $this->lastPageUrl; ?>"><i class="fa fa-angle-double-right"></i></a><?php } ?>
+					</div>
+				</div>
+				<table class="table table-striped">
+					<thead>
+						<tr>
+							<th width="100">Date</th>
+							<th width="150">Kejadian - Modus</th>
+							<th>Detail</th>
+							<th width="<?php if($this->cat_id == 3) echo "18%"; else echo "23%"; ?>"><?php if($this->cat_id == 3) echo "Data hasil Investigasi"; else echo "Analisa"; ?></th>
+							<th width="<?php if($this->cat_id == 3) echo "18%"; else echo "23%"; ?>"><?php if($this->cat_id == 3) echo "Langkah Antisipatif"; else echo "Rencana &amp; Tindakan"; ?></th>
+							<?php if($this->cat_id == 3) { ?><th width="18%">Rekomendasi</th><?php } ?>
+						</tr>
+					</thead>
+					<tbody>
+						<?php $i = 0; foreach($this->detailIssues as $detailIssue) { 
+							$issuedate = explode(" ", $detailIssue['issue_date']);
+							$issue_date = date("j M Y", strtotime($issuedate[0]))." ".$issuedate[1];
+						?>
+						<tr <?php if($i%2 == 1) echo 'style="background-color:#eee;"'; ?> >
+							<td><?php echo $issue_date; ?></td>
+							<td><?php echo $detailIssue['kejadian']." - ".$detailIssue['modus']; ?></td>
+							<td><?php echo nl2br($detailIssue['description']); ?></td>
+							<td><?php echo $detailIssue['analisa']; ?></td>
+							<td><?php echo $detailIssue['tindakan']; ?></td>
+							<?php if($this->cat_id == 3) { ?><td><?php echo $detailIssue['rekomendasi']; ?></td><?php } ?>
+						</tr>
+						<?php $i++; } ?>
+					</tbody>
+				</table>
+				<div class="paging">
+					<div class="record-indicator">Showing <?php echo $this->startRec." - ".$this->endRec." of ".$this->totalRec; ?> Issues </div>
+					<div class="paging-section">
+						<?php if(!empty($this->firstPageUrl)) { ?><a class="paging-button" data-href="<?php echo $this->firstPageUrl; ?>"><i class="fa fa-angle-double-left" ></i></a><?php } ?>
+						<?php if(!empty($this->prevUrl)) { ?><a class="paging-button" data-href="<?php echo $this->prevUrl; ?>"><i class="fa fa-angle-left" ></i></a><?php } ?>
+						<span class="page-indicator" style="margin-right:10px; margin-left:10px;">Page <?php echo $this->curPage; ?> of <?php echo $this->totalPage; ?></span>
+						<?php if(!empty($this->nextUrl)) { ?><a class="paging-button" data-href="<?php echo $this->nextUrl; ?>"><i class="fa fa-angle-right" ></i></a><?php } ?>
+						<?php if(!empty($this->lastPageUrl)) { ?><a class="paging-button" data-href="<?php echo $this->lastPageUrl; ?>"><i class="fa fa-angle-double-right"></i></a><?php } ?>
+					</div>
+				</div>
+			</div>
+		<?php } */ ?>
+	  </div>
+	</div>
+  </div>
+</div>
+</div>
+<!-- /page content -->
+
+<script type="text/javascript" src="/js/Chart.js2.9.3/dist/Chart.min.js"></script>
+<script type="text/javascript" src="/js/Chart.js2.9.3/utils.js"></script>
+<script type="text/javascript" src="/js/Chart.js2.9.3/plugin/chartjs-plugin-labels.js"></script>
+<script src="/js/jquery-ui.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+	$('#kejadian').on('change', function() {
+		var city_ids = [];
+		$('#city option:selected').each(function () {
+			if ($(this).val()) {
+				city_ids.push($(this).val());
+			}
+		});
+
+		var site_ids = [];
+		$('#site_id option:selected').each(function () {
+			if ($(this).val()) {
+				site_ids.push($(this).val());
+			}
+		});
+
+		$.ajax({
+			url: '/default/issue/getmodusbyincidents',
+			data: { incidents : $(this).val(),
+					category_id : '<?php echo $this->cat_id; ?>',
+					city_ids : city_ids,
+					site_ids : site_ids
+			}
+		}).done(function(response) {
+			var resp = $.parseJSON(response);
+			$("#modus").empty();
+			$.each(resp, function (item, value) {
+				$("#modus").append(new Option(value.modus, value.modus));
+			});
+		});
+	});
+
+	$('#city').on('change', function() {
+		$.ajax({
+			url: '/default/site/getsitesbycityids',
+			data: { city_ids : $(this).val() }
+		}).done(function(response) {
+			var resp = $.parseJSON(response);
+			$("#site_id").empty();
+			$.each(resp, function (item, value) {
+				$("#site_id").append(new Option(value.site_name, value.site_id));
+			});
+
+		});
+
+		$.ajax({
+			url: '/default/floor/getfloorsbycityids',
+			data: { city_ids : $(this).val(),
+					category_id : '<?php echo $this->cat_id; ?>'
+			}
+		}).done(function(response) {
+			var resp = $.parseJSON(response);
+			$("#floor").empty();
+			$.each(resp, function (item, value) {
+				$("#floor").append(new Option(value.floor, value.floor));
+			});
+
+		});
+
+		$.ajax({
+			url: '/default/incident/getincidentsbycityids',
+			data: { city_ids : $(this).val(),
+					category_id : '<?php echo $this->cat_id; ?>'
+			}
+		}).done(function(response) {
+			var resp = $.parseJSON(response);
+			$("#kejadian").empty();
+			$.each(resp, function (item, value) {
+				$("#kejadian").append(new Option(value.kejadian, value.kejadian));
+			});
+
+		});
+	});
+
+	$('#site_id').on('change', function() {
+		$.ajax({
+			url: '/default/floor/getfloorsbysiteids',
+			data: { site_ids : $(this).val(),
+					category_id : '<?php echo $this->cat_id; ?>'
+			}
+		}).done(function(response) {
+			var resp = $.parseJSON(response);
+			$("#floor").empty();
+			$.each(resp, function (item, value) {
+				$("#floor").append(new Option(value.floor, value.floor));
+			});
+
+		});
+
+		$.ajax({
+			url: '/default/incident/getincidentsbysiteids',
+			data: { site_ids : $(this).val(),
+					category_id : '<?php echo $this->cat_id; ?>'
+			}
+		}).done(function(response) {
+			var resp = $.parseJSON(response);
+			$("#kejadian").empty();
+			$.each(resp, function (item, value) {
+				$("#kejadian").append(new Option(value.kejadian, value.kejadian));
+			});
+
+		});
+	});
+
+	$("#reset-chart").click(function() {
+		location.href = '/default/pivot/corporate/c/<?php echo $this->cat_id; ?>';
+	});	
+
+
+	$("#exportpivottopdf").click(function() {
+		$("body").mLoading();
+		var totalAllChart = document.getElementById("totalAllChart");
+		var totalDayChart = document.getElementById("totalDayChart");
+		var totalEachIncident = document.getElementById("totalEachIncident");
+		var totalEachPeriod = document.getElementById("totalEachPeriod");
+		var totalMonthlyChart = document.getElementById("totalMonthlyChart");
+		var totalEachArea = document.getElementById("totalEachArea");
+		var totalEachModus = document.getElementById("totalEachModus");
+
+		var cities = [];
+		$('#city option:selected').each(function () {
+			if ($(this).val()) {
+				cities.push($(this).val());
+			}
+		});
+
+		var sites = [];
+		$('#site_id option:selected').each(function () {
+			if ($(this).val()) {
+				sites.push($(this).val());
+			}
+		});
+
+		var mo = [];
+		$('#month option:selected').each(function () {
+			if ($(this).val()) {
+				mo.push($(this).val());
+			}
+		});
+
+		var day = [];
+		$('#day option:selected').each(function () {
+			if ($(this).val()) {
+				day.push($(this).val());
+			}
+		});
+
+		var floor = [];
+		$('#floor option:selected').each(function () {
+			if ($(this).val()) {
+				floor.push($(this).val());
+			}
+		});
+
+		var tenant_umum = [];
+		$('#tenant_umum option:selected').each(function () {
+			if ($(this).val()) {
+				tenant_umum.push($(this).val());
+			}
+		});
+
+		var kejadian = [];
+		$('#kejadian option:selected').each(function () {
+			if ($(this).val()) {
+				kejadian.push($(this).val());
+			}
+		});
+
+		var modus = [];
+		$('#modus option:selected').each(function () {
+			if ($(this).val()) {
+				modus.push($(this).val());
+			}
+		});
+
+		var time_period = [];
+		$('#time_period option:selected').each(function () {
+			if ($(this).val()) {
+				time_period.push($(this).val());
+			}
+		});
+
+		$.ajax({
+			method: 'POST',
+			url: '/default/pivot/savecorporatepivotgraph',
+			data: {
+				totalAllChart: totalAllChart.toDataURL("image/png"),
+				totalDayChart: totalDayChart.toDataURL("image/png"),
+				totalEachIncident: totalEachIncident.toDataURL("image/png"),
+				totalEachPeriod: totalEachPeriod.toDataURL("image/png"),
+				totalMonthlyChart: totalMonthlyChart.toDataURL("image/png"),
+				totalEachArea: totalEachArea.toDataURL("image/png"),
+				totalEachModus: totalEachModus.toDataURL("image/png"),
+				prefix: '<?php echo "corp_".$this->cat_id; ?>',
+				cities: cities,
+				sites: sites,
+				year : $('#year option:selected').val(),
+				month : mo,
+				day : day,
+				floor : floor,
+				tenant_umum : tenant_umum,
+				kejadian : kejadian,
+				modus : modus,
+				time_period : time_period
+			},
+			success: function(data) {
+				if(window.innerWidth <= 800 && window.innerHeight <= 600) {
+					location.href = '/default/pivot/exportcorporatepivottopdf/cd/'+data+'/c/<?php echo $this->cat_id; ?>';
+				} else {
+					window.open("/default/pivot/exportcorporatepivottopdf/cd/"+data+"/c/<?php echo $this->cat_id; ?>");
+				}	
+				$("body").mLoading('hide');	
+			}
+		});
+	});	
+
+	/*$( ".paging-button").click(function() {
+        $("body").mLoading();
+		var mo = [];
+		$('#month option:selected').each(function () {
+			if ($(this).val()) {
+				mo.push($(this).val());
+			}
+		});
+
+		var day = [];
+		$('#day option:selected').each(function () {
+			if ($(this).val()) {
+				day.push($(this).val());
+			}
+		});
+
+		var floor = [];
+		$('#floor option:selected').each(function () {
+			if ($(this).val()) {
+				floor.push($(this).val());
+			}
+		});
+
+		var tenant_umum = [];
+		$('#tenant_umum option:selected').each(function () {
+			if ($(this).val()) {
+				tenant_umum.push($(this).val());
+			}
+		});
+
+		var kejadian = [];
+		$('#kejadian option:selected').each(function () {
+			if ($(this).val()) {
+				kejadian.push($(this).val());
+			}
+		});
+
+		var modus = [];
+		$('#modus option:selected').each(function () {
+			if ($(this).val()) {
+				modus.push($(this).val());
+			}
+		});
+
+		var time_period = [];
+		$('#time_period option:selected').each(function () {
+			if ($(this).val()) {
+				time_period.push($(this).val());
+			}
+		});
+
+		$.ajax({
+			url: this.dataset.href,
+			data: { c : '<?php echo $this->cat_id; ?>',
+					year : $('#year option:selected').val(),
+					month : mo,
+					day : day,
+					floor : floor,
+					tenant_umum : tenant_umum,
+					kejadian : kejadian,
+					modus : modus,
+					time_period : time_period
+			}
+		}).done(function(response) {
+			$( "#detail-issue-summary").html(response);
+            $("body").mLoading('hide');
+		});
+	}); */
+
+	var chartColor = [window.chartColors.red, window.chartColors.yellow, window.chartColors.green, window.chartColors.blue, window.chartColors.purple, window.chartColors.orange, window.chartColors.grey, "#B8860B", "#FF00FF", "#6495ED", "#ADFF2F", "#FF0000", "#00FFFF", "#FFFF00"];
+
+	/*** MONTH ***/
+
+	var mo = new Array();
+	var dt = new Array();
+
+	<?php if(!empty($this->totalMonthly)) {
+		$m = 0;
+		$totalAll = 0;
+	 	foreach($this->totalMonthly as $tm) { 
+			switch($tm['mo'])
+			{
+				case 1: $mo = 'mo['.$m.'] = "January";'; break;
+				case 2: $mo = 'mo['.$m.'] = "February";'; break;
+				case 3: $mo = 'mo['.$m.'] = "March";'; break;
+				case 4: $mo = 'mo['.$m.'] = "April";'; break;
+				case 5: $mo = 'mo['.$m.'] = "May";'; break;
+				case 6: $mo = 'mo['.$m.'] = "June";'; break;
+				case 7: $mo = 'mo['.$m.'] = "July";'; break;
+				case 8: $mo = 'mo['.$m.'] = "August";'; break;
+				case 9: $mo = 'mo['.$m.'] = "September";'; break;
+				case 10: $mo = 'mo['.$m.'] = "October";'; break;
+				case 11: $mo = 'mo['.$m.'] = "November";'; break;
+				case 12: $mo = 'mo['.$m.'] = "December";'; break;
+			}
+			echo $mo;
+			echo 'dt['.$m.'] = '.$tm['total'].';';
+			$m++;
+
+			$totalAll += $tm['total'];
+	 	}
+	} ?>
+	var configMonth = {
+		type: 'line',
+		data: {
+			labels: mo,
+			datasets: [{
+				label: '',
+				backgroundColor: window.chartColors.red,
+				borderColor: window.chartColors.red,
+				data: dt,
+				fill: false,
+			}]
+		},
+		options: {
+			legend: {
+				display: false,
+			},
+			responsive: true,
+			title: {
+				display: true,
+				text: 'MONTH'
+			},
+			tooltips: {
+				mode: 'index',
+				intersect: false,
+			},
+			hover: {
+				mode: 'nearest',
+				intersect: true
+			},
+			scales: {
+				xAxes: [{
+					display: true,
+					scaleLabel: {
+						display: false,
+						labelString: 'Month'
+					}
+				}],
+				yAxes: [{
+					display: true,
+					scaleLabel: {
+						display: false,
+						labelString: ''
+					}
+				}]
+			},
+			plugins: {
+				labels: {
+					render: 'value',
+					fontColor: '#000',
+					position: 'outside'
+				}
+			}
+		}
+	};
+
+	var monthlyChart = document.getElementById('totalMonthlyChart').getContext('2d');
+	window.totalMonthlyLine = new Chart(monthlyChart, configMonth);
+
+	/*** TOTAL ***/
+
+	var siteName = new Array();
+	var siteValue = new Array();
+	var siteColor = new Array();
+
+	<?php if(!empty($this->totalSites)) {
+		$site = 0;
+	 	foreach($this->totalSites as $ts) { 
+			echo 'siteName['.$site.'] = "'.$ts['initial'].'"; ';
+			echo 'siteValue['.$site.'] = '.$ts['total'].'; ';
+			echo 'siteColor['.$site.'] = chartColor['.$site.']; ';
+			$site++;
+	 	}
+	} ?>
+
+
+	var configTotal = {
+		type: 'doughnut',
+		data: {
+			datasets: [{
+				data: siteValue,
+				backgroundColor: siteColor,
+				label: ''
+			}],
+			labels: siteName
+		},
+		options: {
+			responsive: true,
+			legend: {
+				position: 'right',
+				labels: {
+					fontSize: 9
+				},
+			},		
+			title: {
+				display: true,
+				text: 'SITES'
+			},
+			animation: {
+				animateScale: true,
+				animateRotate: true
+			},
+			plugins: {
+				labels: {
+					render: 'value',
+					fontColor: '#000',
+					position: 'outside'
+				}
+			}
+		}
+	};
+
+	var totalChart = document.getElementById('totalAllChart').getContext('2d');
+	window.totalAllDoughnut = new Chart(totalChart, configTotal);
+
+	/*** DAY ***/
+
+	var configDay = {
+		type: 'doughnut',
+		data: {
+			datasets: [{
+				data: [
+					<?php echo intval($this->totalDay['1']); ?>,
+					<?php echo intval($this->totalDay['2']); ?>,
+					<?php echo intval($this->totalDay['3']); ?>,
+					<?php echo intval($this->totalDay['4']); ?>,
+					<?php echo intval($this->totalDay['5']); ?>,
+					<?php echo intval($this->totalDay['6']); ?>,
+					<?php echo intval($this->totalDay['7']); ?>
+				],
+				backgroundColor: [
+					chartColor[0], 
+					chartColor[1],
+					chartColor[2], 
+					chartColor[3], 
+					chartColor[5], 
+					chartColor[4], 					
+					chartColor[7]
+				],
+				label: 'Day'
+			}],
+			labels: [
+				'Sunday',
+				'Monday',
+				'Tuesday',
+				'Wednesday',
+				'Thursday',
+				'Friday',
+				'Saturday'
+			]
+		},
+		options: {
+			legend: {
+				position: 'right',
+				labels: {
+					fontSize: 9
+				},
+			},		
+			responsive: true,
+			title: {
+				display: true,
+				text: 'DAY'
+			},
+			plugins: {
+				labels: {
+					render: 'value',
+					fontColor: '#000',
+					position: 'outside'
+				}
+			}
+		}
+	};
+
+	var dayChart = document.getElementById('totalDayChart').getContext('2d');
+	window.totalDayDoughnut = new Chart(dayChart, configDay);
+
+	/*** INCIDENT ***/
+
+	var incidentName = new Array();
+	var incidentValue = new Array();
+	var incidentColor = new Array();
+
+	<?php if(!empty($this->totalEachIncidents)) {
+		$inc = 0;
+		$totalAll = 0;
+	 	foreach($this->totalEachIncidents as $ti) { 
+			echo 'incidentName['.$inc.'] = "'.$ti['kejadian'].'"; ';
+			echo 'incidentValue['.$inc.'] = '.$ti['total'].'; ';
+			echo 'incidentColor['.$inc.'] = chartColor['.$inc.']; ';
+			$inc++;
+	 	}
+	} ?>
+
+	var incidentConfig = {
+		type: 'doughnut',
+		data: {
+			datasets: [{
+				data: incidentValue,
+				backgroundColor: incidentColor,
+				label: ''
+			}],
+			labels: incidentName
+		},
+		options: {
+			responsive: true,
+			legend: {
+				position: 'right',
+				labels: {
+					fontSize: 9
+				},
+			},			
+			title: {
+				display: true,
+				text: 'INCIDENT'
+			},
+			animation: {
+				animateScale: true,
+				animateRotate: true
+			},
+			plugins: {
+				labels: {
+					render: 'value',
+					fontColor: '#000',
+					position: 'outside'
+				}
+			}
+		}
+	};
+
+	var incidentChart = document.getElementById('totalEachIncident').getContext('2d');
+	window.incidentDoughnut = new Chart(incidentChart, incidentConfig);
+
+
+	/*** MODUS ***/
+
+	var modusLabel = new Array();
+	var modusData = new Array();
+	<?php if(!empty($this->totalEachModus)) {
+		$modusCtr = 0;
+	 	foreach($this->totalEachModus as $tmodus) { 
+			echo 'modusLabel['.$modusCtr.'] = "'.$tmodus['modus'].'";';
+			echo 'modusData['.$modusCtr.'] = '.$tmodus['total'].';';
+			$modusCtr++;
+	 	}
+	} ?>
+	
+	var color = Chart.helpers.color;
+	var barChartData = {
+		labels: modusLabel,
+		datasets: [{
+			label: 'Modus',
+			backgroundColor: color(window.chartColors.orange).alpha(0.5).rgbString(),
+			borderColor: window.chartColors.orange,
+			borderWidth: 1,
+			data: modusData
+		}]
+	};
+
+	var modusChart = document.getElementById('totalEachModus').getContext('2d');
+	window.myBar = new Chart(modusChart, {
+		type: 'bar',
+		data: barChartData,
+		options: {
+			responsive: true,
+			legend: {
+				display: false,
+			},
+			title: {
+				display: true,
+				text: 'MODUS'
+			},
+			plugins: {
+				labels: {
+					render: 'value',
+					fontColor: '#000'
+				}
+			},
+			scales: {
+				xAxes: [{
+					ticks: {
+						fontSize: 9
+					}
+				}]
+			}
+		}
+	});
+
+	/*** TIME PERIOD ***/
+
+	var periodLabel = new Array();
+	var periodData = new Array();
+	<?php if(!empty($this->totalEachPeriod)) {
+		$periodCtr = 0;
+	 	foreach($this->totalEachPeriod as $tperiod) { 
+			echo 'periodLabel['.$periodCtr.'] = "'.$tperiod['time'].'";';
+			echo 'periodData['.$periodCtr.'] = '.$tperiod['total'].';';
+			$periodCtr++;
+	 	}
+	} ?>
+	
+	var periodChartData = {
+		labels: periodLabel,
+		datasets: [{
+			label: 'Modus',
+			backgroundColor: color(window.chartColors.purple).alpha(0.5).rgbString(),
+			borderColor: window.chartColors.purple,
+			borderWidth: 1,
+			data: periodData
+		}]
+	};
+
+	var periodChart = document.getElementById('totalEachPeriod').getContext('2d');
+	window.periodChartBar = new Chart(periodChart, {
+		type: 'horizontalBar',
+		data: periodChartData,
+		options: {
+			layout: {
+				padding: {
+					left: 0,
+					right: 30,
+					top: 0,
+					bottom: 0
+				}
+			},
+			responsive: true,
+			legend: {
+				display: false,
+			},
+			title: {
+				display: true,
+				text: 'TIME PERIOD'
+			},
+			scales: {
+				xAxes: [{
+					ticks: {
+						fontSize: 10
+					}
+				}],
+				yAxes: [{
+					ticks: {
+						fontSize: 10
+					}
+				}]
+			},
+			plugins: {
+				labels: {
+					render: 'value',
+					fontColor: '#000',
+					position: 'outside'
+				}
+			}
+		}
+	});
+
+	/*** AREA ***/
+
+	var areaLabel = new Array();
+	var areaData = new Array();
+	<?php if(!empty($this->totalEachArea)) {
+		$areaCtr = 0;
+	 	foreach($this->totalEachArea as $tarea) { 
+			echo 'areaLabel['.$areaCtr.'] = "'.$tarea['floor'].'";';
+			echo 'areaData['.$areaCtr.'] = '.$tarea['total'].';';
+			$areaCtr++;
+	 	}
+	} ?>
+	
+	var color = Chart.helpers.color;
+	var areaChartData = {
+		labels: areaLabel,
+		datasets: [{
+			label: 'Area',
+			backgroundColor: color(chartColor[7]).alpha(0.5).rgbString(),
+			borderColor: chartColor[7],
+			borderWidth: 1,
+			data: areaData
+		}]
+	};
+
+	var areaChart = document.getElementById('totalEachArea').getContext('2d');
+	window.areaBar = new Chart(areaChart, {
+		type: 'bar',
+		data: areaChartData,
+		options: {
+			responsive: true,
+			legend: {
+				display: false,
+			},
+			title: {
+				display: true,
+				text: 'AREA'
+			},
+			plugins: {
+				labels: {
+					render: 'value',
+					fontColor: '#000'
+				}
+			},
+			scales: {
+				xAxes: [{
+					ticks: {
+						fontSize: 9
+					}
+				}]
+			}
+		}
+	});
+
+	
+
+});	
+</script>

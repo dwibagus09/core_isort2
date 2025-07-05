@@ -1,0 +1,17 @@
+    <!-- footer content -->
+        <footer>
+          <div class="pull-right">
+            <p>Pakuwon Smart Reporting Tool &copy;<?php echo date("Y"); ?> All Rights Reserved.</p>
+          </div>
+          <div class="clearfix"></div>
+        </footer>
+        <!-- /footer content -->
+      </div>
+    </div>
+
+
+    <!-- NProgress -->
+    <script src="/nprogress/nprogress.js"></script>	
+	<script src="/js/custom.js"></script>		
+  </body>
+</html>

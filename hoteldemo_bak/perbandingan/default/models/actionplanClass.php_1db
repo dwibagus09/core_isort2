@@ -1,0 +1,853 @@
+<?php
+
+require_once('defaultClass.php');
+require_once('dbClass.php');
+
+class actionplanClass extends defaultClass
+{		
+	/*** Action Plan Schedule ***/
+	
+	function saveActionPlanSchedule($params)
+	{		
+		$scheduleTable = new action_plan_schedule(array('db'=>'db'));
+		
+		$data = array(
+			'site_id'					=> $this->site_id,
+			'schedule_id'				=> $params['schedule_id'],
+			'user_id'					=> $params['user_id'],
+			'action_plan_module_id'		=> $params['action_plan_module_id'],
+			'action_plan_target_id'		=> $params['action_plan_target_id'],
+			'action_plan_activity_id'	=> $params['action_plan_activity_id'],
+			'schedule_date'				=> $params['schedule'],
+			'week'						=> $params['week'],
+			'month'						=> $params['month'],
+			'created_date'				=> date("Y-m-d H:i:s")
+		);
+			
+		if(empty($params['schedule_id']))
+		{
+			$scheduleTable->insert($data);
+		}
+		else
+		{
+			$where = $scheduleTable->getAdapter()->quoteInto('schedule_id = ?', $params['schedule_id']);
+			$scheduleTable->update($data, $where);
+		}
+	}
+
+	function checkifscheduledateexist($activity_id, $schedule_date, $week, $month)
+	{
+		$scheduleTable = new action_plan_schedule(array('db'=>'db'));
+		$select = $scheduleTable->select()->where('site_id = ?', $this->site_id)->where('action_plan_activity_id = ?', $activity_id)->where('schedule_date = "'.$schedule_date.'" or (week = "'.$week.'" and month = "'.$month.'")');
+		$schedule = $scheduleTable->getAdapter()->fetchRow($select);
+		return $schedule;
+	}
+	
+	function getActionPlanScheduleByActivityId($activity_id)
+	{
+		$scheduleTable = new action_plan_schedule(array('db'=>'db'));
+		$select = $scheduleTable->select()->where('action_plan_activity_id = ?', $activity_id)->order("schedule_date");
+		$schedule = $scheduleTable->getAdapter()->fetchAll($select);
+		return $schedule;
+	}	
+
+	function getScheduleDateByMonthWeek($site_id, $month, $week, $activity_id, $year)
+	{
+		$scheduleTable = new action_plan_schedule(array('db'=>'db'));
+		$select = $scheduleTable->select()->where('site_id = ?', $site_id)->where('action_plan_activity_id = ?', $activity_id)->where('month = ?', $month)->where('week = ?', $week)->where('year(schedule_date) = ?', $year);
+		$schedule = $scheduleTable->getAdapter()->fetchRow($select);
+		return $schedule;
+	}
+
+	function rangeWeek ($datestr) {
+	   date_default_timezone_set (date_default_timezone_get());
+	   $dt = strtotime ($datestr);
+	   return array (
+		 "start" => date ('N', $dt) == 1 ? date ('Y-m-d', $dt) : date ('Y-m-d', strtotime ('last monday', $dt)),
+		 "end" => date('N', $dt) == 7 ? date ('Y-m-d', $dt) : date ('Y-m-d', strtotime ('next sunday', $dt))
+	   );
+	}
+	
+	function getActionPlanScheduleById($schedule_id, $site_id) {
+		$scheduleTable = new action_plan_schedule(array('db'=>'db'));
+		$select = $scheduleTable->getAdapter()->select();
+		$select->from(array("s"=>"action_plan_schedule"), array("s.*"));
+		$select->joinLeft(array("a"=>"action_plan_activity"), "a.action_plan_activity_id = s.action_plan_activity_id", array("a.activity_name"));
+		$select->joinLeft(array("si"=>"sites"), "si.site_id = s.site_id", array("si.initial"));
+		$select->joinLeft(array("r"=>"action_plan_reschedule"), "r.action_plan_schedule_id = s.schedule_id", array("r.reschedule_date","r.approved_by_om"));
+		$select->where("s.schedule_id= ?", $schedule_id);
+		$select->order("r.reschedule_id desc");
+		$schedule = $scheduleTable->getAdapter()->fetchRow($select);
+		return $schedule;
+	}
+	
+	
+	function reschedule($params)
+	{		
+		$rescheduleTable = new action_plan_reschedule(array('db'=>'db'));
+		
+		$data = array(
+			'site_id'					=> $this->site_id,
+			'user_id'					=> $params['user_id'],
+			'action_plan_schedule_id'	=> $params['action_plan_schedule_id'],
+			'reschedule_date'			=> $params['schedule_date'],
+			'original_date'				=> $params['original_date'],
+			'created_date'				=> date("Y-m-d H:i:s")
+		);
+			
+		if(empty($params['reschedule_id']))
+		{
+			$rescheduleTable->insert($data);
+		}
+	}
+	
+	function getActionPlanRescheduleList()
+	{
+		$rescheduleTable = new action_plan_reschedule(array('db'=>'db'));
+		$select = $rescheduleTable->getAdapter()->select();
+		$select->from(array("r"=>"action_plan_reschedule"), array("r.*"));
+		$select->joinLeft(array("s"=>"action_plan_schedule"), "s.schedule_id = r.action_plan_schedule_id", array());
+		$select->joinLeft(array("a"=>"action_plan_activity"), "a.action_plan_activity_id = s.action_plan_activity_id", array("a.activity_name"));
+		$select->joinLeft(array("t"=>"action_plan_target"), "t.action_plan_target_id = s.action_plan_target_id", array("t.target_name"));
+		$select->joinLeft(array("m"=>"action_plan_module"), "m.action_plan_module_id = s.action_plan_module_id", array("m.module_name"));
+		$select->joinLeft(array("c"=>"categories"), "c.category_id = a.category_id", array("c.category_name"));
+		$select->where("r.approved_by_om is null or r.approved_by_om < 1");
+		$select->where("r.site_id= ?", $this->site_id);
+		$select->order('r.reschedule_date asc');
+		$list = $rescheduleTable->getAdapter()->fetchAll($select);
+		return $list;
+	}
+	
+	function approveReschedule($id)
+	{		
+		$rescheduleTable = new action_plan_reschedule(array('db'=>'db'));
+		
+		$data = array(
+			'approved_by_om'			=> '1',
+			'approved_by_om_date'		=> date("Y-m-d H:i:s")
+		);
+			
+		$where = $rescheduleTable->getAdapter()->quoteInto('reschedule_id = ?', $id);
+		$rescheduleTable->update($data, $where);
+	}
+	
+	function getRescheduleById($id)
+	{
+		$rescheduleTable = new action_plan_reschedule(array('db'=>'db'));
+		$select = $rescheduleTable->select()->where('reschedule_id = ?', $id);
+		$reschedule = $rescheduleTable->getAdapter()->fetchRow($select);
+		return $reschedule;
+	}
+
+	function getRescheduleByScheduleId($id)
+	{
+		$rescheduleTable = new action_plan_reschedule(array('db'=>'db'));
+		$select = $rescheduleTable->select()->where('action_plan_schedule_id = ?', $id)->order('reschedule_id desc');
+		$reschedule = $rescheduleTable->getAdapter()->fetchRow($select);
+		return $reschedule;
+	}
+	
+	function updateschedulestatus($schedule_id, $status)
+	{		
+		$scheduleTable = new action_plan_schedule(array('db'=>'db'));
+			
+		if(!empty($schedule_id))
+		{
+			$data = array(
+				'status'					=> $status
+			);
+			$where = $scheduleTable->getAdapter()->quoteInto('schedule_id = ?', $schedule_id);
+			$scheduleTable->update($data, $where);
+		}
+	}
+
+	function updateAllowAdditionalUpload($schedule_id, $allow_upload)
+	{		
+		$scheduleTable = new action_plan_schedule(array('db'=>'db'));
+			
+		if(!empty($schedule_id))
+		{
+			$data = array(
+				'allow_additional_upload'	=> intval($allow_upload)
+			);
+			$where = $scheduleTable->getAdapter()->quoteInto('schedule_id = ?', $schedule_id);
+			$scheduleTable->update($data, $where);
+		}
+	}
+	
+	function updateDocumentRemark($schedule_id, $document, $remark, $updateStatus = 0, $status = 0)
+	{		
+		$scheduleTable = new action_plan_schedule(array('db'=>'db'));
+			
+		if(!empty($schedule_id))
+		{
+			$data['remark'] = $remark;
+			
+			if($document != "#*#*#") $data['document_as_approves'] = $document;
+
+			if($updateStatus == 1)
+			{
+				$data['status'] = $status;
+			}
+
+			$where = $scheduleTable->getAdapter()->quoteInto('schedule_id = ?', $schedule_id);
+			$scheduleTable->update($data, $where);
+		}
+	}
+	
+	function updateScheduleDate($schedule_id, $date, $week, $month)
+	{		
+		$scheduleTable = new action_plan_schedule(array('db'=>'db'));
+			
+		if(!empty($schedule_id))
+		{
+			$data = array(
+				'schedule_date'				=> $date,
+				'status'					=> '0',
+				'week'						=> $week,
+				'month'						=> $month
+			);
+			$where = $scheduleTable->getAdapter()->quoteInto('schedule_id = ?', $schedule_id);
+			$scheduleTable->update($data, $where);
+		}
+	}
+	
+	function addScheduleAttachment($params)
+	{		
+		$attachmentTable = new action_plan_schedule_attachment(array('db'=>'db'));
+		
+		$data = array(
+			'site_id'					=> $this->site_id,
+			'user_id'					=> $params['user_id'],
+			'action_plan_schedule_id'	=> $params['action_plan_schedule_id'],
+			'uploaded_date'				=> date("Y-m-d H:i:s")
+		);
+		$attachmentTable->insert($data);
+		return $this->db->lastInsertId();
+	}
+	
+	function updateScheduleAttachment($attachment_id,$fieldname, $filename)
+	{		
+		$attachmentTable = new action_plan_schedule_attachment(array('db'=>'db'));
+			
+		if(!empty($attachment_id))
+		{
+			$data = array(
+				$fieldname					=> $filename
+			);
+			$where = $attachmentTable->getAdapter()->quoteInto('attachment_id = ?', $attachment_id);
+			$attachmentTable->update($data, $where);
+		}
+	}
+	
+	function getActionPlanAttachmentByScheduleId($schedule_id)
+	{
+		$attachmentTable = new action_plan_schedule_attachment(array('db'=>'db'));
+		$select = $attachmentTable->select()->where('action_plan_schedule_id = ?', $schedule_id);
+		$attachments = $attachmentTable->getAdapter()->fetchAll($select);
+		return $attachments;
+	}	
+
+	function deleteAttachmentById($id)
+	{
+		$attachmentTable = new action_plan_schedule_attachment(array('db'=>'db'));
+		
+		if ( is_numeric($id) && $id > 0 )
+		{		
+			$where = array();
+			$where[] = $attachmentTable->getAdapter()->quoteInto('attachment_id = ?', $id);
+			$attachmentTable->delete($where);
+		}
+	}
+
+	function getActionPlanAttachmentById($attachment_id)
+	{
+		$attachmentTable = new action_plan_schedule_attachment(array('db'=>'db'));
+		$select = $attachmentTable->select()->where('attachment_id = ?', $attachment_id);
+		$attachment = $attachmentTable->getAdapter()->fetchRow($select);
+		return $attachment;
+	}	
+
+	
+	function getTotalDoneSchedule($activity_id, $site_id, $year)
+	{
+		$scheduleTable = new action_plan_schedule(array('db'=>'db'));
+		$select = $scheduleTable->select()->where('action_plan_activity_id = ?', $activity_id)->where('site_id = ?', $site_id)->where('status = ?', '1')->where('year(schedule_date) = ?', $year);
+		$done = $scheduleTable->getAdapter()->fetchAll($select);
+		return count($done);
+	}
+	
+	function getTotalSchedule($activity_id, $site_id, $year)
+	{
+		$scheduleTable = new action_plan_schedule(array('db'=>'db'));
+		$select = $scheduleTable->select()->where('action_plan_activity_id = ?', $activity_id)->where('site_id = ?', $site_id)->where('year(schedule_date) = ?', $year);
+		$total = $scheduleTable->getAdapter()->fetchAll($select);
+		return count($total);
+	}
+	
+	/*** Action Plan Module ***/
+	
+	function getActionPlanModules($category_id, $year = 0) {
+		$moduleTable = new action_plan_module(array('db'=>'db'));
+		$select = $moduleTable->select()->where("category_id= ?", $category_id);
+		$select->where('site_id = ?', $this->site_id);
+		if($year > 0) $select->where('show_year = ?', $year);
+		$select->order('show_year asc');
+		$select->order('sort_order asc');
+		$modules = $moduleTable->getAdapter()->fetchAll($select);
+		return $modules;
+	}
+
+	function saveActionPlanModule($params)
+	{		
+		$moduleTable = new action_plan_module(array('db'=>'db'));
+		
+		$data = array(
+			'site_id'				=> $this->site_id,
+			'module_name'			=> $params['module_name'],
+			'sort_order'			=> $params['sort_order'],
+			'category_id'			=> $params['category_id'],
+			'show_year'				=> $params['show_year']
+		);
+			
+		if(empty($params['action_plan_module_id']))
+		{
+			$moduleTable->insert($data);
+		}
+		else
+		{
+			$where = $moduleTable->getAdapter()->quoteInto('action_plan_module_id = ?', $params['action_plan_module_id']);
+			$moduleTable->update($data, $where);
+		}
+	}
+	
+	function getActionPlanModuleById($module_id)
+	{
+		$moduleTable = new action_plan_module(array('db'=>'db'));
+		$select = $moduleTable->select()->where('action_plan_module_id = ?', $module_id);
+		$target = $moduleTable->getAdapter()->fetchRow($select);
+		return $target;
+	}	
+	
+	function deleteActionPlanModuleById($id)
+	{
+		$moduleTable = new action_plan_module(array('db'=>'db'));
+		
+		if ( is_numeric($id) && $id > 0 )
+		{		
+			$where = array();
+			$where[] = $moduleTable->getAdapter()->quoteInto('action_plan_module_id = ?', $id);
+			$moduleTable->delete($where);
+		}
+	}
+
+	function copyActionPlanModuleToOtherSite($params)
+	{		
+		$moduleTable = new action_plan_module(array('db'=>'db'));
+		
+		$data = array(
+			'site_id'				=> $params['site_id'],
+			'module_name'			=> $params['module_name'],
+			'sort_order'			=> $params['sort_order'],
+			'category_id'			=> $params['category_id'],
+			'show_year'				=> $params['show_year']
+		);
+			
+		$moduleTable->insert($data);
+	}
+
+	function getActionPlanModuleByModuleName($module_name, $site_id)
+	{
+		$moduleTable = new action_plan_module(array('db'=>'db'));
+		$select = $moduleTable->select()->where('module_name = ?', $module_name)->where('site_id = ?', $site_id);
+		$module = $moduleTable->getAdapter()->fetchRow($select);
+		return $module;
+	}	
+
+	/*** Action Plan Target ***/
+
+	function getActionPlanTarget($category_id) {
+		$targetTable = new action_plan_target(array('db'=>'db'));
+		$select = $targetTable->getAdapter()->select();
+		$select->from(array("t"=>"action_plan_target"), array("t.*"));
+		$select->joinLeft(array("m"=>"action_plan_module"), "m.action_plan_module_id = t.action_plan_module_id", array("m.module_name"));
+		$select->where("t.category_id= ?", $category_id);
+		$select->where("t.site_id= ?", $this->site_id);
+		$select->order('t.action_plan_module_id asc');
+		$select->order('t.sort_order asc');
+		$target = $targetTable->getAdapter()->fetchAll($select);
+		return $target;
+	}
+	
+	function saveActionPlanTarget($params)
+	{		
+		$targetTable = new action_plan_target(array('db'=>'db'));
+		
+		$data = array(
+			'site_id'				=> $this->site_id,
+			'action_plan_module_id'	=> $params['action_plan_module_id'],
+			'target_name'			=> $params['target_name'],
+			'sort_order'			=> $params['sort_order'],
+			'category_id'			=> $params['category_id']
+		);
+			
+		if(empty($params['action_plan_target_id']))
+		{
+			$targetTable->insert($data);
+		}
+		else
+		{
+			$where = $targetTable->getAdapter()->quoteInto('action_plan_target_id = ?', $params['action_plan_target_id']);
+			$targetTable->update($data, $where);
+		}
+	}
+	
+	function getActionPlanTargetById($target_id)
+	{
+		$targetTable = new action_plan_target(array('db'=>'db'));
+		$select = $targetTable->select()->where('action_plan_target_id = ?', $target_id);
+		$target = $targetTable->getAdapter()->fetchRow($select);
+		return $target;
+	}	
+	
+	function deleteActionPlanTargetById($id)
+	{
+		$targetTable = new action_plan_target(array('db'=>'db'));
+		
+		if ( is_numeric($id) && $id > 0 )
+		{		
+			$where = array();
+			$where[] = $targetTable->getAdapter()->quoteInto('action_plan_target_id = ?', $id);
+			$targetTable->delete($where);
+		}
+	}
+	
+	
+	function getActionPlanTargetByModuleId($module_id)
+	{
+		$targetTable = new action_plan_target(array('db'=>'db'));
+		$select = $targetTable->select()->where('action_plan_module_id = ?', $module_id)->where('site_id = ?', $this->site_id)->order('sort_order asc');
+		$target = $targetTable->getAdapter()->fetchAll($select);
+		return $target;
+	}	
+
+	function copyActionPlanTargetToOtherSite($params)
+	{		
+		$targetTable = new action_plan_target(array('db'=>'db'));
+		
+		$data = array(
+			'site_id'				=> $params['site_id'],
+			'action_plan_module_id'	=> $params['new_action_plan_module_id'],
+			'target_name'			=> $params['target_name'],
+			'sort_order'			=> $params['sort_order'],
+			'category_id'			=> $params['category_id']
+		);
+			
+		$targetTable->insert($data);
+	}
+
+	function getActionPlanTargetByTargetName($target_name, $site_id)
+	{
+		$targetTable = new action_plan_target(array('db'=>'db'));
+		$select = $targetTable->select()->where('target_name = ?', $target_name)->where('site_id = ?', $site_id);
+		$target = $targetTable->getAdapter()->fetchRow($select);
+		return $target;
+	}
+	
+	/*** Action Plan Activity ***/
+	
+	function getActionPlanActivity($category_id) {
+		$activityTable = new action_plan_activity(array('db'=>'db'));
+		$select = $activityTable->getAdapter()->select();
+		$select->from(array("a"=>"action_plan_activity"), array("a.*"));
+		$select->joinLeft(array("t"=>"action_plan_target"), "t.action_plan_target_id = a.action_plan_target_id", array("t.target_name"));
+		$select->joinLeft(array("m"=>"action_plan_module"), "m.action_plan_module_id = t.action_plan_module_id", array("m.module_name"));
+		$select->where("a.category_id= ?", $category_id);
+		$select->where("a.site_id= ?", $this->site_id);
+		$select->order('a.action_plan_target_id asc');
+		$select->order('a.sort_order asc');
+		$target = $activityTable->getAdapter()->fetchAll($select);
+		return $target;
+	}
+	
+	function saveActionPlanActivity($params)
+	{		
+		$activityTable = new action_plan_activity(array('db'=>'db'));
+		
+		$data = array(
+			'site_id'				=> $this->site_id,
+			'action_plan_target_id'	=> $params['action_plan_target_id'],
+			'activity_name'			=> $params['activity_name'],
+			'sort_order'			=> $params['sort_order'],
+			'category_id'			=> $params['category_id'],
+			'total_schedule'		=> $params['total_schedule'],
+			'document_as_approve'	=> $params['document_as_approve'],
+			'remarks'				=> $params['remarks']
+		);
+			
+		if(empty($params['action_plan_activity_id']))
+		{
+			$activityTable->insert($data);
+		}
+		else
+		{
+			$where = $activityTable->getAdapter()->quoteInto('action_plan_activity_id = ?', $params['action_plan_activity_id']);
+			$activityTable->update($data, $where);
+		}
+	}
+	
+	function getActionPlanActivityById($activity_id)
+	{
+		$activityTable = new action_plan_activity(array('db'=>'db'));
+		$select = $activityTable->select()->where('action_plan_activity_id = ?', $activity_id);
+		$target = $activityTable->getAdapter()->fetchRow($select);
+		return $target;
+	}	
+	
+	function deleteActionPlanActivityById($id)
+	{
+		$activityTable = new action_plan_activity(array('db'=>'db'));
+		
+		if ( is_numeric($id) && $id > 0 )
+		{		
+			$where = array();
+			$where[] = $activityTable->getAdapter()->quoteInto('action_plan_activity_id = ?', $id);
+			$activityTable->delete($where);
+		}
+	}
+	
+	function getActionPlanActivityByTargetId($action_plan_target_id)
+	{
+		$activityTable = new action_plan_activity(array('db'=>'db'));
+		$select = $activityTable->select()->where('action_plan_target_id = ?', $action_plan_target_id)->where('site_id = ?', $this->site_id)->order('sort_order asc');
+		$activity = $activityTable->getAdapter()->fetchAll($select);
+		return $activity;
+	}	
+
+	function copyActionPlanActivityToOtherSite($params)
+	{		
+		$activityTable = new action_plan_activity(array('db'=>'db'));
+		
+		$data = array(
+			'site_id'				=> $params['site_id'],
+			'action_plan_target_id'	=> $params['new_action_plan_target_id'],
+			'activity_name'			=> $params['activity_name'],
+			'sort_order'			=> $params['sort_order'],
+			'category_id'			=> $params['category_id'],
+			'total_schedule'		=> $params['total_schedule'],
+			'document_as_approve'	=> $params['document_as_approve'],
+			'remarks'				=> $params['remarks']
+		);
+			
+		$activityTable->insert($data);
+	}
+	
+	
+	/*** Action Plan Reminder Email ***/
+	
+	function getActionPlanEmail($category_id, $site_id) {
+		$emailTable = new action_plan_reminder_email(array('db'=>'db'));
+		$select = $emailTable->select()->where("category_id= ?", $category_id)->where("site_id= ?", $site_id)->order('email asc');
+		$email = $emailTable->getAdapter()->fetchAll($select);
+		return $email;
+	}
+
+	function getActionPlanReminderEmail($category_id, $site_id) {
+		$emailTable = new action_plan_reminder_email(array('db'=>'db'));
+		$select = $emailTable->select()->where("category_id= ?", $category_id)->where("site_id= ?", $site_id)->where("reminder= '1'")->order('email asc');
+		$email = $emailTable->getAdapter()->fetchAll($select);
+		return $email;
+	}
+
+	function getActionPlanReviewEmail($category_id, $site_id) {
+		$emailTable = new action_plan_reminder_email(array('db'=>'db'));
+		$select = $emailTable->select()->where("category_id= ?", $category_id)->where("site_id= ?", $site_id)->where("review= '1'")->order('email asc');
+		$email = $emailTable->getAdapter()->fetchAll($select);
+		return $email;
+	}
+	
+	function saveActionPlanEmail($params)
+	{		
+		$emailTable = new action_plan_reminder_email(array('db'=>'db'));
+		
+		$data = array(
+			'site_id'				=> $this->site_id,
+			'email'					=> $params['email'],
+			'category_id'			=> $params['category_id'],
+			'cc'					=> $params['cc'],
+			'reminder'				=> $params['reminder'],
+			'review'				=> $params['review']
+		);
+			
+		if(empty($params['email_id']))
+		{
+			$emailTable->insert($data);
+		}
+		else
+		{
+			$where = $emailTable->getAdapter()->quoteInto('email_id = ?', $params['email_id']);
+			$emailTable->update($data, $where);
+		}
+	}
+	
+	function getActionPlanEmailById($email_id)
+	{
+		$emailTable = new action_plan_reminder_email(array('db'=>'db'));
+		$select = $emailTable->select()->where('email_id = ?', $email_id);
+		$target = $emailTable->getAdapter()->fetchRow($select);
+		return $target;
+	}	
+	
+	function deleteActionPlanEmailById($id)
+	{
+		$emailTable = new action_plan_reminder_email(array('db'=>'db'));
+		
+		if ( is_numeric($id) && $id > 0 )
+		{		
+			$where = array();
+			$where[] = $emailTable->getAdapter()->quoteInto('email_id = ?', $id);
+			$emailTable->delete($where);
+		}
+	}
+	
+	function getTomorrowSchedule($category_id, $site_id)
+	{
+		$scheduleTable = new action_plan_schedule(array('db'=>'db'));
+		$select = $scheduleTable->getAdapter()->select();
+		$select->from(array("s"=>"action_plan_schedule"), array("s.*"));
+		$select->joinLeft(array("a"=>"action_plan_activity"), "a.action_plan_activity_id = s.action_plan_activity_id", array("a.activity_name"));
+		$select->joinLeft(array("t"=>"action_plan_target"), "t.action_plan_target_id = s.action_plan_target_id", array("t.target_name"));
+		$select->joinLeft(array("m"=>"action_plan_module"), "m.action_plan_module_id = s.action_plan_module_id", array("m.module_name"));
+		$select->where("a.category_id= ?", $category_id);
+		$select->where("s.site_id= ?", $site_id);
+		$select->where("s.status is NULL or s.status = 0 or s.status = 2");
+		$select->where("date(s.schedule_date)= ?", date("Y-m-d", mktime(0, 0, 0, date("m")  , date("d")+1, date("Y"))));
+		$select->order("m.module_name asc");
+		$select->order("t.target_name asc");
+		$select->order("a.activity_name asc");
+		$schedule = $scheduleTable->getAdapter()->fetchAll($select);
+		return $schedule;
+	}	
+	
+	function getActionPlanUpcomingSchedule($category_id, $startdate, $enddate)
+	{
+		$scheduleTable = new action_plan_schedule(array('db'=>'db'));
+		$select = $scheduleTable->getAdapter()->select();
+		$select->from(array("s"=>"action_plan_schedule"), array("s.*"));
+		$select->joinLeft(array("a"=>"action_plan_activity"), "a.action_plan_activity_id = s.action_plan_activity_id", array("a.activity_name"));
+		$select->where("a.category_id= ?", $category_id);
+		$select->where("s.site_id= ?", $this->site_id);
+		$select->where("date(s.schedule_date)>= ?", $startdate);
+		$select->where("date(s.schedule_date)<= ?", $enddate);
+		$select->order("s.schedule_date asc");
+		$schedule = $scheduleTable->getAdapter()->fetchAll($select);
+		return $schedule;
+	}
+	
+	function getActionPlanUpcomingSchedule2($site_id, $category_id, $startdate, $enddate)
+	{
+		$scheduleTable = new action_plan_schedule(array('db'=>'db'));
+		$select = $scheduleTable->getAdapter()->select();
+		$select->from(array("s"=>"action_plan_schedule"), array("s.*"));
+		$select->joinLeft(array("a"=>"action_plan_activity"), "a.action_plan_activity_id = s.action_plan_activity_id", array("a.activity_name", "a.document_as_approve as doc_act", "a.remarks as remarks_act"));
+		$select->where("a.category_id= ?", $category_id);
+		$select->where("s.site_id= ?", $site_id);
+		$select->where("date(s.schedule_date)>= ?", $startdate);
+		$select->where("date(s.schedule_date)<= ?", $enddate);
+		$select->order("s.schedule_date asc");
+		$schedule = $scheduleTable->getAdapter()->fetchAll($select);
+		return $schedule;
+	}
+	
+	function getActionPlanCurrentYearReviewSchedule($category_id, $enddate)
+	{
+		$scheduleTable = new action_plan_schedule(array('db'=>'db'));
+		$select = $scheduleTable->getAdapter()->select();
+		$select->from(array("s"=>"action_plan_schedule"), array("s.*"));
+		$select->joinLeft(array("a"=>"action_plan_activity"), "a.action_plan_activity_id = s.action_plan_activity_id", array("a.activity_name", "a.document_as_approve as doc_act", "a.remarks as remarks_act"));
+		$select->where("a.category_id= ?", $category_id);
+		$select->where("s.site_id= ?", $this->site_id);
+		$select->where("date(s.schedule_date)>= ?", date("Y-01-01", strtotime($enddate)));
+		$select->where("date(s.schedule_date)< ?", $enddate);
+		$select->where("s.status <> 1 OR s.status is NULL");
+		$select->order("s.schedule_date asc");
+		$schedule = $scheduleTable->getAdapter()->fetchAll($select);
+		return $schedule;
+	}	
+
+	function getActionPlanCurrentYearReviewSchedule2($site_id, $category_id, $enddate)
+	{
+		$scheduleTable = new action_plan_schedule(array('db'=>'db'));
+		$select = $scheduleTable->getAdapter()->select();
+		$select->from(array("s"=>"action_plan_schedule"), array("s.*"));
+		$select->joinLeft(array("a"=>"action_plan_activity"), "a.action_plan_activity_id = s.action_plan_activity_id", array("a.activity_name", "a.document_as_approve as doc_act", "a.remarks as remarks_act"));
+		$select->where("a.category_id= ?", $category_id);
+		$select->where("s.site_id= ?", $site_id);
+		$select->where("date(s.schedule_date)>= ?", date("Y-01-01", strtotime($enddate)));
+		$select->where("date(s.schedule_date)< ?", $enddate);
+		$select->where("s.status <> 1 OR s.status is NULL");
+		$select->order("s.schedule_date asc");
+		$schedule = $scheduleTable->getAdapter()->fetchAll($select);
+		return $schedule;
+	}	
+	
+	function getActionPlanLastWeekReviewSchedule($category_id, $startdate, $enddate)
+	{
+		$scheduleTable = new action_plan_schedule(array('db'=>'db'));
+		$select = $scheduleTable->getAdapter()->select();
+		$select->from(array("s"=>"action_plan_schedule"), array("s.*"));
+		$select->joinLeft(array("a"=>"action_plan_activity"), "a.action_plan_activity_id = s.action_plan_activity_id", array("a.activity_name", "a.document_as_approve as doc_act", "a.remarks as remarks_act"));
+		$select->joinLeft(array("r"=>"action_plan_reschedule"), "r.action_plan_schedule_id = s.schedule_id", array("r.original_date", "r.reschedule_date"));
+		$select->where("a.category_id= ?", $category_id);
+		$select->where("s.site_id= ?", $this->site_id);
+		$select->where("((date(s.schedule_date)>= '".$startdate."') AND (date(s.schedule_date)<= '".$enddate."')) OR ((date(r.original_date)>= '".$startdate."') AND (date(r.original_date)<= '".$enddate."'))");
+		$select->group("s.action_plan_activity_id");
+		$select->order("s.schedule_date asc");
+		$schedule = $scheduleTable->getAdapter()->fetchAll($select);
+		return $schedule;
+	}	
+
+	function getActionPlanLastWeekReviewSchedule2($site_id, $category_id, $startdate, $enddate)
+	{
+		$scheduleTable = new action_plan_schedule(array('db'=>'db'));
+		$select = $scheduleTable->getAdapter()->select();
+		$select->from(array("s"=>"action_plan_schedule"), array("s.*"));
+		$select->joinLeft(array("a"=>"action_plan_activity"), "a.action_plan_activity_id = s.action_plan_activity_id", array("a.activity_name", "a.document_as_approve as doc_act", "a.remarks as remarks_act"));
+		$select->joinLeft(array("r"=>"action_plan_reschedule"), "r.action_plan_schedule_id = s.schedule_id", array("r.original_date", "r.reschedule_date"));
+		$select->where("a.category_id= ?", $category_id);
+		$select->where("s.site_id= ?", $site_id);
+		$select->where("((date(s.schedule_date)>= '".$startdate."') AND (date(s.schedule_date)<= '".$enddate."')) OR ((date(r.original_date)>= '".$startdate."') AND (date(r.original_date)<= '".$enddate."'))");
+		$select->order("s.schedule_date asc");
+		$schedule = $scheduleTable->getAdapter()->fetchAll($select);
+		return $schedule;
+	}	
+
+	function getRescheduleList($params) {
+		$rescheduleTable = new action_plan_reschedule(array('db'=>'db'));
+		$select = $rescheduleTable->getAdapter()->select();
+		$select->from(array("r"=>"action_plan_reschedule"), array("r.*"));
+		$select->joinLeft(array("s"=>"action_plan_schedule"), "s.schedule_id = r.action_plan_schedule_id", array());
+		$select->joinLeft(array("a"=>"action_plan_activity"), "a.action_plan_activity_id = s.action_plan_activity_id", array("a.activity_name"));
+		$select->joinLeft(array("t"=>"action_plan_target"), "t.action_plan_target_id = s.action_plan_target_id", array("t.target_name"));
+		$select->joinLeft(array("m"=>"action_plan_module"), "m.action_plan_module_id = s.action_plan_module_id", array("m.module_name"));
+		$select->joinLeft(array("u"=>"users"), "u.user_id = r.user_id", array("u.name"));
+		$select->where("a.category_id= ?", $params['c']);
+		$select->where("r.original_date= ?", $params['y']);
+		if($params['s'] == 'activity')	$select->order('a.action_plan_activity_id asc');
+		if($params['s'] == 'user')	$select->order('u.user_id asc');
+		echo $select; exit();
+		$rescheduleList = $rescheduleTable->getAdapter()->fetchAll($select);
+		return $rescheduleList;
+	}
+
+	function getRescheduleStatistic($params) {
+		$rescheduleTable = new action_plan_reschedule(array('db'=>'db'));
+		$select = $rescheduleTable->getAdapter()->select();
+		$select->from(array("r"=>"action_plan_reschedule"), array("r.*", "count(action_plan_schedule_id) as total_reschedule"));
+		$select->joinLeft(array("s"=>"action_plan_schedule"), "s.schedule_id = r.action_plan_schedule_id", array());
+		$select->joinLeft(array("a"=>"action_plan_activity"), "a.action_plan_activity_id = s.action_plan_activity_id", array("a.activity_name"));
+		$select->joinLeft(array("t"=>"action_plan_target"), "t.action_plan_target_id = s.action_plan_target_id", array("t.target_name"));
+		if($params['filter'] == 'u') $select->joinLeft(array("u"=>"users"), "u.user_id = r.user_id", array("u.name"));
+		$select->where("a.category_id= ?", $params['c']);
+		$select->where("year(r.original_date)= ?", $params['year']);
+		$select->where("r.site_id= ?", $this->site_id);
+		if($params['filter'] == 'ts')	$select->group('r.action_plan_schedule_id');
+		if($params['filter'] == 'u')	$select->group('r.user_id');
+		$select->order('total_reschedule');
+		//echo $select; exit();
+		$rescheduleList = $rescheduleTable->getAdapter()->fetchAll($select);
+		return $rescheduleList;
+	}
+
+	function getReschedulesByScheduleId($schedule_id)
+	{
+		$rescheduleTable = new action_plan_reschedule(array('db'=>'db'));
+		$select = $rescheduleTable->select()->where('action_plan_schedule_id = ?', $schedule_id);
+		$rs = $rescheduleTable->getAdapter()->fetchAll($select);
+		return $rs;
+	}	
+
+	function getReschedulesByUserId($user_id, $cat_id) {
+		$rescheduleTable = new action_plan_reschedule(array('db'=>'db'));
+		$select = $rescheduleTable->getAdapter()->select();
+		$select->from(array("r"=>"action_plan_reschedule"), array("r.*"));
+		$select->joinLeft(array("s"=>"action_plan_schedule"), "s.schedule_id = r.action_plan_schedule_id", array());
+		$select->joinLeft(array("a"=>"action_plan_activity"), "a.action_plan_activity_id = s.action_plan_activity_id", array("a.activity_name"));
+		$select->joinLeft(array("t"=>"action_plan_target"), "t.action_plan_target_id = s.action_plan_target_id", array("t.target_name"));
+		$select->where("r.user_id= ?", $user_id);
+		$select->where("a.category_id= ?", $cat_id);
+		$select->where("r.site_id= ?", $this->site_id);
+		//echo $select; exit();
+		$rescheduleList = $rescheduleTable->getAdapter()->fetchAll($select);
+		return $rescheduleList;
+	}
+
+	function deleteScheduleById($id)
+	{
+		$scheduleTable = new action_plan_schedule(array('db'=>'db'));
+		
+		if ( is_numeric($id) && $id > 0 )
+		{		
+			$where = array();
+			$where[] = $scheduleTable->getAdapter()->quoteInto('schedule_id = ?', $id);
+			$scheduleTable->delete($where);
+		}
+	}
+
+	function getTotalDone($site_id, $cat_id) {
+		$scheduleTable = new action_plan_schedule(array('db'=>'db'));
+		$select = $scheduleTable->getAdapter()->select();
+		$select->from(array("s"=>"action_plan_schedule"), array("count(s.schedule_id) as total"));
+		$select->joinLeft(array("a"=>"action_plan_activity"), "a.action_plan_activity_id = s.action_plan_activity_id", array());
+		$select->where("a.category_id= ?", $cat_id);
+		$select->where("s.site_id= ?", $site_id);
+		$select->where("date(s.schedule_date) <= ?", date("Y-m-d"));
+		$select->where("date(s.schedule_date) >= ?", date("Y")."-01-01");
+		$total = $scheduleTable->getAdapter()->fetchRow($select);
+		return $total;
+	}
+
+	function getTotalOutstanding($site_id, $cat_id, $year) {
+		$scheduleTable = new action_plan_schedule(array('db'=>'db'));
+		$select = $scheduleTable->getAdapter()->select();
+		$select->from(array("s"=>"action_plan_schedule"), array("count(s.schedule_id) as total"));
+		$select->joinLeft(array("a"=>"action_plan_activity"), "a.action_plan_activity_id = s.action_plan_activity_id", array());
+		$select->where("a.category_id= ?", $cat_id);
+		$select->where("s.site_id= ?", $site_id);
+		$select->where("date(s.schedule_date) < ?", date("Y-m-d"));
+		$select->where("date(s.schedule_date) >= ?", $year."-01-01");
+		$select->where("s.status <> 1 or s.status is null");
+		$total = $scheduleTable->getAdapter()->fetchRow($select);
+		return $total;
+	}
+
+	function getTotalReschedule($site_id, $cat_id, $year) {
+		$scheduleTable = new action_plan_schedule(array('db'=>'db'));
+		$select = $scheduleTable->getAdapter()->select();
+		$select->from(array("s"=>"action_plan_schedule"), array("count(s.schedule_id) as total"));
+		$select->joinLeft(array("a"=>"action_plan_activity"), "a.action_plan_activity_id = s.action_plan_activity_id", array());
+		$select->joinLeft(array("r"=>"action_plan_reschedule"), "r.action_plan_schedule_id = s.schedule_id", array());
+		$select->where("a.category_id= ?", $cat_id);
+		$select->where("s.site_id= ?", $site_id);
+		$select->where("date(s.schedule_date) >= ?", $year."-01-01");
+		$select->where("date(s.schedule_date) <= ?", $year."-12-31");
+		$select->where("r.reschedule_id > 0");
+		$total = $scheduleTable->getAdapter()->fetchRow($select);
+		return $total;
+	}
+
+	function getTotalUpcoming($site_id, $cat_id, $year) {
+		$scheduleTable = new action_plan_schedule(array('db'=>'db'));
+		$select = $scheduleTable->getAdapter()->select();
+		$select->from(array("s"=>"action_plan_schedule"), array("count(s.schedule_id) as total"));
+		$select->joinLeft(array("a"=>"action_plan_activity"), "a.action_plan_activity_id = s.action_plan_activity_id", array());
+		$select->joinLeft(array("r"=>"action_plan_reschedule"), "r.action_plan_schedule_id = s.schedule_id", array());
+		$select->where("a.category_id= ?", $cat_id);
+		$select->where("s.site_id= ?", $site_id);
+		$select->where("date(s.schedule_date) > ?", date("Y-m-d"));
+		$select->where("date(s.schedule_date) <= ?", $year."-12-31");
+		$total = $scheduleTable->getAdapter()->fetchRow($select);
+		return $total;
+	}
+}
+?>

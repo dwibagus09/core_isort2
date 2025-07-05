@@ -1,0 +1,498 @@
+<!-- Magnific Popup core CSS file -->
+<link rel="stylesheet" href="/css/magnific-popup.css">
+<link rel="stylesheet" href="/css/jquery-ui.min.css">
+<link rel="stylesheet" type="text/css" href="/js/FullWidthTabs/css/component.css" />
+
+	<div class="row">
+	  <div class="col-md-12 col-sm-12 col-xs-12">
+	  	<h1 class="pagetitle">Opened Issues</h1>
+		<div class="filter">
+			<form id="filter-form" action="/default/issue/listissues"  method="post">
+				<div class="filter-field" id="category-filter">Filter by category: 
+					<select id="category-select" name="category" style="width:120px; padding:3px;">
+						<option value="0">All</option>
+						<?php foreach($this->categories as $category) { ?>
+						<option value="<?php echo $category['category_id']; ?>" <?php if($category['category_id'] == $this->category_id) echo "selected"; ?>><?php echo $category['category_name']; ?></option>
+						<?php } ?>
+					</select>
+				</div>
+				<div class="filter-field"> 
+					Issue ID : <input type="text" name="issue_id" name="issue_id" value="<?php echo $this->issue_id; ?>">
+				</div>
+				<div class="filter-field"> 
+					Start Date : <input type="text" name="start_date" name="start_date" class="datepicker" value="<?php echo $this->start_date; ?>">
+				</div>
+				<div class="filter-field"> 
+					End Date :	<input type="text" name="end_date" class="datepicker" value="<?php echo $this->end_date; ?>">
+				</div>
+				<div class="filter-field"> <input type="submit" id="filter-issue" name="filter-issue" value="Go" style="width:40px;"></div>
+			</form>
+		</div>
+	<?php if($this->isMobile == false) { ?>	
+		<div id="list-issue-desktop">
+			<div id="tabs" class="tabs">
+				<nav>
+					<ul>
+						<li id="section1" class="tab" data-id="1"><a href="#section-1"><span>Security (<?php echo intval($this->totalSecIssues['total']); ?>)</span></a></li>
+						<li id="section3" class="tab" data-id="3"><a href="#section-3"><span>Safety (<?php echo intval($this->totalSafIssues['total']); ?>)</span></a></li>
+						<li id="section5" class="tab" data-id="5"><a href="#section-5"><span>Parking &amp; Traffic (<?php echo intval($this->totalParkIssues['total']); ?>)</span></a></li>
+						<li id="section2" class="tab" data-id="2"><a href="#section-2"><span>Housekeeping (<?php echo intval($this->totalHKIssues['total']); ?>)</span></a></li>
+						<li id="section6" class="tab" data-id="6"><a href="#section-6"><span>Engineering (<?php echo intval($this->totalEngIssues['total']); ?>)</span></a></li>
+						<li id="section10" class="tab" data-id="10"><a href="#section-10"><span>Building Service (<?php echo intval($this->totalBSIssues['total']); ?>)</span></a></li>
+						<?php /*<li id="section11" class="tab" data-id="11"><a href="#section-11"><span>Tenant Relation (<?php echo intval($this->totalTRIssues['total']); ?>)</span></a></li> */ ?>
+					</ul>
+				</nav>
+				<div class="content">
+					<section id="section-1">
+						
+					</section>
+					<section id="section-3">
+						
+					</section>
+					<section id="section-5">
+						
+					</section>
+					<section id="section-2">
+						
+					</section>
+					<section id="section-6">
+						
+					</section>
+					<section id="section-10">
+						
+					</section>
+					<?php /*<section id="section-11">
+						
+					</section> */ ?>
+				</div><!-- /content -->
+			</div><!-- /tabs -->
+		</div>
+	<?php } if($this->isMobile == true) { ?>	
+		<div id="list-issue-mobile">
+			<div class="paging">
+				<div class="record-indicator">Showing <?php echo $this->startRec." - ".$this->endRec." of ".$this->totalRec; ?> Issues </div>
+				
+				<div class="paging-section">
+					<?php if(!empty($this->firstPageUrl)) { ?><a href="<?php echo $this->firstPageUrl; ?>" data-id="<?php echo $issue['issue_id']; ?>"><i class="fa fa-angle-double-left" ></i></a><?php } ?>
+					<?php if(!empty($this->prevUrl)) { ?><a href="<?php echo $this->prevUrl; ?>" data-id="<?php echo $issue['issue_id']; ?>"><i class="fa fa-angle-left" ></i></a><?php } ?>
+					<span class="page-indicator" style="margin-right:10px; margin-left:10px;">Page <?php echo $this->curPage; ?> of <?php echo $this->totalPage; ?></span>
+					<?php /*<a class="create-report"><img src="/images/report-icon.png" /></a>*/ ?>
+					<?php if(!empty($this->nextUrl)) { ?><a href="<?php echo $this->nextUrl; ?>" data-id="<?php echo $issue['issue_id']; ?>"><i class="fa fa-angle-right" ></i></a><?php } ?>
+					<?php if(!empty($this->lastPageUrl)) { ?><a href="<?php echo $this->lastPageUrl; ?>" data-id="<?php echo $issue['issue_id']; ?>"><i class="fa fa-angle-double-right"></i></a><?php } ?>
+				</div>
+			</div>
+			
+			<table id="list-issues">
+				<tr>
+					<th class="image-column">Image</th>
+					<th class="detail-column">Detail</th>
+					<th class="comment-column">Comments</th>
+				</tr>
+				<?php
+					if(!empty($this->issues))
+					{
+						$i = 1;
+						foreach($this->issues as $issue) { 
+							if(!empty($issue['kejadian']))	$kejadian = " - ".$issue['kejadian']; 
+							else $kejadian = "";
+
+							if(!empty($issue['modus']))	$modus = " - ".$issue['modus']; 
+							else $modus = "";
+
+							if(!empty($issue['manpower_name']))	$manpower = " - ".$issue['manpower_name']; 
+							else $manpower = "";
+
+							if(!empty($issue['floor']))	$floor = $issue['floor']." - "; 
+							else $floor = "";
+
+							if(!empty($issue['floor']))	
+							{
+								$floor = $issue['floor']." - "; 
+								if(empty($issue['floor_tenant_umum']) || $issue['floor_tenant_umum'] == "0")	$tenant_umum = "tenant - "; 
+								elseif($issue['floor_tenant_umum'] == "1")	$tenant_umum = "umum - "; 
+							}
+							else
+							{ 
+								$floor = "";
+								$tenant_umum = "";
+							}
+
+				?>
+					<tr <?php if($i%2==0) echo 'class="even-row"'; ?>>
+						<?php /*<td><input class="chk-issue-id" type="checkbox" name="chk_issue_id" value="<?php echo $issue['issue_id']; ?>" /></td>*/ ?>
+						<td align="center">
+						<span style="font-size:11px;font-weight:bold;">Opened Image:</span><br/>
+						<a class="image-popup-vertical-fit" href="<?php echo $issue['large_pic']; ?>"><img src="<?php echo $issue['thumb_pic']; ?>" data-large="<?php echo $issue['large_pic']; ?>" width="50px" /></a><br/>
+						<?php if(!empty($issue['progress_images'])) { ?>
+							<span style="font-size:11px;font-weight:bold;">Progress Image(s):</span><br/>
+							<?php foreach($issue['progress_images'] as $progress_image) { ?>
+								<a class="image-popup-vertical-fit" href="<?php echo $progress_image['large_pic']; ?>"><img src="<?php echo $progress_image['thumb_pic']; ?>" data-large="<?php echo $progress_image['large_pic']; ?>" width="50px" /></a><br/>
+						<?php } } ?>
+						<label class="sp-label-progress" for="progress-picture" data-id="<?php echo $issue['issue_id']; ?>">
+							<img src="/images/progress.png" class="progress-icon" />
+						</label>
+						<label class="sp-label" for="solved-picture" data-id="<?php echo $issue['issue_id']; ?>" data-issuetype="<?php echo $issue['issue_type_id']; ?>">
+							<img src="/images/camera.png" class="solved-icon" />
+						</label>
+						</td>
+						<td id="issue-detail-<?php echo $issue['issue_id']; ?>"><?php echo "<p><strong>Issue ID:</strong><br/>".$issue['issue_id']."</p><p><strong>Location:</strong><br/>".$floor.$tenant_umum.$issue['location']."</p><p><strong>Category:</strong><br/>".$issue['category']['category_name']."</p><p><strong>Type:</strong><br/>".$issue['issue_type'].$kejadian.$modus.$manpower."</p><p><strong>Discussion:</strong><br/>".$issue['description']."</p><p><strong>Issue Date:</strong><br/>".$issue['issue_date_time']; ?> (<?php if(!empty($issue['count_years'])) { echo $issue['count_years']." year"; if($issue['count_years'] > 1) echo "s "; } if(!empty($issue['count_months'])) { echo $issue['count_months']." month"; if($issue['count_months'] > 1) echo "s "; } echo $issue['count_days']." day"; if($issue['count_days']>1) echo "s"; ?>)</p></td>
+						<td align="center">
+						    <a class="add-comment" href="#comment-form" data-id="<?php echo $issue['issue_id']; ?>"><img src="/images/comment1.png" /></a>
+							<div class="three-newest-comments" id="comment-<?php echo $issue['issue_id']; ?>">
+							<?php if(!empty($issue['comments'])) { 
+								foreach($issue['comments'] as $comment)
+								{
+									echo '<div style="border-bottom:1px solid #ccc; text-align:left; clear:both; margin-bottom:15px; padding-bottom:5px;"><strong>'.$comment['name'].' : </strong>'.$comment['comment'].'<br/>';
+									if(!empty($comment['filename'])) echo '<a href="'.$this->baseUrl."/comments/".$comment['filename'].'" target="_blank"><i class="fa fa-paperclip"></i> '.$comment['filename'].'</a>';
+									echo '<div style="font-size:10px; color:#aaa; text-align:right;">'.$comment['comment_date']."</div></div>";
+								}
+							} ?>
+							</div>
+						</td>
+					</tr>
+				<?php
+							$i++;
+						}
+					}
+				?>
+			</table>
+			<div class="paging">
+				<div class="paging-section">
+					<?php if(!empty($this->firstPageUrl)) { ?><a href="<?php echo $this->firstPageUrl; ?>" data-id="<?php echo $issue['issue_id']; ?>"><i class="fa fa-angle-double-left" ></i></a><?php } ?>
+					<?php if(!empty($this->prevUrl)) { ?><a href="<?php echo $this->prevUrl; ?>" data-id="<?php echo $issue['issue_id']; ?>"><i class="fa fa-angle-left" ></i></a><?php } ?>
+					<span class="page-indicator" style="margin-right:10px; margin-left:10px;">Page <?php echo $this->curPage; ?> of <?php echo $this->totalPage; ?></span>
+					<?php /*<a class="create-report"><img src="/images/report-icon.png" /></a>*/ ?>
+					<?php if(!empty($this->nextUrl)) { ?><a href="<?php echo $this->nextUrl; ?>" data-id="<?php echo $issue['issue_id']; ?>"><i class="fa fa-angle-right" ></i></a><?php } ?>
+					<?php if(!empty($this->lastPageUrl)) { ?><a href="<?php echo $this->lastPageUrl; ?>" data-id="<?php echo $issue['issue_id']; ?>"><i class="fa fa-angle-double-right"></i></a><?php } ?>
+				</div>
+				<div class="record-indicator">Showing <?php echo $this->startRec." - ".$this->endRec." of ".$this->totalRec; ?> Issues </div>
+			</div>
+		</div>
+	<?php } ?>
+	  </div>
+
+		  <form id="issue-form" action="/default/issue/submitsolveissue"  method="post" enctype="multipart/form-data">
+		    <h2 style="font-weight: bold; text-align: center; border-bottom: 1px solid; padding-bottom: 5px;">Close Issue</h2>
+			<input id="issue_id" name="issue_id" type="hidden" />	
+			<input id="solved-picture" name="solved-picture" type="file" accept="image/jpeg" />	
+			<div id="image-holder"></div>
+			<div id="issue-detail-solve"></div>
+			<div id="lost-found-option">
+				<?php if(!empty($this->lostFoundOptions)) { ?>
+						<select id="lostfound-select" name="lost_found_option_id">
+					<?php foreach($this->lostFoundOptions as $option) {	?>
+								<option value="<?php echo $option['option_id']; ?>"><?php echo $option['options']; ?></option>
+						<?php } ?>
+					</select>
+				<?php } ?>
+			</div>
+			<div id="comment-field">
+				Comment:<br/>
+				<textarea rows="4" cols="50" id="comment-txtarea" name="comment"></textarea><br/>
+				<input type="button" id="cancel-solved-issue" name="cancel-solved-issue" value="Cancel" /> <input type="submit" id="solve-issue-submit" name="solve-issue-submit" value="Submit">
+			</div>
+		</form>
+		
+		<form id="issue-progress-form" action="/default/issue/submitprogressissue"  method="post" enctype="multipart/form-data">
+			<h2 style="font-weight: bold; text-align: center; border-bottom: 1px solid; padding-bottom: 5px;">Add Progress Image</h2>
+			<input id="progress_issue_id" name="progress_issue_id" type="hidden" />	
+			<input id="progress-picture" name="progress-picture" type="file" accept="image/jpeg" capture="capture" />	
+			<div id="image-holder-progress"></div>
+			<div id="issue-detail-progress"></div>
+			<div style="text-align:center;">
+				<input type="button" id="cancel-progress-issue" name="cancel-progress-issue" value="Cancel" /> <input type="submit" id="progress-issue-submit" name="progress-issue-submit" value="Submit">
+			</div>
+		</form>
+		
+		<!-- comment form -->
+		  <form id="comment-form" class="mfp-hide white-popup-block"  enctype="multipart/form-data">
+			<input type="hidden" name="issue_id" id="comment_issue_id" />
+			<div id="comments-content"></div>
+			<label for="name">Comment</label><br/>
+			<textarea rows="4" cols="25" name="comment" id="comment"></textarea>
+			<input type="file" name="attachment" id="attachment" class="attachment-uploader" style="margin:7px 0px;">
+			<input type="submit" id="add-comment-submit" name="add-comment-submit" value="Submit">
+		  </form>
+	  </div>
+	</div>
+</div>
+<!-- /page content -->
+
+
+<!-- Magnific Popup core JS file -->
+<script src="/js/jquery.magnific-popup.min.js"></script>
+<script src="/js/jquery-ui.min.js"></script>
+<script src="/js/FullWidthTabs/js/cbpFWTabs.js"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+	var selectedID;
+	var addCommentIntervalId;
+
+	$("#issue-form")[0].reset();
+	$("#issue-progress-form")[0].reset();
+
+	$( ".datepicker" ).datepicker({ dateFormat: 'yy-mm-dd' });
+
+	<?php if($this->isMobile == false) { ?>	
+		new CBPFWTabs( document.getElementById( 'tabs' ) );
+
+		var selCatId = '<?php echo $this->selectedCategory; ?>';
+		$("body").mLoading();
+		$( "#section1" ).addClass( "tab" );
+		$.ajax({
+			async : true,
+			url: "/default/issue/showissuesbycategory",
+			data: { category : selCatId,
+					issue_id : '<?php echo $this->issue_id; ?>',
+					start_date : '<?php echo $this->start_date; ?>',
+					end_date : '<?php echo $this->end_date; ?>'
+			}
+		}).done(function(response) {
+			$( "#section-"+selCatId ).html(response);
+			$( "#section1" ).removeClass( "tab-current" );
+			$( "#section-1" ).addClass( "" );
+			$( "#section"+selCatId ).addClass( "tab-current" );
+			$( "#section-"+selCatId ).addClass( "content-current" );
+			$("body").mLoading('hide');
+		});
+
+		$('.tab').click(function() {
+			$("body").mLoading();
+			var cat_id = this.dataset.id;
+			$.ajax({
+				async : true,
+				url: "/default/issue/showissuesbycategory",
+				data: { category : cat_id,
+						issue_id : '<?php echo $this->issue_id; ?>',
+						start_date : '<?php echo $this->start_date; ?>',
+						end_date : '<?php echo $this->end_date; ?>'
+				}
+			}).done(function(response) {
+				$( "#section"+selCatId ).removeClass( "tab-current" );
+				$( "#section-"+selCatId ).removeClass( "content-current" );
+				$( "#section-"+cat_id).html(response);
+				$( "#section"+cat_id ).addClass( "tab-current" );
+				$( "#section-"+cat_id ).addClass( "content-current" );
+				$("body").mLoading('hide');
+			});
+		});
+	<?php } ?>	
+
+	$('#issue-form').hide();
+	$('#issue-progress-form').hide();
+	$('.image-popup-vertical-fit').magnificPopup({
+		type: 'image',
+		closeOnContentClick: true,
+		mainClass: 'mfp-img-mobile',
+		image: {
+			verticalFit: true
+		}
+	});
+	
+	function filePreview(input) {
+		if (input.files && input.files[0]) {
+			var reader = new FileReader();
+			reader.addEventListener('load', function() {
+				$(".filter").hide();
+				$(".pagetitle").hide();
+				$("#image-holder").html("");
+				$("<img />", {
+					"src": reader.result,
+					"class": "thumb-image"
+				}).appendTo("#image-holder");
+			});
+			reader.readAsDataURL(input.files[0]);
+		}
+	}
+	
+	$("#solved-picture").change(function() {
+		$('#list-issues').hide();
+		$('.paging').hide();
+		$('#issue-form').show();
+		$(window).scrollTop(0);
+		filePreview(this);
+	});
+	
+	$(".sp-label").click(function() {
+		$('#issue-form')[0].reset();
+		$("#issue_id").val(this.dataset.id);		
+		var issueDetail = $("#issue-detail-"+this.dataset.id).html();
+		$("#issue-detail-solve").html(issueDetail);
+		if(this.dataset.issuetype == 3)
+		{
+			$('#lost-found-option').show();
+		}
+		else
+		{
+			$('#lost-found-option').hide();
+			$('#lostfound-select').val(0);
+		}
+	});
+	
+	function filePreviewProgress(input) {
+		if (input.files && input.files[0]) {
+			var reader = new FileReader();
+			reader.addEventListener('load', function() {
+				$(".filter").hide();
+				$(".pagetitle").hide();
+				$("#image-holder").html("");
+				$("<img />", {
+					"src": reader.result,
+					"class": "thumb-image"
+				}).appendTo("#image-holder-progress");
+			});
+			reader.readAsDataURL(input.files[0]);
+		}
+	}
+	
+	$("#progress-picture").change(function() {
+		$('#list-issues').hide();
+		$('.paging').hide();
+		$('#issue-progress-form').show();
+		$(window).scrollTop(0);
+		filePreviewProgress(this);
+	});
+	
+	$(".sp-label-progress").click(function() {
+		$('#issue-progress-form')[0].reset();
+		$("#progress_issue_id").val(this.dataset.id);		
+		var issueDetail = $("#issue-detail-"+this.dataset.id).html();
+		$("#issue-detail-progress").html(issueDetail);
+	});
+	
+	$( "#cancel-solved-issue").click(function() {
+		$('#list-issues').show();
+		$('.paging').show();
+		$('#issue-form').hide();
+		$(".filter").show();
+		$(".pagetitle").show();
+	});
+
+	$( "#cancel-progress-issue").click(function() {
+		$('#list-issues').show();
+		$('.paging').show();
+		$('#issue-progress-form').hide();
+		$(".filter").show();
+		$(".pagetitle").show();
+	});
+	
+	$('.add-comment').click(function() {
+		selectedID = this.dataset.id;
+	});
+	
+	$('.add-comment').magnificPopup({
+		type: 'inline',
+		preloader: false,
+		focus: '#comment',
+		callbacks: {
+			open: function() {
+			  var id = selectedID; /*this._lastFocusedEl.dataset.id;*/
+			  $.ajax({
+					url: "/default/issue/getcommentsbyissueid",
+					data: { id : id }
+				}).done(function(response) {
+					$("#comment_issue_id").val(id);
+					$( "#comments-content" ).html(response);
+				});
+				/*addCommentIntervalId = setInterval(function(){ 
+					$.ajax({
+						url: "/default/issue/getcommentsbyissueid",
+						data: { id : id }
+					}).done(function(response) {
+						$("#comment_issue_id").val(id);
+						$( "#comments-content" ).html(response);
+					});
+				}, 15000);	*/	
+			},
+			close: function() {	
+				clearInterval(addCommentIntervalId);
+				$( "#comments-content").html("");
+				$.ajax({
+                    url: "/default/issue/updatecomments",
+                    data: { 
+                        start:'<?php echo $this->start; ?>',
+                        start_date: '<?php echo $this->start_date; ?>',
+                        end_date: '<?php echo $this->end_date; ?>',
+                        category: '<?php echo $this->category_id; ?>',
+                        issue_id: '<?php echo $this->issue_id; ?>',
+                        solved: '<?php echo $this->solved; ?>'
+                     }
+                }).done(function(response) {
+                    var resp = jQuery.parseJSON(response);
+                    $.each( resp, function( idx, val ) {
+                        $( "#comment-"+val['id'] ).html(val['comment']);
+                    });
+                });
+			}
+		}
+	});
+	
+	$('#comment-form').on('submit', function(event){
+		event.preventDefault(); 
+		$("body").mLoading();
+		$.ajax({
+			url: '/default/issue/addcomment',
+			type: 'POST',
+			data: new FormData($('#comment-form')[0]),
+			cache: false,
+			contentType: false,
+			processData: false,
+
+			xhr: function () {
+				var myXhr = $.ajaxSettings.xhr();
+				if (myXhr.upload) {
+					myXhr.upload.addEventListener('progress', function (e) {
+					if (e.lengthComputable) {
+						$('progress').attr({
+						value: e.loaded,
+						max: e.total
+						});
+					}
+					}, false);
+				}
+				return myXhr;
+			},
+			success: function(id) {
+				$.ajax({
+					url: "/default/issue/getcommentsbyissueid",
+					data: { id : id }
+				}).done(function(response) { 
+					$("#comment_issue_id").val(id);
+				$( "#comments-content" ).html(response);
+					$('#comment-form')[0].reset();
+				});
+				$("body").mLoading('hide');
+			}
+		});
+	});
+	
+	$('#issue-form').on('submit', function(event){
+		$("body").mLoading();
+	});
+	
+	
+	$(".create-report").click(function() {
+		var arrCB = {};
+		var i = 0;
+		$('.chk-issue-id:checkbox:checked').each(
+			function(){
+				arrCB[i] = this.value;
+				i++;
+			}
+		);
+		var ids = JSON.stringify(arrCB);
+		location.href="/default/report/createreportfromissue/ids/"+ids;
+	});
+	
+	/*setInterval(function(){ 
+		$.ajax({
+			url: "/default/issue/getupdatedpendingcomments/start/<?php echo $this->start; ?>",
+		}).done(function(response) {
+			var resp = jQuery.parseJSON(response);
+			$.each( resp, function( idx, val ) {
+				$( "#comment-"+val['id'] ).html(val['comment']);
+			});
+		});
+	}, 5000);*/
+});	
+</script>

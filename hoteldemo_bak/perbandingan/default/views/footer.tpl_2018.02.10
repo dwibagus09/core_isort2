@@ -1,0 +1,29 @@
+    <!-- footer content -->
+        <footer>
+          <div class="pull-right">
+            Pakuwon Smart Reporting Tool &copy;<?php echo date("Y"); ?> All Rights Reserved.
+          </div>
+          <div class="clearfix"></div>
+        </footer>
+        <!-- /footer content -->
+      </div>
+    </div>
+
+
+    <!-- NProgress -->
+	<script src="/js/custom.js"></script>	
+	<?php
+	if(!empty($this->txt)) {
+	?>
+	<script type="text/javascript">
+	<?php if($this->f == '1') { ?>
+		location.href='https://api.whatsapp.com/send?text=<?php echo $this->txt; ?>&phone=<?php echo $this->phone; ?>&abid=<?php echo $this->txt; ?>';
+	<?php } else { ?>
+		location.href='https://api.whatsapp.com/send?text=<?php echo $this->txt; ?>&abid=<?php echo $this->txt; ?>';
+	<?php } ?>
+	</script>
+	<?php
+	}
+	?>	
+  </body>
+</html>

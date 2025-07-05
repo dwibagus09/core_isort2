@@ -1,0 +1,60 @@
+    <!-- footer content -->
+        <footer>
+          <div class="pull-right">
+            Powered by <a href="http://isort.id">isort</a> Copyright &copy;<?php echo date("Y"); ?>. All Rights Reserved.
+          </div>
+          <div class="clearfix"></div>
+        </footer>
+        <!-- /footer content -->
+      </div>
+    </div>
+
+	
+	<div class="loading-mask">  
+	  <p></p>
+	</div>  
+
+    <!-- NProgress -->
+	<script src="/js/custom.js"></script>	
+	<?php
+	if(!empty($this->txt)) {
+	?>
+	<script type="text/javascript">
+	<?php if($this->f == '1') { ?>
+		location.href='https://api.whatsapp.com/send?text=<?php echo $this->txt; ?>&phone=<?php echo $this->phone; ?>&abid=<?php echo $this->txt; ?>';
+	<?php } else { ?>
+		location.href='https://api.whatsapp.com/send?text=<?php echo $this->txt; ?>&abid=<?php echo $this->txt; ?>';
+	<?php } ?>
+	</script>
+	<?php
+	}
+	?>	
+
+<?php if($this->showSiteSelection == 1) { ?>
+<script type="text/javascript">
+	$(document).ready(function() {
+		$('#site-menu').on('change', function(event){
+			location.href="/default/user/setsiteid/id/"+$(this).val();
+		});
+		
+		$(document).bind("contextmenu",function(e){
+              return false;
+           });
+    	});
+		
+		
+</script>
+<?php } ?>
+
+	<!-- Global site tag (gtag.js) - Google Analytics -->
+	<script async src="https://www.googletagmanager.com/gtag/js?id=UA-142474125-1"></script>
+	<script>
+	window.dataLayer = window.dataLayer || [];
+	function gtag(){dataLayer.push(arguments);}
+	gtag('js', new Date());
+
+	gtag('config', 'UA-142474125-1');
+	</script>
+
+  </body>
+</html>

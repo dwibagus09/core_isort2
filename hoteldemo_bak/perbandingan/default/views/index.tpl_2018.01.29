@@ -1,0 +1,81 @@
+        <!-- page content -->
+        <div class="right_col" role="main">
+			<form id="issue-form" action="/default/issue/submitissue"  method="post" enctype="multipart/form-data">
+			  <div class="row">
+				<div class="col-md-12 col-sm-12 col-xs-12">
+				  <div class="dashboard">
+					<div class="menu-icon col-md-4 col-sm-4 col-xs-6">
+						 <label for="picture-issue">
+							<img src="/images/issue_finding_icon.png" />
+							<div class="icon-title">Issue Finding</div>
+						</label>
+						<input id="picture-issue" name="picture" type="file" accept="image/*" capture="capture" />
+					</div>
+
+					<div class="menu-icon col-md-4 col-sm-4 col-xs-6">
+						<a href="/default/issue/listissues">
+							<img src="/images/list_icon.png" />
+							<div class="icon-title">List Issues</div>
+						</a>
+					</div>							
+					<div class="clearfix"></div>
+				  </div>
+				  
+				  <div id="other-info">
+					<div id="image-holder"></div>
+					<div id="location-field">
+						Location:<br/>
+						<textarea rows="4" cols="50" id="location-txtarea" name="location"></textarea><br/>
+						<input type="button" id="cancel-issue" name="cancel-issue" value="Cancel" /> <input type="button" id="location-next" name="location-next" value="Next" />
+					</div>
+					<div id="discussion-field">
+						Discussion:<br/>
+						<textarea rows="4" cols="50" id="discussion-txtarea" name="description"></textarea><br/>
+						<input type="button" id="cancel-issue" name="cancel-issue" value="Cancel" /> <input type="submit" id="issue-submit" name="issue-submit" value="Submit">
+					</div>
+				  </div>
+				</div>
+			</form>
+          </div>
+          <br /> 
+		  
+
+        </div>
+        <!-- /page content -->
+
+    
+<script type="text/javascript">
+$("#issue-form")[0].reset();
+$("#other-info").hide();
+
+function filePreview(input) {
+    if (input.files && input.files[0]) {
+        var reader = new FileReader();
+        reader.addEventListener('load', function() {
+			$(".dashboard").hide();
+			$("#discussion-field").hide();
+			$("#other-info").show();
+			$("<img />", {
+				"src": reader.result,
+                "class": "thumb-image"
+            }).appendTo("#image-holder");
+		});
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+$( "#picture-issue" ).change(function() {
+  filePreview(this);
+});
+
+$( "#cancel-issue" ).click(function() {
+  console.log("cancel");
+  location.href="/default/index/index";
+});
+
+$( "#location-next" ).click(function() {
+	$("#location-field").hide();
+	$("#discussion-field").show();
+});
+
+</script>

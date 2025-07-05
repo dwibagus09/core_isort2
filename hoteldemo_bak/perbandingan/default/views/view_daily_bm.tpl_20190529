@@ -1,0 +1,299 @@
+<!-- Magnific Popup core CSS file -->
+<link rel="stylesheet" href="/css/magnific-popup.css">
+<link rel="stylesheet" href="/js/jQuery-File-Upload-9.30.0/css/jquery.fileupload.css">
+<link rel="stylesheet" href="/js/jQuery-File-Upload-9.30.0/css/jquery.fileupload-ui.css">
+
+<!-- page content -->
+<div class="right_col" role="main">
+	<div class="row">
+	  <div class="col-md-12 col-sm-12 col-xs-12">
+			<h2 class="pagetitle">BM Daily Report</h2>
+			<div class="paging">
+				<div class="record-indicator">Showing <?php echo $this->startRec." - ".$this->endRec." of ".$this->totalRec; ?> Reports </div>
+				<div class="paging-section">
+					<?php if(!empty($this->firstPageUrl)) { ?><a href="<?php echo $this->firstPageUrl; ?>" data-id="<?php echo $issue['issue_id']; ?>"><i class="fa fa-angle-double-left" ></i></a><?php } ?>
+					<?php if(!empty($this->prevUrl)) { ?><a href="<?php echo $this->prevUrl; ?>" data-id="<?php echo $issue['issue_id']; ?>"><i class="fa fa-angle-left" ></i></a><?php } ?>
+					<span class="page-indicator" style="margin-right:10px; margin-left:10px;">Page <?php echo $this->curPage; ?> of <?php echo $this->totalPage; ?></span>
+					<?php /*<a class="create-report"><img src="/images/report-icon.png" /></a>*/ ?>
+					<?php if(!empty($this->nextUrl)) { ?><a href="<?php echo $this->nextUrl; ?>" data-id="<?php echo $issue['issue_id']; ?>"><i class="fa fa-angle-right" ></i></a><?php } ?>
+					<?php if(!empty($this->lastPageUrl)) { ?><a href="<?php echo $this->lastPageUrl; ?>" data-id="<?php echo $issue['issue_id']; ?>"><i class="fa fa-angle-double-right"></i></a><?php } ?>
+				</div>
+			</div>
+		  <table class="table table-striped">
+			  <thead>
+				<tr>
+				  <th width="150">Day / Date</th>
+				  <th width="100">Building</th>
+				  <th width="150">Submitted By</th>
+				  <th>Comments</th>						  
+				  <th>Action</th>
+				</tr>
+			  </thead>
+			  <?php
+				if(!empty($this->bm))
+				{
+			?>
+				<tbody>
+				<?php
+					$i = 1;
+					foreach($this->bm as $bm) { 
+				?>
+				<tr>
+				  <td class="date-column"><?php echo $bm['day_date']; ?></th>
+				  <td class="date-column"><?php if($bm['building']=='1') echo 'Office Tower'; else if($bm['building']=='2') echo 'Kondominium'; ?></td>
+				  <td class="date-column"><?php echo $bm['name']; ?></td>
+				  <td>
+						<div class="three-newest-comments" id="comment-<?php echo $bm['report_id']; ?>">
+						<?php if(!empty($bm['comments'])) { 
+							foreach($bm['comments'] as $comment)
+							{
+								echo '<div style="border-bottom:1px solid #ccc; text-align:left; clear:both; margin-bottom:15px; padding-bottom:5px;"><strong>'.$comment['name'].' said : </strong> '.$comment['comment'].'<br/><div style="font-size:10px; color:#aaa; text-align:right;">'.$comment['comment_date']."</div></div>";
+							}
+						} ?>
+						</div>
+				  </td>
+				  <td class="action-column">
+					<?php if(!in_array($this->curUser['role_id'], array(5,6))/*$bm['allowEditDate'] == date("Y-m-d")*/) {  ?><a href="/default/bm/edit/id/<?php echo $bm['report_id']; ?>" class="action-btn"><i class="fa fa-edit" ></i></a><?php } ?>
+					<?php /*<a class="action-btn delete"><i class="fa fa-trash" data-id="<?php echo $bm['report_id']; ?>" ></i></a> */ ?>
+					<a target="_blank" href="/default/bm/exporttopdf/id/<?php echo $bm['report_id']; ?>" class="action-btn"><img src="/images/newlogo_pdf.png" width="24" /></a>
+					<a class="add-comment" href="#fileupload" data-id="<?php echo $bm['report_id']; ?>" style="float:none; padding-top:10px; display:block;"><img src="/images/comment_24x24.png" /></a>
+				  </td>
+				</tr>
+				<?php
+						$i++;
+					}
+				?>				
+			  </tbody>
+			<?php
+				}
+			?>
+			</table>
+					
+		  <div class="paging">
+				<div class="paging-section">
+					<?php if(!empty($this->firstPageUrl)) { ?><a href="<?php echo $this->firstPageUrl; ?>" data-id="<?php echo $issue['issue_id']; ?>"><i class="fa fa-angle-double-left" ></i></a><?php } ?>
+					<?php if(!empty($this->prevUrl)) { ?><a href="<?php echo $this->prevUrl; ?>" data-id="<?php echo $issue['issue_id']; ?>"><i class="fa fa-angle-left" ></i></a><?php } ?>
+					<span class="page-indicator" style="margin-right:10px; margin-left:10px;">Page <?php echo $this->curPage; ?> of <?php echo $this->totalPage; ?></span>
+					<?php /*<a class="create-report"><img src="/images/report-icon.png" /></a>*/ ?>
+					<?php if(!empty($this->nextUrl)) { ?><a href="<?php echo $this->nextUrl; ?>" data-id="<?php echo $issue['issue_id']; ?>"><i class="fa fa-angle-right" ></i></a><?php } ?>
+					<?php if(!empty($this->lastPageUrl)) { ?><a href="<?php echo $this->lastPageUrl; ?>" data-id="<?php echo $issue['issue_id']; ?>"><i class="fa fa-angle-double-right"></i></a><?php } ?>
+				</div>
+				<div class="record-indicator">Showing <?php echo $this->startRec." - ".$this->endRec." of ".$this->totalRec; ?> Reports </div>
+			</div>			
+	  </div>
+	</div>
+</div>
+<!-- /page content -->
+
+<!-- comment form -->
+  <form action="" id="fileupload" class="mfp-hide white-popup-block" enctype="multipart/form-data">
+	<input type="hidden" name="report_id" id="report_id" />
+	<div id="comments-content"></div>
+	<label for="name">Comment</label><br/>
+	<textarea rows="4" cols="25" name="comment" id="comment"></textarea>
+	<div id="uploader">
+		<span class="btn btn-success fileinput-button">
+				<i class="glyphicon glyphicon-plus"></i>
+				<span>Add files...</span>
+				<input type="file" name="files[]" multiple>
+		</span>
+		<div class="fileupload-progress fade">
+				<!-- The global progress bar -->
+				<div class="progress progress-striped active" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+						<div class="progress-bar progress-bar-success" style="width:0%;"></div>
+				</div>
+				<!-- The extended global progress state -->
+				<div class="progress-extended">&nbsp;</div>
+		</div>
+	</div>
+	<!-- The table listing the files available for upload/download -->
+  <table id="file-upload-list" role="presentation" class="table table-striped"><tbody class="files"></tbody></table>
+	<input type="submit" id="add-comment-submit" name="add-comment-submit" value="Submit">
+  </form>
+
+
+<!-- The template to display files available for upload -->
+<script id="template-upload" type="text/x-tmpl">
+{% for (var i=0, file; file=o.files[i]; i++) { %}
+    <tr class="template-upload fade">
+        <td>
+            <span class="preview"></span>
+        </td>
+        <td>
+            {% if (window.innerWidth > 480 || !o.options.loadImageFileTypes.test(file.type)) { %}
+                <p class="name">{%=file.name%}</p>
+            {% } %}
+            <strong class="error text-danger"></strong>
+        </td>
+        <td>
+            <p class="size">Processing...</p>
+            <div class="progress progress-striped active" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div class="progress-bar progress-bar-success" style="width:0%;"></div></div>
+        </td>
+        <td>
+            {% if (!i) { %}
+                <button class="btn btn-warning cancel">
+                    <i class="glyphicon glyphicon-ban-circle"></i>
+                    <span>Remove</span>
+                </button>
+            {% } %}
+        </td>
+    </tr>
+{% } %}
+</script>
+<!-- The template to display files available for download -->
+<script id="template-download" type="text/x-tmpl">
+{% for (var i=0, file; file=o.files[i]; i++) { %}
+    <tr class="template-download fade">
+        <td>
+            <span class="preview">
+                {% if (file.thumbnailUrl) { %}
+                    <a href="{%=file.url%}" title="{%=file.name%}" download="{%=file.name%}" data-gallery><img src="{%=file.thumbnailUrl%}"></a>
+                {% } %}
+            </span>
+        </td>
+        <td>
+            {% if (window.innerWidth > 480 || !file.thumbnailUrl) { %}
+                <p class="name">
+                    {% if (file.url) { %}
+                        <a href="{%=file.url%}" title="{%=file.name%}" download="{%=file.name%}" {%=file.thumbnailUrl?'data-gallery':''%}>{%=file.name%}</a>
+                    {% } else { %}
+                        <span>{%=file.name%}</span>
+                    {% } %}
+                </p>
+            {% } %}
+            {% if (file.error) { %}
+                <div><span class="label label-danger">Error</span> {%=file.error%}</div>
+            {% } %}
+        </td>
+        <td>
+            <span class="size">{%=o.formatFileSize(file.size)%}</span>
+        </td>
+        <td>
+            {% if (file.deleteUrl) { %}
+                <button class="btn btn-danger delete" data-type="{%=file.deleteType%}" data-url="{%=file.deleteUrl%}"{% if (file.deleteWithCredentials) { %} data-xhr-fields='{"withCredentials":true}'{% } %}>
+                    <i class="glyphicon glyphicon-trash"></i>
+                    <span>Delete</span>
+                </button>
+                <input type="checkbox" name="delete" value="1" class="toggle">
+            {% } else { %}
+                <button class="btn btn-warning cancel">
+                    <i class="glyphicon glyphicon-ban-circle"></i>
+                    <span>Cancel</span>
+                </button>
+            {% } %}
+        </td>
+    </tr>
+{% } %}
+</script>
+
+<!-- Magnific Popup core JS file -->
+<script src="/js/jquery.magnific-popup.min.js"></script>  
+<script src="/js/jQuery-File-Upload-9.30.0/js/vendor/jquery.ui.widget.js"></script>
+<!-- The Templates plugin is included to render the upload/download listings -->
+<script src="/js/jQuery-File-Upload-9.30.0/js/tmpl.js"></script>
+<!-- The Load Image plugin is included for the preview images and image resizing functionality -->
+<script src="https://blueimp.github.io/JavaScript-Load-Image/js/load-image.all.min.js"></script>
+<!-- The Canvas to Blob plugin is included for image resizing functionality -->
+<script src="https://blueimp.github.io/JavaScript-Canvas-to-Blob/js/canvas-to-blob.min.js"></script>
+<!-- Bootstrap JS is not required, but included for the responsive demo navigation -->
+<script src="https://blueimp.github.io/Gallery/js/jquery.blueimp-gallery.min.js"></script>
+<script src="/js/jQuery-File-Upload-9.30.0/js/jquery.iframe-transport.js"></script>
+<script src="/js/jQuery-File-Upload-9.30.0/js/jquery.fileupload.js"></script>
+<script src="/js/jQuery-File-Upload-9.30.0/js/jquery.fileupload-process.js"></script>
+<script src="/js/jQuery-File-Upload-9.30.0/js/jquery.fileupload-image.js"></script>
+<script src="/js/jQuery-File-Upload-9.30.0/js/jquery.fileupload-audio.js"></script>
+<script src="/js/jQuery-File-Upload-9.30.0/js/jquery.fileupload-video.js"></script>
+<script src="/js/jQuery-File-Upload-9.30.0/js/jquery.fileupload-validate.js"></script>
+<script src="/js/jQuery-File-Upload-9.30.0/js/jquery.fileupload-ui.js"></script>
+<script src="/js/jQuery-File-Upload-9.30.0/js/main.js"></script>
+
+<script type="text/javascript">
+$(document).ready(function() {
+	var report_date;
+	
+	$('.add-comment').click(function() {
+		report_id = this.dataset.id;
+	});
+	
+	$('.add-comment').magnificPopup({
+		type: 'inline',
+		preloader: false,
+		focus: '#comment',
+		callbacks: {
+			open: function() {
+			  $.ajax({
+					url: "/default/bm/getcommentsbyreportid",
+					data: { id : report_id }
+				}).done(function(response) {
+					$("#report_id").val(report_id);
+					$( "#comments-content" ).html(response);
+				});
+				addCommentIntervalId = setInterval(function(){ 
+					$.ajax({
+						url: "/default/bm/getcommentsbyreportid",
+						data: { id : report_id }
+					}).done(function(response) {
+						$("#report_id").val(report_id);
+						$( "#comments-content" ).html(response);
+					});
+				}, 5000);		
+			},
+			close: function() {	
+				clearInterval(addCommentIntervalId);
+				$( "#comments-content").html("");
+			}
+		}
+	});
+	
+	$('#fileupload').on('submit', function(event){
+		event.preventDefault(); 
+		$("body").mLoading();
+		$.ajax({
+			url: '/default/bm/addcomment',
+			type: 'POST',
+			data: new FormData($('form')[0]),
+			cache: false,
+			contentType: false,
+			processData: false,
+
+			xhr: function () {
+				var myXhr = $.ajaxSettings.xhr();
+				if (myXhr.upload) {
+					myXhr.upload.addEventListener('progress', function (e) {
+					if (e.lengthComputable) {
+						$('progress').attr({
+						value: e.loaded,
+						max: e.total
+						});
+					}
+					}, false);
+				}
+				return myXhr;
+			}
+			/*data: $(this).serialize(),
+			success: function(response) {
+				$.ajax({
+					url: "/default/bm/getcommentsbyreportid",
+					data: { id : report_id }
+				}).done(function(response) { 
+					$( "#comments-content" ).html(response);
+						$('#fileupload')[0].reset();
+					});
+				$("body").mLoading('hide');
+			}*/
+		});
+	});
+	
+	setInterval(function(){ 
+		$.ajax({
+			url: "/default/bm/getupdatedcomments",
+			data: { start : <?php echo intval($this->start); ?> }
+		}).done(function(response) {
+			var resp = jQuery.parseJSON(response);
+			$.each( resp, function( idx, val ) {
+				$( "#comment-"+val['report_id'] ).html(val['comment']);
+			});
+		});
+	}, 5000);
+});
+</script>

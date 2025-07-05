@@ -1,0 +1,486 @@
+<!-- Magnific Popup core CSS file -->
+<link rel="stylesheet" href="/css/magnific-popup.css">
+
+<?php 
+if(empty($this->security['created_date'])) $cur_date = date("Y-m-d");
+else {
+	$cur_report_date = explode(" ",$this->security['created_date']);
+	$cur_date = $cur_report_date[0];
+}
+?>
+
+  <div class="">
+	<div class="row">
+	  <div class="col-md-12 col-sm-12 col-xs-12">
+		<div class="x_panel">
+			<?php if(!empty($this->message)) { ?><div class="err-msg"><?php echo $this->message; ?></div><?php } ?>
+		  <div class="x_title">
+			<h2 class="page-title"><?php echo $this->title; ?></h2>
+			<div class="clearfix"></div>
+		  </div>
+		  <div class="x_content">
+
+			<form class="form-horizontal form-label-left" action="/default/security/insert" method="POST" onsubmit="$('body').mLoading();">
+				<input type="hidden" id="security_id" name="security_id" class="form-control col-md-7 col-xs-12" value="<?php echo $this->security['security_id']; ?>">
+			  <span class="section">Date / Shift</span>
+			  <div class="item form-group">
+				<label class="control-label col-md-3 col-sm-3 col-xs-12" for="name">Day / Date
+				</label>
+				<div class="col-md-6 col-sm-6 col-xs-12 " style="padding-top:4px;">
+					<?php if(!empty($this->security['report_date'])) echo $this->security['report_date']; else echo date("l, F j, Y"); ?>
+				</div>
+			  </div>
+			  <div class="item form-group">
+				<label class="control-label col-md-3 col-sm-3 col-xs-12" for="shift">Shift
+				</label>
+				<div class="col-md-6 col-sm-6 col-xs-12">
+					<select id="shift" name="shift" class="form-control" <?php if($this->editMode == 1) { ?>disabled<?php } ?>>
+					<?php if(!empty($this->shift)) {
+						foreach($this->shift as $shift) { ?>
+						<option value="<?php echo $shift['shift_id']; ?>" <?php if($this->security['shift'] == $shift['shift_id']) echo "selected"; ?>><?php echo $shift['shift_name']; ?></option>
+						<?php } } ?>
+					  </select>
+					  <?php if($this->editMode == 1) { ?>
+					    <input type="hidden" id="shift" name="shift" value="<?php echo $this->security['shift']; ?>">
+					  <?php } ?>
+				</div>
+			  </div>
+			  
+			  <span class="section">Man Power</span>
+			  <fieldset>
+				<legend>In House</legend>
+				  <div class="item form-group">
+					<label class="control-label col-md-3 col-sm-3 col-xs-12" for="supervisor-inhouse">Supervisor
+					</label>
+					<div class="col-md-6 col-sm-6 col-xs-12">
+					  <input id="supervisor-inhouse" class="form-control col-md-7 col-xs-12" name="supervisor-inhouse" type="text" value="<?php if(!empty($this->security['supervisor'])) echo $this->security['supervisor']; else echo $this->ident['name']; ?>" required>
+					</div>
+				  </div>
+				  <div class="item form-group">
+					<label class="control-label col-md-3 col-sm-3 col-xs-12" for="staff-posko-inhouse">Staff Posko
+					</label>
+					<div class="col-md-6 col-sm-6 col-xs-12">
+					  <input type="text" id="staff-posko-inhouse" name="staff-posko-inhouse" class="form-control col-md-7 col-xs-12" value="<?php echo $this->security['staff_posko']; ?>" required>
+					</div>
+				  </div>
+				  <div class="item form-group">
+					<label class="control-label col-md-3 col-sm-3 col-xs-12" for="staff-cctv-inhouse">Staff CCTV
+					</label>
+					<div class="col-md-6 col-sm-6 col-xs-12">
+					  <input type="text" id="staff-cctv-inhouse" name="staff-cctv-inhouse"  class="form-control col-md-7 col-xs-12" value="<?php echo $this->security['staff_cctv']; ?>" required>
+					</div>
+				  </div>
+				  <div class="item form-group">
+					<label class="control-label col-md-3 col-sm-3 col-xs-12" for="safety-inhouse">Safety
+					</label>
+					<div class="col-md-6 col-sm-6 col-xs-12">
+					  <input type="text" id="safety-inhouse" name="safety-inhouse" class="form-control col-md-7 col-xs-12" value="<?php echo $this->security['safety']; ?>" required>
+					</div>
+				  </div>
+			</fieldset>
+			<fieldset>
+				<legend>Vendor</legend>
+					<h4><?php echo strtoupper($this->vendor[0]['vendor_name']); ?></h4>
+				  <div class="item form-group">
+					<label class="control-label col-md-3 col-sm-3 col-xs-12" for="chief-spd">Chief / Waka
+					</label>
+					<div class="col-md-6 col-sm-6 col-xs-12">
+					  <input id="chief-spd" class="form-control col-md-7 col-xs-12" name="chief-spd" type="text" value="<?php echo $this->security['chief_spd']; ?>" required>
+					</div>
+				  </div>
+				  <div class="item form-group">
+					<label class="control-label col-md-3 col-sm-3 col-xs-12" for="panwas-spd">Panwas
+					</label>
+					<div class="col-md-6 col-sm-6 col-xs-12">
+					  <input type="text" id="panwas-spd" name="panwas-spd" class="form-control col-md-7 col-xs-12" value="<?php echo $this->security['panwas_spd']; ?>" required>
+					</div>
+				  </div>
+				  <div class="item form-group">
+					<label class="control-label col-md-3 col-sm-3 col-xs-12" for="danton-spd">Danton / Danru
+					</label>
+					<div class="col-md-6 col-sm-6 col-xs-12">
+					  <input type="text" id="danton-spd" name="danton-spd" class="form-control col-md-7 col-xs-12" value="<?php echo $this->security['danton_spd']; ?>" required>
+					</div>
+				  </div>
+				  <div class="item form-group">
+					<label class="control-label col-md-3 col-sm-3 col-xs-12" for="jumlah-spd">Jumlah
+					</label>
+					<div class="col-md-6 col-sm-6 col-xs-12">
+					  <input type="text" id="jumlah-spd" name="jumlah-spd" class="form-control col-md-7 col-xs-12" value="<?php echo $this->security['jumlah_spd']; ?>" required>
+					</div>
+				  </div>
+				  
+				  <h4><?php echo strtoupper($this->vendor[1]['vendor_name']); ?></h4>
+				  <div class="item form-group">
+					<label class="control-label col-md-3 col-sm-3 col-xs-12" for="name">Chief / Waka
+					</label>
+					<div class="col-md-6 col-sm-6 col-xs-12">
+					  <input id="chief-army" class="form-control col-md-7 col-xs-12" name="chief-army" type="text" value="<?php echo $this->security['chief_army']; ?>" required>
+					</div>
+				  </div>
+				  <div class="item form-group">
+					<label class="control-label col-md-3 col-sm-3 col-xs-12" for="panwas-army">Panwas
+					</label>
+					<div class="col-md-6 col-sm-6 col-xs-12">
+					  <input type="text" id="panwas-army" name="panwas-army" class="form-control col-md-7 col-xs-12" value="<?php echo $this->security['panwas_army']; ?>" required>
+					</div>
+				  </div>
+				  <div class="item form-group">
+					<label class="control-label col-md-3 col-sm-3 col-xs-12" for="danton-army">Danton / Danru
+					</label>
+					<div class="col-md-6 col-sm-6 col-xs-12">
+					  <input type="text" id="danton-army" name="danton-army" class="form-control col-md-7 col-xs-12" value="<?php echo $this->security['danton_army']; ?>" required>
+					</div>
+				  </div>
+				  <div class="item form-group">
+					<label class="control-label col-md-3 col-sm-3 col-xs-12" for="jumlah-army">Jumlah
+					</label>
+					<div class="col-md-6 col-sm-6 col-xs-12">
+					  <input type="text" id="jumlah-army" name="jumlah-army" class="form-control col-md-7 col-xs-12" value="<?php echo $this->security['jumlah_army']; ?>" required>
+					</div>
+				  </div>
+			</fieldset>
+			  
+			  <span class="section">Briefing</span>
+				<div class="col-md-4 col-sm-4 col-xs-12">
+				  <textarea id="briefing" name="briefing" class="form-control col-md-4 col-xs-12" style="height:150px; margin-bottom:5px;" required><?php echo str_replace("\r\n","&#13;",$this->security['briefing']); ?></textarea>
+				</div>
+				<div class="col-md-4 col-sm-4 col-xs-12">
+				  <textarea id="briefing2" name="briefing2" class="form-control col-md-4 col-xs-12" style="height:150px; margin-bottom:5px;" disabled><?php echo $this->security['briefing2']; ?></textarea>
+				</div>
+				<div class="col-md-4 col-sm-4 col-xs-12">
+				  <textarea id="briefing3" name="briefing3" class="form-control col-md-4 col-xs-12" style="height:150px; margin-bottom:5px;" disabled><?php echo $this->security['briefing3']; ?></textarea>
+				</div>
+			  
+			  <span class="section">Defect List</span>
+			  <div class="table-auto-scroll">
+			  <table id="defect-list-table" class="table">
+			  <thead>
+				<tr>
+				  <th width="80">Image</th>
+				  <th width="15%">Date &amp; Time</th>
+				  <th width="20%">Location</th>
+				  <th>Description</th>
+				  <th width="30%">Follow up</th>
+				</tr>
+			  </thead>
+			  <tbody>
+				<?php if(!empty($this->issuesbytype[4])) {
+						foreach($this->issuesbytype[4] as $defect_list) {
+						
+				
+				?>
+				<tr>
+				    <td class="id-hidden"><a class="image-popup-vertical-fit" href="<?php echo $defect_list['large_pic']; ?>"><img src="<?php echo $defect_list['thumb_pic']; ?>" data-large="<?php echo $defect_list['large_pic']; ?>" width="50px" /></a></td>
+				    <td><?php echo $defect_list['date_time']; ?></td>
+				<td><?php echo $defect_list['location']; ?></td>
+				<td><?php echo $defect_list['description']; ?></td>
+				  <td><input type="hidden" id="id-defect-list" name="id-defect-list[]" value="<?php echo $defect_list['sdl_id']; ?>"><input type="hidden" id="id-issue-defect-list" name="id-issue-defect-list[]" value="<?php echo $defect_list['issue_id']; ?>"><textarea id="followup-defect-list" name="followup-defect-list[]" class="form-control col-md-7 col-xs-12" style="height:50px;" required><?php echo $defect_list['status']; ?></textarea></td>
+				</tr>
+				<?php } 
+				} ?>
+			  </tbody>
+			</table>
+			</div>
+			  
+			  <span class="section">Incident Report</span>
+			  <div class="table-auto-scroll">
+			  <table id="incident-report-table" class="table">
+			  <thead>
+				<tr>
+				  <th width="80">Image</th>
+				  <th width="15%">Date &amp; Time</th>
+				  <th width="20%">Location</th>
+				  <th>Description</th>
+				  <th width="30%">Status</th>
+				</tr>
+			  </thead>
+			  <tbody>
+			    <?php if(!empty($this->issuesbytype[1])) {
+						foreach($this->issuesbytype[1] as $incident) {	
+				?>
+				<tr>
+				    <td><a class="image-popup-vertical-fit" href="<?php echo $incident['large_pic']; ?>"><img src="<?php echo $incident['thumb_pic']; ?>" data-large="<?php echo $incident['large_pic']; ?>" width="50px" /></a></td>
+				    <td><?php echo $incident['date_time']; ?></td>
+				<td><?php echo $incident['location']; ?></td>
+				<td><?php echo $incident['description']; ?></td>
+				  <td><input type="hidden" id="id-incident" name="id-incident[]" value="<?php echo $incident['incident_id']; ?>"><input type="hidden" id="id-issue-incident" name="id-issue-incident[]" value="<?php echo $incident['issue_id']; ?>"><textarea id="status-incident" name="status-incident[]" class="form-control col-md-7 col-xs-12" style="height:50px;" required><?php echo $incident['status']; ?></textarea></td>
+				</tr>
+				<?php } 
+				} ?> 
+			  </tbody>
+			</table>
+			</div>
+			  
+			  <span class="section">Glitch</span>
+			  <div class="table-auto-scroll">
+			  <table id="glitch-table" class="table">
+			  <thead>
+				<tr>
+				  <th width="80">Image</th>
+				  <th width="15%">Date &amp; Time</th>
+				  <th>Location</th>
+				  <th width="30%">Description</th>
+				  <th width="30%">Status</th>
+				</tr>
+			  </thead>
+			  <tbody>
+			    <?php if(!empty($this->issuesbytype[2])) {
+						foreach($this->issuesbytype[2] as $glitch) {	
+				?>
+				<tr>
+				    <td><a class="image-popup-vertical-fit" href="<?php echo $glitch['large_pic']; ?>"><img src="<?php echo $glitch['thumb_pic']; ?>" data-large="<?php echo $glitch['large_pic']; ?>" width="50px" /></a></td>
+				    <td><?php echo $glitch['date_time']; ?></td>
+				<td><?php echo $glitch['location']; ?></td>
+				<td><?php echo $glitch['description']; ?></td>
+				  <td><input type="hidden" id="id-glitch" name="id-glitch[]" value="<?php echo $glitch['glitch_id']; ?>"><input type="hidden" id="id-issue-glitch" name="id-issue-glitch[]" value="<?php echo $glitch['issue_id']; ?>"><textarea id="status-glitch" name="status-glitch[]" class="form-control col-md-7 col-xs-12" style="height:50px;" required><?php echo $glitch['status']; ?></textarea></td>
+				</tr>
+				<?php } 
+				} ?>
+			  </tbody>
+			</table>
+			<div>
+			
+			<span class="section">Lost &amp; Found</span>
+			 <div class="table-auto-scroll">
+			  <table id="lost-found-table" class="table">
+			  <thead>
+				<tr>
+				  <th width="80">Image</th>
+				  <th width="15%">Date &amp; Time</th>
+				  <th width="20%">Location</th>
+				  <th>Description</th>
+				  <th width="30%">Status</th>
+				</tr>
+			  </thead>
+			  <tbody>
+			     <?php if(!empty($this->issuesbytype[3])) {
+						foreach($this->issuesbytype[3] as $lost_found) {	
+				?>
+				<tr>
+				    <td><a class="image-popup-vertical-fit" href="<?php echo $lost_found['large_pic']; ?>"><img src="<?php echo $lost_found['thumb_pic']; ?>" data-large="<?php echo $lost_found['large_pic']; ?>" width="50px" /></a></td>
+				    <td><?php echo $lost_found['date_time']; ?></td>
+				<td><?php echo $lost_found['location']; ?></td>
+				<td><?php echo $lost_found['description']; ?></td>
+				  <td><input type="hidden" id="id-lost-found" name="id-lost-found[]" value="<?php echo $lost_found['lost_found_id']; ?>"><input type="hidden" id="id-issue-lost-found" name="id-issue-lost-found[]" value="<?php echo $lost_found['issue_id']; ?>"><textarea id="status-lost-found" name="status-lost-found[]" class="form-control col-md-7 col-xs-12" style="height:50px;" required><?php echo $lost_found['status']; ?></textarea></td>
+				</tr>
+				<?php } 
+				} ?>
+			  </tbody>
+			</table>
+			</div>
+			  
+			  <div class="ln_solid"></div>
+			  <div class="form-group">
+				<div class="col-md-12" style="text-align:center;">
+				  <button id="send" type="submit" class="form-btn" style="width:200px;">Next Page</button>
+				</div>
+			  </div>
+			</form>
+		  </div>
+		</div>
+	  </div>
+	</div>
+  </div>
+</div>
+<!-- /page content -->
+
+<!-- Incident, glitch, lost&found form -->
+  <form action="" id="issues-table-form" class="mfp-hide white-popup-block" >
+	<div id="issues-table"></div>
+	<div class="add-btn"><input type="submit" id="add-issue-submit" name="add-issue-submit" value="Add"></div>
+  </form>
+<!-- End of Incident, glitch, lost&found form -->
+
+<!-- Magnific Popup core JS file -->
+<script src="/js/jquery.magnific-popup.min.js"></script>
+ 
+<script type="text/javascript">
+$(document).ready(function() {
+	/*$( "#add-defect-list" ).click(function() {
+	  $( "#defect-list-table").append('<tr><td class="id-hidden"><input type="hidden" id="id-defect-list" name="id-defect-list[]"></td><td><input id="area-defect-list" class="form-control col-md-7 col-xs-12" name="area-defect-list[]" type="text"></td><td><input id="detil-defect-list" class="form-control col-md-7 col-xs-12" name="detil-defect-list[]" type="text"></td><td><input id="followup-defect-list" class="form-control col-md-7 col-xs-12" name="followup-defect-list[]" type="text"></td><td align="center" style="vertical-align:middle;"><i class="fa fa-trash remove-issue" onclick="$(this).closest(\'tr\').remove();"></i></td></tr>');
+	});*/
+
+<?php if($this->editMode == 1) { ?>
+	$(".edit-spv-sec").css("display", "block");
+	$(".edit-spv-sec").addClass('current-page');
+	$(".edit-spv-sec").addClass('current-page').parents('ul').slideDown().parent().addClass('active');
+<?php } ?>
+	$('#add-defect-list').magnificPopup({
+		type: 'inline',
+		preloader: false,
+		callbacks: {
+			open: function() {
+			  $.ajax({
+					url: "/default/issue/getissuebytype",
+					data: { id : '4', cat_id:1, report_date:'<?php echo $cur_date; ?>' }
+				}).done(function(response) {
+					$( "#issues-table" ).html(response);
+				});	
+			},
+			close: function() {	
+				$( "#issues-table").html("");
+			}
+		}
+	});
+	
+	$('#add-incident-report').magnificPopup({
+		type: 'inline',
+		preloader: false,
+		callbacks: {
+			open: function() {
+			  $.ajax({
+					url: "/default/issue/getissuebytype",
+					data: { id : '1', cat_id:1, report_date:'<?php echo $cur_date; ?>' }
+				}).done(function(response) {
+					$( "#issues-table" ).html(response);
+				});	
+			},
+			close: function() {	
+				$( "#issues-table").html("");
+			}
+		}
+	});
+	
+	$('#add-glitch').magnificPopup({
+		type: 'inline',
+		preloader: false,
+		callbacks: {
+			open: function() {
+			  $.ajax({
+					url: "/default/issue/getissuebytype",
+					data: { id : '2', cat_id:1, report_date:'<?php echo $cur_date; ?>' }
+				}).done(function(response) {
+					$( "#issues-table" ).html(response);
+				});				
+			},
+			close: function() {	
+				$( "#issues-table").html("");
+			}
+		}
+	});
+	
+	$('#add-lost-found').magnificPopup({
+		type: 'inline',
+		preloader: false,
+		callbacks: {
+			open: function() {
+			  $.ajax({
+					url: "/default/issue/getissuebytype",
+					data: { id : '3', cat_id:1, report_date:'<?php echo $cur_date; ?>' }
+				}).done(function(response) {
+					$( "#issues-table" ).html(response);
+				});				
+			},
+			close: function() {	
+				$( "#issues-table").html("");
+			}
+		}
+	});
+	
+	$('#issues-table-form').on('submit', function(event){
+		event.preventDefault(); 
+		var data;
+		var issue_type;
+		$.each( $( this ).serializeArray(), function( i, field ) {
+			if(field.name == 'type_id') 
+			{
+				if(field.value == '1') issue_type = 'incident';
+				if(field.value == '2') issue_type = 'glitch';
+				if(field.value == '3') issue_type = 'lost-found';
+				if(field.value == '4') issue_type = 'defect-list';
+			}
+			if(field.name == 'chk_issue_id')
+			{
+				$.ajax({
+					url: "/default/issue/getissuebyid",
+					data: { id : field.value }
+				}).done(function(response) {
+					var issue = $.parseJSON(response);
+					if(issue.issue_type_id == 4)
+					{
+							data = '<tr id="'+issue_type+issue.issue_id+'"><td class="id-hidden"><input type="hidden" id="id-'+ issue_type+'" name="id-'+ issue_type+'[]" value="'+issue.issue_id+'"><input type="hidden" id="area-'+ issue_type+'" name="area-'+ issue_type+'[]" value="'+issue.location+'"><input type="hidden" id="detil-'+ issue_type+'" name="detil-'+ issue_type+'[]" value="'+issue.description+'"></td><td><textarea id="area-'+ issue_type+'2" name="area-'+ issue_type+'2" class="form-control col-md-7 col-xs-12" style="height:50px;" disabled>'+issue.location+'</textarea></td><td><textarea id="detil-'+ issue_type+'2" name="detil-'+ issue_type+'2" class="form-control col-md-7 col-xs-12" style="height:50px;" disabled>'+issue.description+'</textarea></td><td><textarea id="followup-'+ issue_type+'" name="followup-'+ issue_type+'[]" class="form-control col-md-7 col-xs-12" style="height:50px;"></textarea></td><td align="center"  style="vertical-align:middle;"><i class="fa fa-trash remove-issue" data-id="'+issue_type+issue.issue_id+'"></i></td></tr>';
+					}
+					else
+					{
+						var issuedate = issue.issue_date;
+						var issuetime = issuedate.split(" ");
+						data = '<tr id="'+issue_type+issue.issue_id+'"><td class="id-hidden"><input type="hidden" id="id-'+ issue_type+'" name="id-'+ issue_type+'[]" value="'+issue.issue_id+'"></td><td><textarea id="time-'+ issue_type+'" name="time-'+ issue_type+'[]" class="form-control col-md-7 col-xs-12" style="height:50px;" disabled>'+issue.date_time+'</textarea></td><td><textarea id="description-'+ issue_type+'" name="description-'+ issue_type+'[]" class="form-control col-md-7 col-xs-12" style="height:50px;" disabled>'+issue.description+'</textarea></td><td><textarea id="status-'+ issue_type+'" name="status-'+ issue_type+'[]" class="form-control col-md-7 col-xs-12" style="height:50px;"></textarea></td><td align="center"  style="vertical-align:middle;"><i class="fa fa-trash remove-issue" data-id="'+issue_type+issue.issue_id+'"></i></td></tr>';					
+					}
+					$( "#"+issue_type+"-table").append(data);
+					$(".remove-issue").click(function() {
+						$("#"+this.dataset.id).remove();
+					});
+				});
+			}
+		});
+		$.magnificPopup.close();
+	});
+	
+	$(".remove-issue").click(function() {
+		$("#"+this.dataset.id).remove();
+	});
+	
+	$("#add-attachment").click(function() {
+		var row;
+		var table_name;
+		
+		row = '<tr>
+				<td><input type="hidden" name="attachment_id[]" class="form-control col-md-7 col-xs-12" required></td>									
+				<td align="center"><input type="file" name="attachment_file[]" accept="image/jpeg"></td>
+				<td><input type="text" name="attachment-description[]" class="form-control col-md-7 col-xs-12" required /></td>
+				<td><i class="fa fa-trash remove-issue" onclick="$(this).closest(\'tr\').remove();"></i></td>
+			</tr>';		
+		
+		$( "#attachment-table").append(row);
+	});
+	
+	
+	$("#shift").change(function() {
+		var shift = $( this ).val();
+		
+		$('#defect-list-table tbody').empty();
+		$('#incident-table tbody').empty();
+		$('#glitch-table tbody').empty();
+		$('#lost-found-table tbody').empty();
+		
+		$.ajax({
+			url: "/default/issue/getissuesbyshift",
+			data: { shift : shift, id : '4', cat_id:1, report_date:'<?php echo $cur_date; ?>' }
+		}).done(function(response) {
+		    $( "#defect-list-table").append(response);
+		});	
+		
+		$.ajax({
+			url: "/default/issue/getissuesbyshift",
+			data: { shift : shift, id : '1', cat_id:1, report_date:'<?php echo $cur_date; ?>' }
+		}).done(function(response) {
+		    $( "#iincident-report-table").append(response);
+		});	
+		
+		$.ajax({
+			url: "/default/issue/getissuesbyshift",
+			data: { shift : shift, id : '2', cat_id:1, report_date:'<?php echo $cur_date; ?>' }
+		}).done(function(response) {
+		    $( "#glitch-table").append(response);
+		});	
+		
+		$.ajax({
+			url: "/default/issue/getissuesbyshift",
+			data: { shift : shift, id : '3', cat_id:1, report_date:'<?php echo $cur_date; ?>' }
+		}).done(function(response) {
+		    $( "#lost-found-table").append(response);
+		});	
+	});
+	
+	$('.image-popup-vertical-fit').magnificPopup({
+		type: 'image',
+		closeOnContentClick: true,
+		mainClass: 'mfp-img-mobile',
+		image: {
+			verticalFit: true
+		}
+	});
+	
+});	
+</script>

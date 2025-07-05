@@ -1,0 +1,504 @@
+<?php
+require_once('actionControllerBase.php');
+
+class SafetyController extends actionControllerBase
+{
+	public function addAction() {
+		$this->view->ident = $this->ident;
+		$this->view->title = "Add Safety Report";
+		
+		$settingTable = $this->loadModel('setting');
+		$this->view->setting = $settingTable->getOtherSetting();
+		
+		$trainingTable = $this->loadModel('training');
+		$this->view->training_activity = $trainingTable->getSafetyTrainingActivity();
+		
+		$issueTypeTable = $this->loadModel('issuetype');
+		$this->view->issue_type = $issueTypeTable->getIssueType('3');
+		
+		$equipmentTable = $this->loadModel('equipment');
+		$this->view->equipments_ab = $equipmentTable->getSafetyEquipments('ab');
+		$this->view->equipments_c1 = $equipmentTable->getSafetyEquipments('c1');
+		$this->view->equipments_c2 = $equipmentTable->getSafetyEquipments('c2');
+		
+		$this->renderTemplate('form_daily_safety.tpl'); 
+	}
+	
+	public function savereportAction() {
+		$params = $this->_getAllParams();
+		$params['user_id'] = $this->ident['user_id'];
+		Zend_Loader::LoadClass('safetyClass', $this->modelDir);
+		$safetyClass = new safetyClass();
+		
+		$params['report_id'] = $safetyClass->saveReport($params);
+		
+		$equipmentTable = $this->loadModel('equipment');
+		$equipmentTable->deleteEquipmentBySafetyReportId($params['report_id']);
+		if(!empty($params['equipment_item_id']))
+		{
+			$i = 0;
+			foreach($params['equipment_item_id'] as $equipment_item_id)
+			{
+				if(!empty($params['status_cut_in'][$i]) || !empty($params['status_cut_off'][$i]) || !empty($params['shift2'][$i]) || !empty($params['shift3'][$i])) {
+					$dt['safety_report_id'] = $params['report_id'];
+					$dt['equipment_item_id'] = $equipment_item_id;
+					$dt['status_pressure_cut_in'] = $params['status_cut_in'][$i];
+					$dt['status_pressure_cut_off'] = $params['status_cut_off'][$i];
+					$dt['shift2'] = $params['shift2'][$i];
+					$dt['shift3'] = $params['shift3'][$i];
+					$equipmentTable->addSafetyEquipment($dt);
+				}
+				$i++;
+			}
+		}
+		
+		$trainingTable = $this->loadModel('training');
+		$trainingTable->deleteSafetyTrainingByReportId($params['report_id']);
+		if(!empty($params['training_type']))
+		{		
+			$k = 0;
+			foreach($params['training_type'] as $training_type)
+			{
+				$dt2=array();
+				$dt2['safety_report_id'] = $params['report_id'];
+				$dt2['training_type'] = $training_type;
+				$dt2['training_activity'] = $params['training_activity'][$k];
+				$dt2['description_training'] = $params['description_training'][$k];
+				$trainingTable->addSafetyTraining($dt2);
+				$k++;
+			}			
+		}
+
+		$safetyClass->deleteSpecificReportBySafetyId($params['report_id']);
+		if(!empty($params['issue_type']))
+		{		
+			$j = 0;
+			foreach($params['issue_type'] as $issue_type)
+			{
+				$dt=array();
+				$dt['safety_report_id'] = $params['report_id'];
+				$dt['issue_type'] = $issue_type;
+				$dt['time'] = $params['time-sr'][$j];
+				$dt['detail'] = $params['description-sr'][$j];
+				$dt['status'] = $params['status-sr'][$j];
+				$dt['security_id'] = $params['security-id-sr'][$j];
+				$dt['issue_id'] = $params['id-issue-sr'][$j];
+				$safetyClass->addSpecificReport($dt);
+				$j++;
+			}			
+		}
+		$this->_response->setRedirect($this->baseUrl.'/default/safety/viewreport');
+		$this->_response->sendResponse();
+		exit();
+	}
+	
+	
+	public function viewreportAction() {
+		Zend_Loader::LoadClass('safetyClass', $this->modelDir);
+		$safetyClass = new safetyClass();
+		$safetyReports = $safetyClass->getReports();	
+		$commentsTable = $this->loadModel('safetycomments');
+		
+		$safety = $safetyClass->getReports();
+		foreach($safety as &$s)
+		{
+			$report_date = explode(" ",$s['created_date']);
+			$s['day_date'] = date("l, j F Y", strtotime($report_date[0]));
+			$s['comments'] = $commentsTable->getCommentsBySafetyReportId($s['report_id'], '3');
+		}
+		$this->view->safety = $safety;
+    	$this->renderTemplate('view_daily_safety.tpl');  
+	}
+	
+	public function editAction() {
+		$this->view->ident = $this->ident;
+		$params = $this->_getAllParams();
+		Zend_Loader::LoadClass('safetyClass', $this->modelDir);
+		$safetyClass = new safetyClass();
+		$safety = $safetyClass->getReportById($params['id']);
+		$datetime = explode(" ",$safety['created_date']);
+		$date = explode("-",$datetime[0]);
+		$r_date = mktime(0, 0, 0, intval($date[1]), intval($date[2]), intval($date[0]));
+		$safety['report_date'] = date("l, j F Y", $r_date);
+		$this->view->safety = $safety;
+		
+		$settingTable = $this->loadModel('setting');
+		$this->view->setting = $settingTable->getOtherSetting();
+		
+		/*$equipmentTable = $this->loadModel('equipment');
+		$this->view->equipments_ab = $equipmentTable->getSafetyEquipments('ab', $safety['report_id']);
+		$this->view->equipments_c1 = $equipmentTable->getSafetyEquipments('c1', $safety['report_id']);
+		$this->view->equipments_c2 = $equipmentTable->getSafetyEquipments('c2', $safety['report_id']);	*/	
+		
+		$trainingTable = $this->loadModel('training');
+		$this->view->training_activity = $trainingTable->getSafetyTrainingActivity();
+		
+		if(!empty($safety['report_id']))
+		{
+			$this->view->outdoorTraining = $trainingTable->getSafetyTrainingByType($safety['report_id'],'1');
+			$this->view->inHouseTraining = $trainingTable->getSafetyTrainingByType($safety['report_id'],'2');
+		}
+		
+		$issueTypeTable = $this->loadModel('issuetype');
+		$this->view->issue_type = $issueTypeTable->getIssueType('3');
+		
+		$specific_report = $safetyClass->getSpecificReportById($params['id']);
+		foreach($specific_report as &$sr)
+		{
+			if(!empty($sr['issue_id']))
+			{
+				$sr['detail'] = $sr['description'];
+				$datetime = explode(" ",$sr['issue_date']);
+				$sr['time'] = $datetime[1];
+			}
+		}
+		$this->view->specific_report = $specific_report;
+		
+		$this->view->title = "Edit Safety Report";
+		$this->renderTemplate('form_daily_safety.tpl');  
+	}
+	
+	public function deleteAction() {
+		$params = $this->_getAllParams();
+		Zend_Loader::LoadClass('safetyClass', $this->modelDir);
+		$safetyClass = new safetyClass();
+		
+		$safetyClass->deleteReportById($params['id']);
+		
+		Zend_Loader::LoadClass('trainingClass', $this->modelDir);
+		$trainingClass = new trainingClass();
+		$trainingClass->deleteSafetyTrainingByReportId($params['id']);
+		
+		Zend_Loader::LoadClass('safetycommentsClass', $this->modelDir);
+		$safetycommentsClass = new safetycommentsClass();
+		$safetycommentsClass->deleteCommentsBySafetyReportId($params['id']);
+		
+		self::viewreportAction();
+	}
+	
+	public function exporttopdfAction() {
+		$params = $this->_getAllParams();
+		Zend_Loader::LoadClass('safetyClass', $this->modelDir);
+		$safetyClass = new safetyClass();
+		
+		if(!empty($params['id'])) 
+		{
+			$safety = $safetyClass->getReportById($params['id']);
+			$datetime = explode(" ",$safety['created_date']);
+			$date = explode("-",$datetime[0]);
+			$r_date = mktime(0, 0, 0, intval($date[1]), intval($date[2]), intval($date[0]));
+			$safety['report_date'] = date("l, j F Y", $r_date);	
+			
+		
+			$settingTable = $this->loadModel('setting');
+			$setting = $settingTable->getOtherSetting();
+			
+			/*$equipmentTable = $this->loadModel('equipment');
+			$equipments_ab = $equipmentTable->getSafetyEquipments('ab', $params['id']);
+			$equipments_c1 = $equipmentTable->getSafetyEquipments('c1', $params['id']);
+			$equipments_c2 = $equipmentTable->getSafetyEquipments('c2', $params['id']);	*/
+			
+			$trainingTable = $this->loadModel('training');
+			$training_activity = $trainingTable->getSafetyTrainingActivity();
+			
+			if(!empty($params['id']))
+			{
+				$outdoorTraining = $trainingTable->getSafetyTrainingByType($params['id'],'1');
+				$inHouseTraining = $trainingTable->getSafetyTrainingByType($params['id'],'2');
+				if(count($outdoorTraining) > count($inHouseTraining)) $totalTraining = count($outdoorTraining);
+				else $totalTraining = count($inHouseTraining);
+			}
+			
+			/*** SPECIFIC REPORT ***/
+			
+			$specific_report = $safetyClass->getSpecificReportById($params['id']);
+			foreach($specific_report as &$sr)
+			{
+				if(!empty($sr['issue_id']))
+				{
+					$sr['detail'] = $sr['description'];
+					$datetime = explode(" ",$sr['issue_date']);
+					$sr['time'] = $datetime[1];
+				}
+			}
+			$specific_reports = $specific_report;
+			foreach($specific_reports as &$sr)
+			{
+				if(!empty($sr['issue_id']))
+				{
+					$sr['detail'] = $sr['description'];
+					$datetime = explode(" ",$sr['issue_date']);
+					$sr['time'] = $datetime[1];
+				}
+			}
+			
+			/*** END OF SPECIFIC REPORT ***/
+			
+			require('PHPpdf/html2fpdf.php');
+
+
+			$html= '<html>
+			<head>
+			<title>Daily Safety Report</title>
+			 
+			</head>
+			<body>
+			<h2>Daily Safety Report</h2>
+			PT. Artisan Wahyu Gandaria City
+			
+			<h3>DAY / DATE</h3>
+			<table width="100%" cellspacing="6" cellpadding="5" align="center" border="1" valign="top">
+				<tr><td><strong>Day / Date</strong></td><td colspan="3">'.$safety['report_date'].'</td></tr>
+				<tr><td><strong>Reporting Date</strong></td><td colspan="2" align="center">'.date("d", mktime(0, 0, 0, date("m")  , date("d")-1, date("Y"))).'</td><td align="center">'.date("d").'</td></tr>
+				<tr><td><strong>Reporting Time</strong></td><td align="center">'.$setting['safety_afternoon_reporting_time'].'</td><td align="center">'.$setting['safety_night_reporting_time'].'</td><td align="center">'.$setting['safety_morning_reporting_time'].'</td></tr>
+			</table>
+			
+			<h3>MAN POWER</h3>
+			<table width="100%" cellspacing="6" cellpadding="5" align="center" border="1" valign="top">
+				<tr bgcolor="#afd9af"><th><strong>'.$setting['safety_afternoon_reporting_time'].'</strong></th><th><strong>'.$setting['safety_night_reporting_time'].'</strong></th><th><strong>'.$setting['safety_morning_reporting_time'].'</strong></th></tr>
+				<tr>
+					<td>'.$safety['man_power_afternoon'].'</td>
+					<td>'.$safety['man_power_night'].'</td>
+					<td>'.$safety['man_power_morning'].'</td>
+				</tr>
+			</table>
+			
+			<h3>PERLENGKAPAN</h3>
+			<table width="100%" cellspacing="6" cellpadding="5" align="center" border="1" valign="top">
+				<tr bgcolor="#afd9af">
+				  <th>No</th>
+				  <th>Equipment Name</th>
+				  <th>Item</th>
+				  <th>Status Normal</th>
+				  <th>Shift 2<br>00:00</th>
+				  <th>Shift 3<br>12:00</th>
+				</tr>';
+				  
+				if(!empty($equipments_ab)) {
+					$i = 0;
+					foreach($equipments_ab as $equipmentab) {
+						$html .= '<tr>
+						<td>'.$equipmentab['no'].'</td>
+						<td>'.$equipmentab['equipment_name'].'</td>
+						<td>'.$equipmentab['item_name'].'</td>
+						<td>'.$equipmentab['status'].'</td>
+						<td>'.$equipmentab['shift2'].'</td>
+						<td>'.$equipmentab['shift3'].'</td>
+					</tr>';
+					$i++; } 
+					}
+				  $html .= '</table>	
+
+			<table width="100%" cellspacing="6" cellpadding="5" align="center" border="1" valign="top">
+				<tr bgcolor="#afd9af">
+				  <th rowspan="2">No</th>
+				  <th rowspan="2">Equipment Name</th>
+				  <th rowspan="2">Item</th>
+				  <th colspan="2">Status Pressure<br/>(bar or PSI or Kgf / cm2)/th>
+				  <th colspan="2">Actual Pressure<br/>(bar or PSI or Kgf / cm2)</th>
+				</tr>
+				<tr bgcolor="#afd9af">
+					<th>Cut In</th>
+					<th>Cut Off</th>
+					<th>Shift 2<br>00:00</th>
+					<th>Shift 3<br>12:00</th>
+				</tr>
+				';
+				  
+				if(!empty($equipments_c1)) {
+					$i = 0;
+					foreach($equipments_c1 as $equipmentc1) {
+						if(empty($equipmentc1['status_pressure_cut_in'])) $equipmentc1['status_pressure_cut_in'] = $equipmentc1['status_cut_in'];
+						if(empty($equipmentc1['status_pressure_cut_off'])) $equipmentc1['status_pressure_cut_off'] = $equipmentc1['status_cut_off'];
+						$html .= '<tr>
+						<td>'.$equipmentc1['no'].'</td>
+						<td>'.$equipmentc1['equipment_name'].'</td>
+						<td>'.$equipmentc1['item_name'].'</td>
+						<td>'.$equipmentc1['status_pressure_cut_in'].'</td>
+						<td>'.$equipmentc1['status_pressure_cut_off'].'</td>
+						<td>'.$equipmentc1['shift2'].'</td>
+						<td>'.$equipmentc1['shift3'].'</td>
+					</tr>';
+					$i++; } 
+					}
+				  $html .= '</table>
+
+			<table width="100%" cellspacing="6" cellpadding="5" align="center" border="1" valign="top">
+				<tr bgcolor="#afd9af">
+				  <th>No</th>
+				  <th>Full Tank</th>
+				  <th>Status Normal</th>
+				  <th>Shift 2<br>00:00</th>
+				  <th>Shift 3<br>12:00</th>
+				</tr>';
+				  
+				if(!empty($equipments_c2)) {
+					$i = 0;
+					foreach($equipments_c2 as $equipmentc2) {
+						$html .= '<tr>
+						<td>'.$equipmentc2['no'].'</td>
+						<td>'.$equipmentc2['equipment_name'].'</td>
+						<td>'.$equipmentc2['status'].'</td>
+						<td>'.$equipmentc2['shift2'].'</td>
+						<td>'.$equipmentc2['shift3'].'</td>
+					</tr>';
+					$i++; } 
+					}
+				  $html .= '</table>
+				  
+			<h3>BRIEFING</h3>';
+			if(!empty($safety['briefing1']))
+				$html .= '<div>'.str_replace("<br />", "<br>",nl2br($safety['briefing1'])).'</div><br>
+			<hr>';
+			if(!empty($safety['briefing2']))
+				$html .= '<div>'.str_replace("<br />", "<br>",nl2br($safety['briefing2'])).'</div><br>
+			<hr>';
+			if(!empty($safety['briefing3']))
+				$html .= '<div>'.str_replace("<br />", "<br>",nl2br($safety['briefing3'])).'</div><br>
+			<hr>';
+			
+			$html .= '<h3>TRAINING</h3>
+			<table width="100%" cellspacing="6" cellpadding="5" align="center" border="1" valign="top">
+				<tr>
+					<th><strong>Outsource</strong></th>
+					<th><strong>In House</strong></th>
+				</tr>';
+			for($j=0; $j<$totalTraining; $j++)
+			{
+				$html .= '<tr>
+					<td>'.strtoupper($outdoorTraining[$j]['activity']).'<br>'.$outdoorTraining[$j]['description'].'</td>
+					<td>'.strtoupper($inHouseTraining[$j]['activity']).'<br>'.$inHouseTraining[$j]['description'].'</td>
+				</tr>';
+			} 
+		  $html .= '
+			</table>
+			
+			<h3>SOSIALISASI SOP</h3>
+	'.$safety['sop1'].'<br><hr>
+	'.$safety['sop2'].'<br><hr>
+	'.$safety['sop3'].'<br><hr>';
+				
+			if(!empty($specific_reports)) { 
+			$html .= '<h3>SPECIFIC REPORT</h3>
+			<table width="100%" cellspacing="6" cellpadding="5" align="center" border="1" valign="top">';
+				foreach($specific_reports as $specific_report) { 
+					if($specific_report['issue_type_id'] < 4)
+					{
+						$specific_report['detail'] = $specific_report['description'];
+					}
+					//$issueDate = explode(" ",$specific_report['issue_date']);
+					//$specific_report['time'] = $issueDate[1];
+					$html .= '<tr>
+						<td>'.strtoupper($specific_report['issue_type_name']).'<br>Detail : '.$specific_report['detail'].'</td>
+						<td><br>Status :<br>'.$specific_report['status'].'</td>
+					</tr>';
+				 }
+			$html .= '</table>';
+			}
+			$html .= '</body>
+			</html>'; 
+			
+			$pdf=new HTML2FPDF();
+			$pdf->AddPage();
+			$pdf->WriteHTML($html);
+			if (preg_match("/MSIE/i", $_SERVER["HTTP_USER_AGENT"])){
+				header("Content-type: application/PDF");
+			} else {
+				header("Content-type: application/PDF");
+				header("Content-Type: application/pdf");
+			}
+			$pdf->Output("sample2.pdf","I");
+		}
+	}
+	
+	
+	function getsafetycommentsbyreportidAction()
+	{
+		$params = $this->_getAllParams();
+		$this->view->ident = $this->ident;
+		$category = $this->loadModel('category');
+		$safetyCommentsTable = $this->loadModel('safetycomments');
+		$comments = $safetyCommentsTable->getCommentsBySafetyReportId($params['id']);
+		$commentText = "";
+		if(!empty($comments)) {
+			foreach($comments as $comment)
+			{
+				$commentText .= '<div style="border-bottom:1px solid #ccc; text-align:left; clear:both; margin-bottom:5px; padding-bottom:5px;"><strong>'.$comment['username'].' said : </strong>'.$comment['comment'].'<br/><div style="font-size:10px; color:#aaa; text-align:right;">'.$comment['comment_date']."</div></div>";
+			}
+		}
+		
+		echo $commentText;	
+	}
+	
+	function addcommentAction() {
+		$params = $this->_getAllParams();
+		$commentsTable = $this->loadModel('safetycomments');
+		$params['user_id'] = $this->ident['user_id'];
+		$commentsTable->addComment($params);
+		
+		Zend_Loader::LoadClass('safetyClass', $this->modelDir);
+		$safetyClass = new safetyClass();
+		$safety = $safetyClass->getReportById($params['report_id']);
+		
+		$datetime = explode(" ",$safety['created_date']);
+		$date = explode("-",$datetime[0]);
+		$r_date = mktime(0, 0, 0, intval($date[1]), intval($date[2]), intval($date[0]));
+		$report_date = date("l, j F Y", $r_date);
+		
+		$categoryClass = $this->loadModel('category');
+		$category = $categoryClass->getCategoryById('3');	
+					
+		$botToken = '476346623:AAFlB9X5-bShAkdTK9ziNDrfZ0TCePXl2cY';
+		$website="https://api.telegram.org/bot".$botToken;
+		$chatId=$category['telegram_channel_id'];  //Receiver Chat Id 
+		$txt = '[NEW COMMENT] 
+'.$params['comment'].'
+
+[SAFETY REPORT]
+Submitted by : '.$safety['name'].' 
+Date : '.$report_date;
+		$params=array(
+			'chat_id'=>$chatId,
+			'text'=>$txt
+		);
+		$ch = curl_init($website . '/sendMessage');
+		curl_setopt($ch, CURLOPT_HEADER, false);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		curl_setopt($ch, CURLOPT_POST, 1);
+		curl_setopt($ch, CURLOPT_POSTFIELDS, ($params));
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+		$result = curl_exec($ch);
+		curl_close($ch);
+		echo $params['report_id'];
+	}	
+	
+	function getupdatedcommentsAction()
+	{
+		$params = $this->_getAllParams();
+	
+		Zend_Loader::LoadClass('safetyClass', $this->modelDir);
+		$safetyClass = new safetyClass();
+		
+		$data= array();
+		$safetyReports = $safetyClass->getReports();	
+		$commentsTable = $this->loadModel('safetycomments');
+		$i=0;
+		foreach($safetyReports as $s) {
+			$data[$i]['report_id'] = $s['report_id'];
+			$comments = $commentsTable->getCommentsBySafetyReportId($s['report_id'], '3');
+			if(!empty($comments)) { 
+				$comment_content = "";
+				foreach($comments as $comment)
+				{
+					$comment_content .= '<div style="border-bottom:1px solid #ccc; text-align:left; clear:both; margin-bottom:5px; padding-bottom:5px;"><strong>'.$comment['username'].' said : </strong>'.$comment['comment'].'<br/><div style="font-size:10px; color:#aaa; text-align:right;">'.$comment['comment_date']."</div></div>";
+				}
+				$data[$i]['comment'] = $comment_content;
+			}
+			$i++;
+		}
+				
+		echo json_encode($data);
+	}
+}
+
+?>

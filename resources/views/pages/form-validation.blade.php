@@ -1,0 +1,333 @@
+
+@extends('layouts.master')
+
+@section('styles')
+
+
+
+@endsection
+
+@section('content')
+
+                            <!-- PAGE-HEADER -->
+                            <div class="page-header">
+                                <h1 class="page-title">Form Validation</h1>
+                                <ol class="breadcrumb">
+                                    <li class="breadcrumb-item"><a href="javascript:void(0);">Forms</a></li>
+                                    <li class="breadcrumb-item active" aria-current="page">Form Validation</li>
+                                </ol>
+                            </div>
+                            <!-- PAGE-HEADER END -->
+
+                            <!-- ROW OPEN -->
+                            <div class="row">
+                                <div class="col-lg-12 col-md-12">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h3 class="card-title">Cutom Validation</h3>
+                                        </div>
+                                        <div class="card-body">
+                                            <form class="needs-validation" novalidate>
+                                                <div class="form-row">
+                                                    <div class="col-xl-6 mb-3">
+                                                        <label for="validationCustom01">First name</label>
+                                                        <input type="text" class="form-control" id="validationCustom01"
+                                                            value="Mark" required>
+                                                        <div class="valid-feedback">Looks good!</div>
+                                                    </div>
+                                                    <div class="col-xl-6 mb-3">
+                                                        <label for="validationCustom02">Last name</label>
+                                                        <input type="text" class="form-control" id="validationCustom02"
+                                                            value="Otto" required>
+                                                        <div class="valid-feedback">Looks good!</div>
+                                                    </div>
+                                                </div>
+                                                <div class="form-row">
+                                                    <div class="col-xl-6 mb-3">
+                                                        <label for="validationCustom03">City</label>
+                                                        <input type="text" class="form-control" id="validationCustom03"
+                                                            required>
+                                                        <div class="invalid-feedback">Please provide a valid city.</div>
+                                                    </div>
+                                                    <div class="col-xl-3 mb-3">
+                                                        <label for="validationCustom04">State</label>
+                                                        <select class="form-control select2" id="validationCustom04"
+                                                            required>
+                                                            <option selected disabled value="">U.S.A</option>
+                                                            <option>New york</option>
+                                                            <option>New york</option>
+                                                            <option>New york</option>
+                                                            <option>New york</option>
+                                                            <option>New york</option>
+                                                            <option>New york</option>
+                                                        </select>
+                                                        <div class="invalid-feedback">Please select a valid state.</div>
+                                                    </div>
+                                                    <div class="col-xl-3 mb-3">
+                                                        <label for="validationCustom05">Zip</label>
+                                                        <input type="text" class="form-control" id="validationCustom05"
+                                                            required>
+                                                        <div class="invalid-feedback">Please provide a valid zip.</div>
+                                                    </div>
+                                                </div>
+                                                <div class="form-group">
+                                                    <div class="form-check custom-checkbox">
+                                                        <input class="custom-control-input" type="checkbox" value=""
+                                                            id="invalidCheck" required>
+                                                        <label class="custom-control-label" for="invalidCheck">Agree to terms and
+                                                            conditions</label>
+                                                        <div class="invalid-feedback">You must agree before submitting.</div>
+                                                    </div>
+                                                </div>
+                                                <button class="btn btn-primary" type="submit">Submit form</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-12 col-md-12">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h3 class="card-title">Default Validation</h3>
+                                        </div>
+                                        <div class="card-body">
+                                            <form>
+                                                <div class="form-row">
+                                                    <div class="col-xl-6 mb-3">
+                                                        <label for="validationDefault01">First name</label>
+                                                        <input type="text" class="form-control" id="validationDefault01"
+                                                            value="Mark" required>
+                                                    </div>
+                                                    <div class="col-xl-6 mb-3">
+                                                        <label for="validationDefault02">Last name</label>
+                                                        <input type="text" class="form-control" id="validationDefault02"
+                                                            value="Otto" required>
+                                                    </div>
+                                                </div>
+                                                <div class="form-row">
+                                                    <div class="col-xl-6 mb-3">
+                                                        <label for="validationDefault03">City</label>
+                                                        <input type="text" class="form-control" id="validationDefault03"
+                                                            required>
+                                                    </div>
+                                                    <div class="col-xl-3 mb-3">
+                                                        <label for="validationDefault04">State</label>
+                                                        <select class="form-select form-control" id="validationDefault04"
+                                                            required>
+                                                            <option selected disabled value="">Choose...</option>
+                                                            <option>...</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-xl-3 mb-3">
+                                                        <label for="validationDefault05">Zip</label>
+                                                        <input type="text" class="form-control" id="validationDefault05"
+                                                            required>
+                                                    </div>
+                                                </div>
+                                                <div class="form-group">
+                                                    <div class="form-check custom-checkbox">
+                                                        <input class="custom-control-input" type="checkbox" value=""
+                                                            id="invalidCheck2" required>
+                                                        <label class="custom-control-label" for="invalidCheck2">Agree to terms and
+                                                            conditions</label>
+                                                        <div class="invalid-feedback">You must agree before submitting.</div>
+                                                    </div>
+                                                </div>
+                                                <button class="btn btn-primary" type="submit">Submit form</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-12 col-md-12">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h3 class="card-title">Server Side Validation</h3>
+                                        </div>
+                                        <div class="card-body">
+                                            <form>
+                                                <div class="form-row">
+                                                    <div class="col-xl-6 mb-3">
+                                                        <label for="validationServer01">First name</label>
+                                                        <input type="text" class="form-control is-valid" id="validationServer01"
+                                                            value="Mark" required>
+                                                        <div class="valid-feedback">Looks good!</div>
+                                                    </div>
+                                                    <div class="col-xl-6 mb-3">
+                                                        <label for="validationServer02">Last name</label>
+                                                        <input type="text" class="form-control is-valid" id="validationServer02"
+                                                            value="Otto" required>
+                                                        <div class="valid-feedback">Looks good!</div>
+                                                    </div>
+                                                </div>
+                                                <div class="form-row">
+                                                    <div class="col-xl-6 mb-3">
+                                                        <label for="validationServer03">City</label>
+                                                        <input type="text" class="form-control is-invalid"
+                                                            id="validationServer03"
+                                                            aria-describedby="validationServer03Feedback" required>
+                                                        <div id="validationServer03Feedback" class="invalid-feedback">Please
+                                                            provide a valid city.</div>
+                                                    </div>
+                                                    <div class="col-xl-3 mb-3">
+                                                        <label for="validationServer04">State</label>
+                                                        <select class="form-select form-control is-invalid"
+                                                            id="validationServer04"
+                                                            aria-describedby="validationServer04Feedback" required>
+                                                            <option selected disabled value="">Choose...</option>
+                                                            <option>...</option>
+                                                        </select>
+                                                        <div id="validationServer04Feedback" class="invalid-feedback">Please
+                                                            select a valid state.</div>
+                                                    </div>
+                                                    <div class="col-xl-3 mb-3">
+                                                        <label for="validationServer05">Zip</label>
+                                                        <input type="text" class="form-control is-invalid"
+                                                            id="validationServer05"
+                                                            aria-describedby="validationServer05Feedback" required>
+                                                        <div id="validationServer05Feedback" class="invalid-feedback">Please
+                                                            provide a valid zip.</div>
+                                                    </div>
+                                                </div>
+                                                <div class="form-group">
+                                                    <div class="form-check custom-checkbox">
+                                                        <input class="custom-control-input" type="checkbox" value=""
+                                                            id="invalidCheck3" required>
+                                                        <label class="custom-control-label" for="invalidCheck3">Agree to terms and
+                                                            conditions</label>
+                                                        <div class="invalid-feedback">You must agree before submitting.</div>
+                                                    </div>
+                                                </div>
+                                                <button class="btn btn-primary" type="submit">Submit form</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-12 col-md-12">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h3 class="card-title">Supported Elements</h3>
+                                        </div>
+                                        <div class="card-body">
+                                            <form class="was-validated">
+                                                <div class="mb-3">
+                                                    <label for="validationTextarea">Textarea</label>
+                                                    <textarea class="form-control is-invalid" id="validationTextarea"
+                                                        placeholder="Required example textarea" required></textarea>
+                                                    <div class="invalid-feedback">Please enter a message in the textarea.</div>
+                                                </div>
+                                                <div class="custom-control custom-checkbox mb-3">
+                                                    <input type="checkbox" class="custom-control-input"
+                                                        id="customControlValidation1" required>
+                                                    <label class="custom-control-label" for="customControlValidation1">Check
+                                                        this custom checkbox</label>
+                                                    <div class="invalid-feedback">Example invalid feedback text</div>
+                                                </div>
+                                                <div class="custom-control custom-radio">
+                                                    <input type="radio" class="custom-control-input"
+                                                        id="customControlValidation2" name="radio-stacked" required>
+                                                    <label class="custom-control-label" for="customControlValidation2">Toggle
+                                                        this custom radio</label>
+                                                </div>
+                                                <div class="custom-control custom-radio mb-3">
+                                                    <input type="radio" class="custom-control-input"
+                                                        id="customControlValidation3" name="radio-stacked" required>
+                                                    <label class="custom-control-label" for="customControlValidation3">Or toggle
+                                                        this other custom radio</label>
+                                                    <div class="invalid-feedback">More example invalid feedback text</div>
+                                                </div>
+
+                                                <div class="mb-3">
+                                                    <div class="input-group is-invalid">
+                                                        <span class="input-group-text" id="validatedInputGroupPrepend">@</span>
+                                                        <input type="text" class="form-control is-invalid"
+                                                            aria-describedby="validatedInputGroupPrepend" required>
+                                                    </div>
+                                                    <div class="invalid-feedback">Example invalid input group feedback</div>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <div class="input-group is-invalid">
+                                                        <label class="input-group-text"
+                                                            for="validatedInputGroupSelect">Options</label>
+                                                        <select class="form-select form-control" id="validatedInputGroupSelect"
+                                                            required>
+                                                            <option value="">Choose...</option>
+                                                            <option value="1">One</option>
+                                                            <option value="2">Two</option>
+                                                            <option value="3">Three</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="invalid-feedback">Example invalid input group feedback</div>
+                                                </div>
+                                                <div class="input-group is-invalid">
+                                                    <div class="form-file">
+                                                        <input type="file" class="form-control"
+                                                            id="validatedInputGroupCustomFile" required>
+                                                        <label
+                                                            for="validatedInputGroupCustomFile"></label>
+                                                    </div>
+                                                </div>
+                                                <div class="invalid-feedback">Example invalid input group feedback</div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-lg-12 col-md-12">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h3 class="card-title">Tooltips</h3>
+                                        </div>
+                                        <div class="card-body">
+                                            <form class="needs-validation" novalidate>
+                                                <div class="form-row">
+                                                    <div class="col-xl-6 mb-3">
+                                                        <label for="validationTooltip01">First name</label>
+                                                        <input type="text" class="form-control" id="validationTooltip01"
+                                                            value="Mark" required>
+                                                        <div class="valid-tooltip">Looks good!</div>
+                                                    </div>
+                                                    <div class="col-xl-6 mb-3">
+                                                        <label for="validationTooltip02">Last name</label>
+                                                        <input type="text" class="form-control" id="validationTooltip02"
+                                                            value="Otto" required>
+                                                        <div class="valid-tooltip">Looks good!</div>
+                                                    </div>
+                                                </div>
+                                                <div class="form-row">
+                                                    <div class="col-xl-6 mb-3">
+                                                        <label for="validationTooltip03">City</label>
+                                                        <input type="text" class="form-control" id="validationTooltip03"
+                                                            required>
+                                                        <div class="invalid-tooltip">Please provide a valid city.</div>
+                                                    </div>
+                                                    <div class="col-xl-3 mb-3">
+                                                        <label for="validationTooltip04">State</label>
+                                                        <select class="select2 form-control" id="validationTooltip04"
+                                                            required>
+                                                            <option selected disabled value="">Choose...</option>
+                                                            <option>...</option>
+                                                        </select>
+                                                        <div class="invalid-tooltip">Please select a valid state.</div>
+                                                    </div>
+                                                    <div class="col-xl-3 mb-3">
+                                                        <label for="validationTooltip05">Zip</label>
+                                                        <input type="text" class="form-control" id="validationTooltip05"
+                                                            required>
+                                                        <div class="invalid-tooltip">Please provide a valid zip.</div>
+                                                    </div>
+                                                </div>
+                                                <button class="btn btn-primary" type="submit">Submit form</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- ROW CLOSED -->
+
+@endsection
+
+@section('scripts')
+
+		<!-- INTERNAL SELECT2 JS -->
+		<script src="{{asset('build/assets/plugins/select2/select2.full.min.js')}}"></script>
+		@vite('resources/assets/js/select2.js')
+
+@endsection

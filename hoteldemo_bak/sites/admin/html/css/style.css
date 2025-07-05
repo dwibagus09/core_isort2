@@ -1,0 +1,286 @@
+body {
+	/*background: linear-gradient(to right, #7c673d, #d2b479);*/
+	overflow:hidden;
+	font-family: Verdana;
+	font-size: 13px;
+}
+
+.link-title {
+	margin-left:5px;
+}
+
+a {
+	color:#053468;
+}
+
+a:hover {
+	color:#2155ff;
+}
+
+.navbar-inverse {
+    background: linear-gradient(#0f0c29 0%, #004e92 100%);
+}
+
+.add-btn {
+	margin-top: 20px;
+	width: 150px;
+	text-align:center;
+}
+
+.add-btn, .btn {
+    background-image: linear-gradient(310deg, #0f0c29 0%, #004e92 100%);
+    /*border-color: lighcoral;*/
+	border: none; 
+	padding: 3px 5px;
+	border-radius: 5px 5px 5px;
+	color:#FFF;
+	display: block;
+	font-size: 13px;
+	font-weight:normal;
+}
+
+.add-btn:hover, .btn:hover {
+	color:#FFF;
+	text-decoration:none;
+	background-image: linear-gradient(310deg, #004e92 0%, #0f0c29 100%);
+}
+
+.add-btn:visited {
+	color:#FFF;
+	text-decoration:none;
+}
+
+.mfp-auto-cursor .mfp-content {
+    cursor: auto;
+    width: 400px!important;
+    background: white;
+    padding: 20px;
+    border-radius: 5px 5px 5px;
+}
+
+#err-msg {
+	text-align: center;
+	font-size: 12px;
+	font-weight: bold;
+	color: red;
+	border: 1px solid red;
+	margin: 10px 0px;
+	padding: 5px;
+}
+
+.action-btn {
+	font-size:16px;
+	margin:5px 7px;
+	cursor:pointer;
+}
+
+.page-title {
+	color: #053468;
+	font-weight: bold;
+}
+
+.table > thead > tr > th {
+    border-bottom: 2px solid #0e0d2b;
+    background-color: #053468;
+    color: #ffffff;
+}
+
+.table > thead > tr > th, .table > tbody > tr > th, .table > tfoot > tr > th, .table > thead > tr > td, .table > tbody > tr > td, .table > tfoot > tr > td {
+	border-top: 1px solid #2194fe45;
+}
+
+#copy-modus-submit {
+	margin: 0px 90px;
+	width: 85px;
+}
+
+.Footer {
+	font-size:11px;
+}
+
+.btn-metis-1 {
+	padding: 5px 10px;
+	margin: 0px;
+}
+
+.btn-metis-2 {
+	padding: 5px 10px;
+	margin: 10px;
+}
+
+.topnav {
+	  display: none;
+	  }
+
+.topnav2 {
+	  display: block;
+		float: right;
+	  }
+	  
+#stripedTable{
+	width:100%;
+	height: calc(100vh - 110px);
+}
+
+.year-field {
+	float: left; 
+	margin: 21px 10px; 
+	font-size: 13px;
+}
+
+.red-header-table
+{
+	width:100%;
+}
+
+.red-header-table th {
+	background-color:#c52620;
+	color:white;
+	font-weight:bold;
+	text-align:center;
+}
+
+.red-header-table td {
+	padding:5px;
+	font-size:12px;
+}
+
+.red-header-table select {
+	width:95%;
+	margin:5px;
+	font-size:12px;s
+}
+
+#add_link {
+	cursor:pointer;
+}
+
+.copyright {
+	color: #fff;
+	margin-top: 10px;
+}
+
+.table > thead > tr > th, .table > tbody > tr > th, .table > tfoot > tr > th, .table > thead > tr > td, .table > tbody > tr > td, .table > tfoot > tr > td {
+    line-height: 17px;
+    vertical-align: middle;
+}
+
+.table-striped > tbody > tr:nth-of-type(2n+1) {
+    background: #f1fcff;
+}
+
+.bg-dark.dk, .bg-dark > .dk {
+    background: linear-gradient(#004e92 0%, #000428 100%);
+}
+
+#menu ul {
+    background: #182848;
+}
+
+#menu > li.active > a, #menu > li ul a:hover, #menu > li:hover > a, #menu > li:focus > a {
+    background-color: #005C97;
+}
+
+.form-control {
+	font-size: 13px;
+	padding: 5px 10px;
+}
+
+form label {
+	margin: 15px 0px 5px 1px;
+}
+
+h4, .h4 {
+    font-weight: bold;
+    border-bottom: 1px solid;
+    padding-bottom: 5px;
+	color: #2154ff;
+}
+
+.btn.btn-primary {
+	margin: 20px auto 10px auto;
+}
+
+.table {
+	margin-bottom: 0px;
+}
+
+.table_body {
+	height: calc(100vh - 150px);
+	overflow: auto;
+}
+
+#menu li.active
+{
+	background-color: #005C97;
+}
+
+.popup-btn {
+	width: 100%;
+	text-align: center;
+}
+  
+@media only screen and (min-width: 768px) {
+   nav {
+    overflow: hidden;
+	height : 51px;
+  }
+}
+
+@media (max-width: 500px) {
+	.topnav {
+	  display: block;
+	}
+   .topnav2 {
+	  display: none;
+	}
+	.col-lg-12 {
+		padding-left:5px;
+		padding-right: 5px;
+	}
+}
+
+@media (max-width: 1024px) {
+	.add-btn
+	{
+		margin-top: 20px;
+	}
+
+	.page-title
+	{
+		font-size: 20px;
+	}
+	
+	#add-equipment {
+		margin-top: 30px;
+	}
+	
+	#add-user {
+		margin-top: 30px;
+	}
+	
+	#add-vendor {
+		margin-top: 30px;
+	}
+	
+	#add-kejadian {
+		margin-top: 30px;
+	}
+	#add-modus {
+		margin-top: 30px;
+	}
+	
+	#add-floor {
+		margin-top: 30px;
+	}
+	#add-rating {
+		margin-top: 30px;
+	}
+	#add-category {
+		margin-top: 30px;
+	}
+	
+	#selectyear {
+		margin-top : 20px;
+	}
+}	

@@ -1,0 +1,436 @@
+<!-- Magnific Popup core CSS file -->
+<link rel="stylesheet" href="/css/magnific-popup.css">
+<link rel="stylesheet" href="/css/jquery-ui.min.css">
+
+  <div class="detail-report">
+
+	<div class="row">
+	  <div class="col-md-12 col-sm-12 col-xs-12">
+		<div class="x_panel">
+		  <div class="x_title">
+			<h2 class="pagetitle"><?php echo $this->category['category_name']; ?> Monthly Analytics <?php echo $this->monthYear; ?></h2>
+			<div class="clearfix"></div>
+		  </div>
+		  <div class="x_content">
+			<span class="section">INCIDENT RECAPITULATION</span>
+			<div class="table-dv">
+			<table id="perlengkapan-table" class="table">
+			  <thead>
+				<tr>
+				  <th rowspan="2">Incident</th>
+				  <th rowspan="2">Modus</th>
+				  <th colspan="12"><?php echo $this->year; ?></th>
+				  <th rowspan="2">Total</th>
+				</tr>
+				<tr>
+					<th>Jan</th>
+					<th>Feb</th>
+					<th>Mar</th>
+					<th>Apr</th>
+					<th>Mei</th>
+					<th>Jun</th>
+					<th>Jul</th>
+					<th>Agt</th>
+					<th>Sep</th>
+					<th>Okt</th>
+					<th>Nov</th>
+					<th>Des</th>
+				</tr>
+			  </thead>
+			  <tbody>
+				<?php if(!empty($this->rekap)) {
+					foreach($this->rekap as $rekapitulasi) { ?>
+				<?php 	
+					 $j = 0;
+					 if(!empty($rekapitulasi['modus'])) {
+					 foreach($rekapitulasi['modus'] as $m) { ?>
+				<tr>
+				<?php if($j == 0 || $j > $rekapitulasi['total_modus'])
+					{	$j = 0;
+				?>
+					<td rowspan="<?php echo $rekapitulasi['total_modus']; ?>"><?php echo $rekapitulasi['kejadian_name']; ?></td>
+				<?php } ?>
+					<td><?php echo $m['modus_name']; ?></td>
+					<td align="center"><?php echo $m['total_modus_jan']; ?></td>
+					<td align="center"><?php echo $m['total_modus_feb']; ?></td>
+					<td align="center"><?php echo $m['total_modus_mar']; ?></td>
+					<td align="center"><?php echo $m['total_modus_apr']; ?></td>
+					<td align="center"><?php echo $m['total_modus_may']; ?></td>
+					<td align="center"><?php echo $m['total_modus_jun']; ?></td>
+					<td align="center"><?php echo $m['total_modus_jul']; ?></td>
+					<td align="center"><?php echo $m['total_modus_aug']; ?></td>
+					<td align="center"><?php echo $m['total_modus_sep']; ?></td>
+					<td align="center"><?php echo $m['total_modus_oct']; ?></td>
+					<td align="center"><?php echo $m['total_modus_nov']; ?></td>
+					<td align="center"><?php echo $m['total_modus_dec']; ?></td>
+					<td align="center"><strong><?php echo $m['total_modus_peryear']; ?></strong></td>
+					<?php $j++; } } ?>
+				</tr>
+				<?php $i++; } } ?>
+				<tr>
+					<td colspan="2" align="center"><strong>TOTAL INCIDENTS</strong></td>
+					<td align="center"><strong><?php echo $this->rekapTotal['total_modus_perjan']; ?></strong></td>
+					<td align="center"><strong><?php echo $this->rekapTotal['total_modus_perfeb']; ?></strong></td>
+					<td align="center"><strong><?php echo $this->rekapTotal['total_modus_permar']; ?></strong></td>
+					<td align="center"><strong><?php echo $this->rekapTotal['total_modus_perapr']; ?></strong></td>
+					<td align="center"><strong><?php echo $this->rekapTotal['total_modus_permay']; ?></strong></td>
+					<td align="center"><strong><?php echo $this->rekapTotal['total_modus_perjun']; ?></strong></td>
+					<td align="center"><strong><?php echo $this->rekapTotal['total_modus_perjul']; ?></strong></td>
+					<td align="center"><strong><?php echo $this->rekapTotal['total_modus_peraug']; ?></strong></td>
+					<td align="center"><strong><?php echo $this->rekapTotal['total_modus_persep']; ?></strong></td>
+					<td align="center"><strong><?php echo $this->rekapTotal['total_modus_peroct']; ?></strong></td>
+					<td align="center"><strong><?php echo $this->rekapTotal['total_modus_pernov']; ?></strong></td>
+					<td align="center"><strong><?php echo $this->rekapTotal['total_modus_perdec']; ?></strong></td>
+					<td align="center"><strong><?php echo $this->rekapTotal['total_modus_all']; ?></strong></td>
+				</tr>
+			  </tbody>
+			</table>
+			</div>
+
+			<?php if(!empty($this->listIssues)) { ?>
+			<span class="section">LIST KAIZEN <?php echo strtoupper($this->monthYear); ?></span>
+			<div class="table-dv">
+			<table id="perlengkapan-table" class="table">
+			  <thead>
+				<tr>
+				  <?php /*<th>Image</th> */ ?>
+				  <th>Type</th>
+				  <th>Location</th>
+				  <th>Discussion</th>
+				  <th>Date</th>
+				  <th>Action</th>
+				</tr>
+			  </thead>
+			  <tbody>
+				<?php foreach($this->listIssues as $issue) { 
+						/*if($issue['issue_date'] > "2019-10-23 14:30:00")
+						{
+							$issuedate = explode("-",$issue['issue_date']);
+							$imageURL = "/images/issues/".$issuedate[0]."/";
+						}
+						else
+							$imageURL = "/images/issues/";	
+
+						if($issue['solved_date'] > "2019-10-23 14:30:00")
+						{
+							$solvedIssuedate = explode("-",$issue['solved_date']);
+							$solvedImageURL = "/images/issues/".$solvedIssuedate[0]."/";
+						}
+						else
+							$solvedImageURL = "/images/issues/";	*/
+				?>
+				<tr>
+					<?php /*
+					<td align="center">
+						<a class="image-popup-vertical-fit" href="<?php echo $imageURL.str_replace(".","_large.",$issue['picture']); ?>"><img src="<?php echo $imageURL.str_replace(".","_thumb.",$issue['picture']); ?>" class="monthly-analysis-img"></a>
+						<a class="image-popup-vertical-fit" href="<?php echo $solvedImageURL.str_replace(".","_large.",$issue['solved_picture']); ?>"><img src="<?php echo $solvedImageURL.str_replace(".","_thumb.",$issue['solved_picture']); ?>" class="monthly-analysis-img"></a>
+					</td> */ ?>
+					<td align="center"><span class="anchor" id="issue<?php echo $issue['issue_id']; ?>"></span><?php echo $issue['kejadian']." - ".$issue['modus']; ?></td>
+					<td align="center"><?php echo $issue['location']; ?></td>
+					<td align="center"><?php echo nl2br($issue['description']); ?></td>
+					<td align="center"><?php echo $issue['date']; ?></td>
+					<td align="center"><a href="#issue-form" class="action-btn" data-id="<?php echo $issue['issue_id']; ?>"><i class="fa fa-edit" ></i></a></td>
+				</tr>
+				<?php $i++; } ?>
+			  </tbody>
+			</table>
+			</div>
+			<?php } ?>
+
+			<form action="" id="issue-form" class="mfp-hide white-popup-block" >
+				<input type="hidden" name="issue_id" id="issue_id" />
+				<label for="kejadian_id">Incident</label><br/>
+				<select name="kejadian_id" id="kejadian_id">
+				<?php foreach($this->listKejadian as $listKejadian) { ?>
+					<option value="<?php echo $listKejadian['kejadian_id']; ?>"><?php echo $listKejadian['kejadian']; ?></option>
+				<?php } ?>
+				</select><br/><br/>
+				<label for="modus">Modus</label><br/>
+				<select name="modus_id" id="modus_id">
+				<?php foreach($this->modus as $modus) { ?>
+					<option value="<?php echo $modus['modus_id']; ?>"><?php echo $modus['modus']; ?></option>
+				<?php } ?>
+				</select><br/><br/>				
+				<input type="checkbox" name="pelaku_tertangkap" id="pelaku_tertangkap"> Pelaku Tertangkap
+				<div id="issue-detail"></div>
+				<div class="save-btn" style="text-align:center;"><input type="submit" id="save-issue" name="save-issue" value="Save"></div>
+			</form>
+
+
+			<span class="section">INCIDENT DETAILS</span>
+			<div class="table-dv">
+			<table id="perlengkapan-table" class="table">
+			  <thead>
+				<tr>
+				  <th>Incident</th>
+				  <th>Modus</th>
+				  <th>Detail</th>
+				  <th>Total</th>
+				</tr>
+			  </thead>
+			  <tbody>
+				<?php if(!empty($this->rekap)) {
+					foreach($this->rekap as $rekapitulasi) { ?>
+				<?php 	
+					 $j = 0;
+					 if(!empty($rekapitulasi['modus'])) {
+					 foreach($rekapitulasi['modus'] as $m) { ?>
+				<tr>
+				<?php if($j == 0 || $j > $rekapitulasi['total_modus'])
+					{	$j = 0;
+				?>
+					<td rowspan="<?php echo $rekapitulasi['total_modus']; ?>"><?php echo $rekapitulasi['kejadian_name']; ?></td>
+				<?php } ?>
+					<td><?php echo $m['modus_name']; ?></td>
+					<td><?php echo nl2br($m['uraian_kejadian']); ?></td>
+					<td align="center"><?php echo $m['total_modus_cur_month']; ?></td>
+					<?php $j++; } } ?>
+				</tr>
+				<?php $i++; } } ?>
+			  </tbody>
+			</table>
+			</div>
+
+			<span class="section">ANALYSIS DETAILS</span>
+			<h3>Sequence of Days with the Highest Number of Incidents</h3>	
+			<div class="table-dv">
+			<table class="table">
+			  <thead>
+				<tr>
+				  <th rowspan="2">Type of Incidents</th>
+				  <th colspan="<?php echo count($this->urutan_hari_tertinggi); ?>">Days</th>
+				</tr>
+				<tr>
+					<?php if(!empty($this->urutan_hari_tertinggi)) { 
+						$days = array('Sunday', 'Monday', 'Tuesday', 'Wednesday','Thursday','Friday', 'Saturday');
+						foreach($this->urutan_hari_tertinggi as $urutan_hari_tertinggi)
+						{	
+					?>
+						<th><?php echo $days[$urutan_hari_tertinggi['day']-1]; ?></th>
+					<?php } } ?>	
+				</tr>
+			  </thead>
+			  <tbody>
+				<?php if(!empty($this->rekap)) { 
+						foreach($this->rekap as $rekap) {
+				?>
+					<tr>
+						<td><?php echo $rekap['kejadian_name']; ?></td>
+						<?php if(!empty($this->urutan_hari_tertinggi)) { 
+						$z = 0;
+						foreach($this->urutan_hari_tertinggi as $urutan_hari_tertinggi) {
+						?>
+							<td><?php echo ($rekap['analisa_hari'][$urutan_hari_tertinggi['day']] ? $rekap['analisa_hari'][$urutan_hari_tertinggi['day']] : '-'); ?></td>
+						<?php $totalUht[$z] = $totalUht[$z] + intval($rekap['analisa_hari'][$urutan_hari_tertinggi['day']]); $z++; } } ?>
+					</tr>
+				<?php } } ?>
+					<tr>
+						<td align="center"><strong>TOTAL</strong></td>
+						<?php if(!empty($totalUht)) {
+							foreach($totalUht as $tuht)
+							{
+						?>
+							<td><strong><?php echo $tuht; ?></strong></td>
+						<?php } } ?>
+					</tr>
+			  </tbody>
+			</table>
+			</div>
+
+			<h3>Time Period With Highest Number of Incidents</h3>	
+			<div class="table-dv">
+			<table class="table">
+			  <thead>
+				<tr>
+				  <th rowspan="2">Type of Incidents</th>
+				  <th colspan="5">Time Period</th>
+				</tr>
+				<tr>
+					<?php 
+						if(!empty($this->urutan_total_jam)) { 
+							$times = array('09:00 - 12:00', '12:00 - 16:00', '16:00 - 19:00', '19:00 - 23:00','23:00 - 09:00');
+							foreach($this->urutan_total_jam as $key=>$urutan_total_jam)
+							{	
+					?>
+				  		<th><?php echo $times[$key]; ?></th>
+				  	<?php } } ?>
+				</tr>
+			  </thead>
+			  <tbody>
+				<?php 
+					if(!empty($this->rekap)) { 
+						foreach($this->rekap as $rekap) {	
+					
+				?>
+					<tr>
+						<td><?php echo $rekap['kejadian_name']; ?></td>
+						<?php if(!empty($this->urutan_total_jam)) { 
+							$z = 0;
+							foreach($this->urutan_total_jam as $key=>$urutan_total_jam)
+							{	
+								?>
+									<td><?php echo ($rekap['analisa_jam'][$key] ? $rekap['analisa_jam'][$key] : '-'); ?></td>
+								<?php $totalUtj[$z] = $totalUtj[$z] + intval($rekap['analisa_jam'][$key]); $z++; } } ?>
+							</tr>
+						<?php } } ?>
+					<tr>
+						<td align="center"><strong>TOTAL</strong></td>
+						<?php if(!empty($totalUtj)) {
+							foreach($totalUtj as $tutj)
+							{
+						?>
+							<td><strong><?php echo $tutj; ?></strong></td>
+						<?php } } ?>
+					</tr>
+			  </tbody>
+			</table>
+			</div>
+
+		
+			<form class="form-horizontal form-label-left" action="/default/bi/savemonthlyanalysis" method="POST" onSubmit="$('body').mLoading();">
+			  <input type="hidden" value="<?php echo $this->monthly_analysis_id; ?>" name="monthly_analysis_id">
+			  <input type="hidden" value="<?php echo $this->category['category_id']; ?>" name="c">
+			  <span class="section">CONCLUSION</span>
+				<div class="table-dv">
+				<table id="kejadian-summary-table" class="table">
+				<thead>
+					<tr>
+					<th>No</th>
+					<th>Type of Incident</th>
+					<th>Total</th>
+					<th>Analysis</th>
+					<th>Plan &amp; Action</th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php if(!empty($this->incidents)) {
+							$i = 1;
+							foreach($this->incidents as $incident) {
+					?>
+					<tr>
+						<td align="center"><?php echo $i; ?><input type="hidden" name="summary_id[]" value="<?php echo $incident['summary_id']; ?>"></td>
+						<td><?php echo $incident['kejadian']; ?><input type="hidden" name="kejadian_id[]" value="<?php echo $incident['kejadian_id']; ?>"></td>
+						<td align="center"><?php echo $incident['total_kejadian']; ?></td>
+						<td><textarea name="analisa[]" class="form-control col-md-7 col-xs-12" style="height:50px;" required><?php echo str_replace("<br>","&#13;",stripslashes($incident['analisa'])); ?></textarea></td>
+						<td><textarea name="tindakan[]" class="form-control col-md-7 col-xs-12" style="height:50px;" required><?php echo str_replace("<br>","&#13;",stripslashes($incident['tindakan'])); ?></textarea></td>
+					</tr>
+					<?php $i++; } } ?>
+				</tbody>
+				</table>
+				</div> 
+
+			  <div class="ln_solid"></div>
+			  <div class="form-group">
+				<div class="col-md-12" style="text-align:center;">
+				  <button id="send" type="submit" class="btn btn-success" style="width:200px;">Simpan</button>
+				</div>
+			  </div>
+			</form>
+		  </div>
+		</div>
+	  </div>
+	</div>
+  </div>
+</div>
+<!-- /page content -->
+
+<!-- Magnific Popup core JS file -->
+<script src="/js/jquery.magnific-popup.min.js"></script>
+<script src="/js/jquery-ui.min.js"></script>
+<script type="text/javascript">
+$(document).ready(function() {
+	$('.image-popup-vertical-fit').magnificPopup({
+		type: 'image',
+		closeOnContentClick: true,
+		mainClass: 'mfp-img-mobile',
+		image: {
+			verticalFit: true
+		}
+	});
+
+	var issue_id;
+	$(".action-btn").click(function() {
+		issue_id = this.dataset.id;
+	});
+
+	$('.action-btn').magnificPopup({
+		type: 'inline',
+		preloader: false,
+		callbacks: {
+			open: function() {
+			  $.ajax({
+					url: "/default/issue/getIssueById",
+					data: { id : issue_id }
+				}).done(function(response) {
+					var resp = $.parseJSON(response);
+					$("#issue_id").val(resp.issue_id);
+					$("#kejadian_id").val(resp.kejadian_id);
+					if(resp.pelaku_tertangkap == '1')
+					{
+						$('#pelaku_tertangkap').prop('checked', true);
+					}
+					else
+					{
+						$('#pelaku_tertangkap').prop('checked', false);
+					}
+					$.ajax({
+						url: "/default/issue/getmodusbykejadianid",
+						data: { kejadian_id : resp.kejadian_id, category_id : '2' }
+					}).done(function(response) {
+						$("#modus_id").empty();
+						var object = $.parseJSON(response);
+						$.each(object, function (item, value) {
+							$("#modus_id").append(new Option(value.modus, value.modus_id));
+						});			
+						$("#modus_id").val(resp.modus_id);
+					});	
+					var detail = "<label>Location</label><br/>"+resp.location+"<br/><br/><label>Discussion</label><br/>"+resp.description+"<br/><br/><label>Issue Date</label><br/>"+resp.date_time+"<br/><br/>";
+					$( "#issue-detail" ).html(detail);
+				
+					$("#kejadian_id").change(function() {
+						if($( this ).val() > 0)
+						{			
+							$("#modus_id").prop('required',true);
+							$.ajax({
+								url: "/default/issue/getmodusbykejadianid",
+								data: { kejadian_id : $( this ).val(), category_id: '2'  }
+							}).done(function(response) {
+								$("#modus_id").empty();
+								var object = $.parseJSON(response);
+								$.each(object, function (item, value) {
+									$("#modus_id").append(new Option(value.modus, value.modus_id));
+								});
+							});
+						}
+						else
+						{
+							$("#modus_id").prop('required',false);
+						}
+					});
+				});	
+			},
+			close: function() {	
+				$( "#issues-detail").html("");
+			}
+		}
+	});
+
+	$('#issue-form').on('submit', function(event){
+		event.preventDefault(); 
+		$.ajax({
+			url: '/default/issue/updateissue',
+			type: 'POST',
+			data: $(this).serialize(),
+			success: function() {
+				var idparam = "";
+				<?php if(!empty($this->monthly_analysis_id)) { ?>
+					idparam = "/id/"+<?php echo $this->monthly_analysis_id; ?>;
+				<?php } ?>
+				location.href="/default/housekeeping/addmonthlyanalysis"+idparam+"?"+Math.random()+"#issue"+issue_id;
+			}
+		});
+	});
+	
+
+});
+</script>

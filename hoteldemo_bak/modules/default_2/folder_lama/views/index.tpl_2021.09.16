@@ -1,0 +1,877 @@
+ <script type="text/javascript">
+$(document).ready(function() {
+	$("#issue-form")[0].reset();
+	$("#other-info").hide();
+
+	function filePreview(input) {
+			if (input.files && input.files[0]) {
+					var reader = new FileReader();
+					reader.addEventListener('load', function() {
+				$(".dashboard").hide();
+				/*$("#discussion-field").hide();*/
+				$("#other-info").show();
+				$("<img />", {
+					"src": reader.result,
+									"class": "thumb-image"
+							}).appendTo("#image-holder");
+			});
+					reader.readAsDataURL(input.files[0]);
+			}
+	}
+
+	$( "#picture-issue" ).change(function() {
+		$(".msg").hide();
+		filePreview(this);
+	});
+
+	$( "#cancel-issue" ).click(function() {
+		location.href="/default/index/index";
+	});
+
+	$('#issue-form').on('submit', function(event){
+		$("body").mLoading();
+	});
+
+	/*$( "#location-next" ).click(function() {
+		$("#location-field").hide();
+		$("#discussion-field").show();
+	});*/
+});
+</script>
+
+			<?php if(!empty($this->msg)) echo '<div class="msg">'.$this->msg.'</div>'; ?>
+			
+			<form id="issue-form" action=""  method="post" enctype="multipart/form-data">
+			  <div class="row">
+				<div class="col-md-12 col-sm-12 col-xs-12">
+				  <div class="dashboard">		
+				    <?php if($this->showIssueFinding == 1) { ?>
+						<div id="issue-finding-field" class="col-md-12 col-sm-12 col-xs-12">	
+							<label for="picture-issue" style="width:100%">
+								<div class="menu-icon">								
+									<div class="icon-title"><i class="fa fa-search" style="font-size:25px"></i>&nbsp;&nbsp;&nbsp;Kaizen</div>	
+								</div>
+							</label>
+							<input id="picture-issue" name="picture" type="file" accept="image/*" capture="capture" />	
+						</div>
+					<?php } ?>
+				  
+				  	<div class="dashboard-small">
+				  	    <div class="dashboard-chart-title">Total Kaizen per Site</div>
+        			    <canvas id="totalIssuesSite"></canvas>
+        			</div>
+					<div class="dashboard-xs">
+						<div class="dashboard-chart-title">Top Work Order Performer</div>
+						<div class="duration-dashboard">
+							<span style="font-size:16px;"><?php echo $this->topWOPerformer; ?></span>
+						</div>
+						<br/><br/>
+						<div class="dashboard-chart-title">Case Completion Duration</div>
+						<div class="duration-dashboard">
+							<span style="font-size:16px;"><?php echo $this->issuesAvgDuration[0]['duration'] . " days"; ?></span>
+						</div>
+						<br/><br/>
+                                                <div class="dashboard-chart-title">Longest Closed Kaizen</div>
+                                                <div class="duration-dashboard">
+                                                        <span style="font-size:16px;"><?php echo $this->longestClosedKaizen . " days"; ?></span>
+                                                </div>
+					</div>
+        			<div class="dashboard-small">
+				  	    <div class="dashboard-chart-title">Total Kaizen per Department</div>
+        			    <canvas id="totalIssuesDept"></canvas>
+        			</div>
+					
+        			<?php /*<div class="dashboard-small">
+				  	    <div class="dashboard-chart-title">Action Plan</div>
+        			    <canvas id="actionPlan"></canvas>
+        			</div>*/ ?>
+        			<div class="dashboard-large">
+				  	    <div class="dashboard-chart-title">Kaizen</div>
+        			    <canvas id="totalOpenedIssues"></canvas>
+        			</div>
+        			<?php if(!empty($this->latestIssues)) { ?>
+        			<div class="dashboard-large latest-kaizen">
+        			    <div class="dashboard-chart-title">Latest Kaizen</div>
+            			<div class="ticker">
+                            <ul>
+                                <?php foreach($this->latestIssues as $latestIssue) { 
+                                        $title = $latestIssue['site_name']." - ".$latestIssue['issue_type'];
+                                        if(!empty($latestIssue['kejadian']))  $title .= ": ".$latestIssue['kejadian'];
+                                        if(!empty($latestIssue['modus']))  $title .= " - ".$latestIssue['modus'];
+                                ?>
+                                    <li onclick="location.href='/default/issue/listissues/s/<?php echo $latestIssue['site_id']; ?>/c/<?php echo $latestIssue['category_id']; ?>/id/<?php echo $latestIssue['issue_id']; ?>'"><a href="/default/issue/listissues/s/<?php echo $latestIssue['site_id']; ?>/c/<?php echo $latestIssue['category_id']; ?>/id/<?php echo $latestIssue['issue_id']; ?>"><img src="<?php echo $latestIssue['thumb_pic']; ?>" alt="Opened Image" /><strong><?php echo $title; ?></strong><p><?php echo $latestIssue['description']; ?></p><div class="latest-issue-date"><?php echo $latestIssue['issue_date_time']; ?></div></a></li>
+                                <?php  } ?>
+                            </ul>
+                        </div>
+                    </div>
+                    <?php } ?>
+				 </div> 	
+				  
+				  <div id="other-info" style="display:none;">
+					<div id="image-holder"></div>
+					<?php if(!empty($this->categories)) { ?>
+					<div id="category-field">
+						Department:<br/>
+						<select id="category-select" name="category" required>
+						<option value="" disabled selected hidden>Select Department</option>
+						<?php foreach($this->categories as $category) { ?>
+						  <option value="<?php echo $category['category_id']; ?>"><?php echo $category['category_name']; ?></option>
+						 <?php } ?>
+						</select><br/>
+						<?php /*<input type="button" id="cancel-issue" name="cancel-issue" value="Cancel" /> <input type="button" id="category-next" name="category-next" value="Next" /> */ ?>
+					</div>
+					<?php } ?>
+					<div id="type-field">
+						Type:<br/>
+						<select id="type-select" name="type_id" required>
+							<option value="" disabled selected hidden>Select Issue Type</option>
+						</select>
+					</div>
+					<div id="incident-field">
+						Incident:<br/>
+						<select id="incident-select" name="incident_id">
+							<option value="" disabled selected hidden>Select Incident</option>
+						</select>
+					</div>
+					<div id="modus-field">
+						Modus:<br/>
+						<select id="modus-select" name="modus_id">
+							<option value="" disabled selected hidden>Select Modus</option>
+						</select>
+					</div>
+					<div id="manpower-field">
+						Man Power:<br/>
+						<input id="manpower-text" name="manpower_id" type="text" autocomplete="off" required>
+					</div>
+					<div id="area-field">
+						Area:<br/>
+						<select id="area-select" name="area">
+							<option value="" disabled selected hidden>Select Area</option>
+							<?php if(!empty($this->area)) {
+								foreach($this->area as $area) { ?>
+									<option value="<?php echo $area['area_id']; ?>"><?php echo $area['area_name']; ?></option>
+							<?php } } ?>
+						</select>
+					</div>
+					<div id="location-field">
+						Location:<br/>
+						<select id="floor-select" name="floor_id">
+							<option value="" disabled selected hidden>Select Location</option>
+						</select>
+					</div>
+					<div id="location-detail-field">
+						Location Detail:<br/>
+						<textarea rows="2" cols="50" id="location-txtarea" name="location" required></textarea><br/>
+					</div>
+					<div id="discussion-field">
+						Discussion:<br/>
+						<textarea rows="4" cols="50" id="discussion-txtarea" name="description" required></textarea><br/>
+						<!--<input type="radio" name="sendwa" value="4" checked> Send Anonymous Notification<br>-->
+						<!--<input type="radio" name="sendwa" value="1" checked> Send WhatsApp to Chief/Manager<br>-->
+						<!--<input type="radio" name="sendwa" value="2"> Send WhatsApp to Group/Contact List<br>-->
+						<!--<input type="radio" name="sendwa" value="3"> Do not send Notification<br/><br/>-->
+					</div>	
+					<div id="pelaku-tertangkap-field" style="display:none;">
+						<input type="checkbox" name="pelaku_tertangkap" value="1"> Pelaku Tertangkap
+					</div>
+					<div id="button-field">
+						<input type="button" id="cancel-issue" name="cancel-issue" value="Cancel" /> <input type="submit" id="issue-submit" name="issue-submit" value="Submit">
+					</div>
+					<br/><br/>
+				  </div>
+				</div>
+			</form>
+          </div>
+          <br /> 
+		 
+        </div>
+        <!-- /page content -->
+
+
+<link rel="stylesheet" href="/css/jquery-ui.min.css">
+<!--<script src="/js/amcharts4/core.js"></script>
+<script src="/js/amcharts4/charts.js"></script>
+<script src="/js/amcharts4/themes/animated.js"></script>-->
+<script type="text/javascript" src="/js/Chart.js2.9.3/dist/Chart.min.js"></script>
+<script type="text/javascript" src="/js/Chart.js2.9.3/utils.js"></script>
+<script type="text/javascript" src="/js/Chart.js2.9.3/plugin/chartjs-plugin-labels.js"></script>
+<script type="text/javascript" src="/js/jquery-ui.min.js"></script>
+<script type="text/javascript" src="/js/jquery_easy_ticker/dist/jquery.easy-ticker.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.3/jquery.easing.min.js"></script>
+<script type="text/javascript">
+/*
+am4core.ready(function() {
+
+am4core.useTheme(am4themes_animated);
+
+var chartData = {
+  "<?php echo $this->totalIssues['total_issues']; ?>": [
+      <?php foreach($this->totalIssuesSite as $totalIssuesSite) { ?>
+        { "site": "<?php echo $totalIssuesSite['initial']; ?>", "Total Issue": <?php echo intval($totalIssuesSite['total_issues']); ?>},
+      <?php } ?>
+    ]
+};
+
+var chart = am4core.create("chartdiv", am4charts.PieChart);
+
+chart.data = [
+    <?php foreach($this->totalIssuesSite as $totalIssuesSite) { ?>
+        { "site": "<?php echo $totalIssuesSite['initial']; ?>", "total": <?php echo intval($totalIssuesSite['total_issues']); ?>},
+    <?php } ?>
+];
+
+chart.innerRadius = am4core.percent(50);
+var label = chart.seriesContainer.createChild(am4core.Label);
+label.text = "<?php echo $this->totalIssues['total_issues']; ?>";
+label.horizontalCenter = "middle";
+label.verticalCenter = "middle";
+label.fontSize = 50;
+
+var pieSeries = chart.series.push(new am4charts.PieSeries());
+pieSeries.dataFields.value = "total";
+pieSeries.dataFields.category = "site";
+}); */
+
+$(document).ready(function() {
+    $('.ticker').easyTicker({
+        direction: 'up'
+    });
+    
+    var chartColor = ["#7e5b06", "#a07407", "#c19c40", "#d9b04a", "#B8860B", "#e1cb95", "#DDDDDD", "#CCCCCC", "#BBBBBB", "#AAAAAA"];
+    
+    /*** TOTAL ***
+
+	var configTotal = {
+		type: 'doughnut',
+		data: {
+			datasets: [{
+				data: [
+					<?php echo $this->totalIssues['total_issues']; ?>
+				],
+				backgroundColor: [
+					chartColor[9],
+				],
+				label: 'Total Issues'
+			}],
+			labels: ['Total Issues']
+		},
+		options: {
+			responsive: true,
+			legend: {
+				display: false,
+			},			
+			title: {
+				display: true,
+				text: 'TOTAL ISSUES'
+			},
+			animation: {
+				animateScale: true,
+				animateRotate: true
+			},
+			plugins: {
+				labels: {
+					render: 'value',
+					fontColor: '#000'
+				}
+			}
+		}
+	};
+
+	var totalChart = document.getElementById('totalAllIssues').getContext('2d');
+	window.totalAllDoughnut = new Chart(totalChart, configTotal); */
+    
+    /*** TOTAL ISSUES PER SITES ***/
+    <?php if(!empty($this->totalIssuesSite)) { ?>
+    	var configTotal = {
+    		type: 'doughnut',
+    		data: {
+    			datasets: [{
+    				data: [
+    				    <?php foreach($this->totalIssuesSite as $totalIssuesSite) {
+    				        echo intval($totalIssuesSite['total_issues']).", ";
+    				    } ?>
+    				],
+    				backgroundColor: [
+    					chartColor[0], 
+    					chartColor[1],
+    					chartColor[2], 
+    					chartColor[3], 
+    					chartColor[4], 
+    					chartColor[5], 					
+    					chartColor[6]
+    				],
+    				label: 'Total Issues'
+    			}],
+    			labels: [
+    			    <?php foreach($this->totalIssuesSite as $totalIssuesSite) {
+				        echo '"'.$totalIssuesSite['initial'].'", ';
+				    } ?>
+    			]
+    		},
+    		options: {
+    			responsive: true,
+    			legend: {
+    				position: 'right',
+    				labels: {
+    					fontSize: 9
+    				},
+    			},			
+    			title: {
+    				display: false,
+    				text: 'TOTAL ISSUES PER SITE'
+    			},
+    			animation: {
+    				animateScale: true,
+    				animateRotate: true
+    			},
+    			plugins: {
+    				labels: {
+    					render: 'value',
+    					fontColor: '#000'
+    				}
+    			}
+    		}
+    	};
+    
+    	var totalSiteChart = document.getElementById('totalIssuesSite').getContext('2d');
+    	window.totalSiteDoughnut = new Chart(totalSiteChart, configTotal);
+	<?php } ?>
+	
+	/*** TOTAL ISSUES ACCORDING TO DEPARTMENT ***/
+	<?php if(!empty($this->totalIssuesDept)) { ?>
+    	var configTotal = {
+    		type: 'doughnut',
+    		data: {
+    			datasets: [{
+    				data: [
+    				    <?php foreach($this->totalIssuesDept as $totalIssuesDept) {
+    				        echo intval($totalIssuesDept['total_issues']).", ";
+    				    } ?>
+    				],
+    				backgroundColor: [
+    					chartColor[0], 
+    					chartColor[1],
+    					chartColor[2], 
+    					chartColor[3], 
+    					chartColor[4], 
+    					chartColor[5], 					
+    					chartColor[6]
+    				],
+    				label: 'Total Issues Per Department'
+    			}],
+    			labels: [
+    			    <?php foreach($this->totalIssuesDept as $totalIssuesDept) {
+				        echo '"'.$totalIssuesDept['category_name'].'", ';
+				    } ?>
+    			]
+    		},
+    		options: {
+    			responsive: true,
+    			legend: {
+    				position: 'right',
+    				labels: {
+    					fontSize: 9
+    				},
+    			},			
+    			title: {
+    				display: false,
+    				text: 'TOTAL ISSUES PER DEPARTMENT'
+    			},
+    			animation: {
+    				animateScale: true,
+    				animateRotate: true
+    			},
+    			plugins: {
+    				labels: {
+    					render: 'value',
+    					fontColor: '#000'
+    				}
+    			}
+    		}
+    	};
+    
+    	var totalDeptChart = document.getElementById('totalIssuesDept').getContext('2d');
+    	window.totalDeptDoughnut = new Chart(totalDeptChart, configTotal);
+	<?php } ?>
+	
+	/*** ACTION PLAN ***
+	
+	var config = {
+		type: 'doughnut',
+		data: {
+			datasets: [{
+				data: [
+					<?php echo intval($this->outstanding['total']); ?>,
+					<?php echo intval($this->reschedule['total']); ?>,
+					<?php echo intval($this->done['total']); ?>,
+					<?php echo intval($this->upcoming['total']); ?>
+				],
+				backgroundColor: [
+					chartColor[0], 
+    				chartColor[1],
+					chartColor[2], 
+					chartColor[3], 
+				],
+				label: 'Dataset 1'
+			}],
+			labels: [
+				'Outstanding (<?php echo intval($this->outstanding['total']); ?>)',
+				'Reschedule (<?php echo intval($this->reschedule['total']); ?>)',
+				'Done (<?php echo intval($this->done['total']); ?>)',
+				'Upcoming Schedule (<?php echo intval($this->upcoming['total']); ?>)'
+			]
+		},
+		options: {
+			responsive: true,
+			legend: {
+				position: 'right',
+			},
+			title: {
+				display: false,
+				text: 'Parking Action Plan <?php echo $this->year; ?>'
+			},
+			animation: {
+				animateScale: true,
+				animateRotate: true
+			},
+			plugins: {
+				labels: {
+					render: 'value',
+					fontColor: '#000'
+				}
+			}
+		}
+	};
+
+	var ctx = document.getElementById('actionPlan').getContext('2d');
+	window.doughnut = new Chart(ctx, config);*/
+	
+	/*** TOTAL OPENED ISSUES ***/
+
+    <?php if(!empty($this->totalOpenedIssues)) { ?>
+    	var openedIssuesLabel = new Array();
+    	var openedIssuesData = new Array();
+    	var closedIssuesData = new Array();
+    	<?php $openedIssuesCtr = 0;
+			$totalIssuesHighest = 0;
+    	 	foreach($this->totalOpenedIssues as $oi) { 
+    			echo 'openedIssuesLabel['.$openedIssuesCtr.'] = "'.$oi['initial'].'";';
+    			echo 'openedIssuesData['.$openedIssuesCtr.'] = '.$oi['total_issues'].';';
+    			$openedIssuesCtr++;
+				if($oi['total_issues'] > $totalIssuesHighest) $totalIssuesHighest = $oi['total_issues'];
+    	    } 
+    	    $closedIssuesCtr = 0;
+    	 	foreach($this->totalClosedIssues as $ci) { 
+    			echo 'closedIssuesData['.$closedIssuesCtr.'] = '.$ci['total_issues'].';';
+    			$closedIssuesCtr++;
+				if($ci['total_issues'] > $totalIssuesHighest) $totalIssuesHighest = $ci['total_issues'];
+    	    }
+
+			$totalIssuesOff = $totalIssuesHighest % 5;
+			if($totalIssuesOff == 0) $totalIssuesHighest = $totalIssuesHighest + 5;
+			else $totalIssuesHighest = $totalIssuesHighest + (5 - $totalIssuesOff);
+    	?>
+    	
+    	var color = Chart.helpers.color;
+    	var openedIssuesChartData = {
+    		labels: openedIssuesLabel,
+    		datasets: [{
+    		    type: 'bar',
+    			label: 'Opened Kaizen',
+    			backgroundColor: color(chartColor[4]).alpha(0.5).rgbString(),
+    			borderColor: chartColor[4],
+    			borderWidth: 1,
+    			data: openedIssuesData
+    		}, {
+    		    type: 'bar',
+    			label: 'Closed Kaizen',
+    			backgroundColor: color(chartColor[7]).alpha(0.5).rgbString(),
+    			borderColor: chartColor[7],
+    			borderWidth: 1,
+    			data: closedIssuesData
+    		}]
+    	};
+    
+    	var openedIssuesChart = document.getElementById('totalOpenedIssues').getContext('2d');
+    	window.openedIssuesBar = new Chart(openedIssuesChart, {
+    		type: 'bar',
+    		data: openedIssuesChartData,
+    		options: {
+    			responsive: true,
+    			legend: {
+    				display: true,
+    			},
+    			title: {
+    				display: false,
+    				text: 'OPENED KAIZEN'
+    			},
+    			plugins: {
+    				labels: {
+    					render: 'value',
+    					fontColor: '#000'
+    				}
+    			},
+    			scales: {
+    				xAxes: [{
+    					ticks: {
+    						fontSize: 9
+    					}
+    				}],
+					yAxes: [{
+						display: true,
+						ticks: {
+							beginAtZero: true,
+							max: <?php echo $totalIssuesHighest; ?>,
+							min: 0
+						}
+					}]
+    			}
+    		}
+    	});
+    <?php } ?>
+    
+    /*** TOTAL CLOSED ISSUES ***
+
+    <?php if(!empty($this->totalClosedIssues)) { ?>
+    	var closedIssuesLabel = new Array();
+    	var closedIssuesData = new Array();
+    	<?php $closedIssuesCtr = 0;
+    	 	foreach($this->totalClosedIssues as $ci) { 
+    			echo 'closedIssuesLabel['.$closedIssuesCtr.'] = "'.$ci['initial'].'";';
+    			echo 'closedIssuesData['.$closedIssuesCtr.'] = '.$ci['total_issues'].';';
+    			$closedIssuesCtr++;
+    	    } ?>
+    	
+    	var color = Chart.helpers.color;
+    	var closedIssuesChartData = {
+    		labels: closedIssuesLabel,
+    		datasets: [{
+    			label: 'Closed Issues',
+    			backgroundColor: color(chartColor[5]).alpha(0.5).rgbString(),
+    			borderColor: chartColor[8],
+    			borderWidth: 1,
+    			data: closedIssuesData
+    		}]
+    	};
+    
+    	var closedIssuesChart = document.getElementById('totalClosedIssues').getContext('2d');
+    	window.closedIssuesBar = new Chart(closedIssuesChart, {
+    		type: 'bar',
+    		data: closedIssuesChartData,
+    		options: {
+    			responsive: true,
+    			legend: {
+    				display: false,
+    			},
+    			title: {
+    				display: true,
+    				text: 'CLOSED ISSUES'
+    			},
+    			plugins: {
+    				labels: {
+    					render: 'value',
+    					fontColor: '#000'
+    				}
+    			},
+    			scales: {
+    				xAxes: [{
+    					ticks: {
+    						fontSize: 9
+    					}
+    				}]
+    			}
+    		}
+    	});
+    <?php } ?>
+	
+	/*** ISSUE FINDING FORM ***/
+
+	$("#incident-field").hide();
+	$("#modus-field").hide();
+	$("#manpower-field").hide();
+	$("#floor-field").hide();
+	$("#tenant-public-field").hide();
+	$("#manpower-text").prop('required',false);
+
+	$("#category-select").change(function() {
+		var cat_id = $( this ).val();
+		/*if(cat_id == 1 || cat_id == 2 || cat_id == 3 || cat_id == 5 || cat_id == 6)
+		{*/
+			$('body').mLoading();
+			$("#floor-field").show();
+			$.ajax({
+				url: "/default/issue/getissuetypebycatid",
+				data: { category_id :  cat_id }
+			}).done(function(response) {
+				var object = $.parseJSON(response);
+				$("#type-select").empty();
+				$("#type-select").append('<option value=""  disabled selected hidden>Select Issue Type</option>');
+				$.each(object, function (item, value) {
+					$("#type-select").append(new Option(value.issue_type, value.issue_type_id));
+				});
+
+				/*$("#floor-select").empty();
+				$("#floor-select").append('<option value=""  disabled selected hidden>Select Floor</option>');
+				$.each(object.floor, function (id, val) {
+					$("#floor-select").append(new Option(val.floor, val.floor_id));
+				});
+				$("#floor-select").prop('required',true);*/
+				$("#incident-field").hide();
+				$("#modus-field").hide();
+				$("#incident-select").prop('required',false);
+				$("#modus-select").prop('required',false);
+				$("body").mLoading('hide');
+			});
+		/*}
+		else {			
+			$('body').mLoading();
+			$.ajax({
+				url: "/default/issue/getissuetypebycatid",
+				data: { category_id :  cat_id }
+			}).done(function(response) {
+				var object = $.parseJSON(response);
+
+				$("#type-select").empty();
+				$("#type-select").append('<option value=""  disabled selected hidden>Select Issue Type</option>');
+				$.each(object, function (item, value) {
+					$("#type-select").append(new Option(value.issue_type, value.issue_type_id));
+				});
+				$("body").mLoading('hide');
+			});
+			$("#floor-field").hide();
+			$("#incident-field").hide();
+			$("#modus-field").hide();
+			$("#floor-select").prop('required',false);
+			$("#incident-select").prop('required',false);
+			$("#modus-select").prop('required',false);
+		}*/
+		$("#pelaku-tertangkap-field").hide();
+		$("#manpower-field").hide();		
+		$('#manpower-text').val('');
+		$("#manpower-text").prop('required',false);
+	});
+
+	var curIncidents = [];
+	$("#type-select").change(function() {
+		var cat_id = $("#category-select").val();
+		if(/*(cat_id == 1 || cat_id == 2 || cat_id == 3 || cat_id == 5 || cat_id == 6) &&*/$( this ).val() > 0)
+		{
+			$('body').mLoading();
+			$.ajax({
+				url: "/default/issue/getincidentbyissuetypeid",
+				data: { issue_type : $( this ).val(), category_id: cat_id  }
+			}).done(function(response) {
+				curIncidents = [];
+				if(response == "[]")
+				{
+					$("#incident-field").hide();
+					$("#modus-field").hide();
+					$("#incident-select").prop('required',false);
+					$("#modus-select").prop('required',false);
+				} else {
+					$("#incident-field").show();
+					$("#incident-select").prop('required',true);
+					$("#incident-select").empty();
+					var object = $.parseJSON(response);
+					$("#incident-select").append('<option value=""  disabled selected hidden>Select Incident</option>');
+					$.each(object, function (item, value) {
+						$("#incident-select").append(new Option(value.kejadian, value.kejadian_id));
+						curIncidents[value.kejadian_id] = value.show_pelaku_checkbox;
+					});
+				}
+				$("body").mLoading('hide');
+			});
+		}
+		$("#pelaku-tertangkap-field").hide();
+		$("#manpower-field").hide();		
+		$('#manpower-text').val('');
+		$("#manpower-text").prop('required',false);
+	});
+
+	$("#incident-select").change(function() {
+		if($( this ).val() > 0)
+		{			
+			$('body').mLoading();
+			if(curIncidents[$( this ).val()] == "1")
+			{
+				$("#pelaku-tertangkap-field").show();
+			}
+			else
+			{
+				$("#pelaku-tertangkap-field").hide();
+			}
+			$("#modus-field").show();
+			$("#modus-select").prop('required',true);
+			$.ajax({
+				url: "/default/issue/getmodusbykejadianid",
+				data: { kejadian_id : $( this ).val(), category_id: $("#category-select").val()  }
+			}).done(function(response) {
+				$("#modus-select").empty();
+				var object = $.parseJSON(response);
+				$("#modus-select").append('<option value=""  disabled selected hidden>Select Modus</option>');
+				$.each(object, function (item, value) {
+					$("#modus-select").append(new Option(value.modus, value.modus_id));
+				});
+				$("body").mLoading('hide');
+			});
+		}
+		else
+		{
+			$("#modus-select").prop('required',false);
+		}
+		$("#manpower-field").hide();		
+		$('#manpower-text').val('');
+		$("#manpower-text").prop('required',false);
+	});
+
+	$("#modus-select").change(function() {
+		var modusid = $( this ).val();
+		if(($("#category-select").val() == 2 &&  $("#incident-select").val() >= 2 && $("#incident-select").val() <= 57) && modusid == 3 )
+		{			
+			var categoryid = $("#category-select").val();
+			$("#manpower-field").show();
+			$('#manpower-text').val('');
+			$("#manpower-text").prop('required',true);
+			$( "#manpower-text" ).autocomplete({
+				source: function( request, response ) {
+					$.ajax({
+						url: "/default/manpower/getmanpowerbykeyword",
+						dataType: "json",
+						data: {
+							q: request.term, 
+							m: modusid,
+							c: categoryid
+						},
+						success: function( data ) {
+							response( data );
+						}
+					});
+				}
+			});
+		}
+		else{
+			$("#manpower-field").hide();			
+			$('#manpower-text').val('');
+			$("#manpower-text").prop('required',false);
+		}
+	});
+
+	$("#area-select").change(function() {
+		var area_id = $( this ).val();
+		
+		$('body').mLoading();
+		$.ajax({
+			url: "/default/issue/getlocationbyareaid",
+			data: { area_id :  area_id, cat_id : $("#category-select").val() }
+		}).done(function(response) {
+			var object = $.parseJSON(response);
+			$("#floor-select").empty();
+			$("#floor-select").append('<option value=""  disabled selected hidden>Select Location</option>');
+			$.each(object, function (item, value) {
+				$("#floor-select").append(new Option(value.floor, value.floor_id));
+			});
+
+			$("body").mLoading('hide');
+		});
+		
+	});
+
+	$('#issue-form').on('submit', function(event){
+		event.preventDefault();
+		$("body").mLoading();
+		if($("#manpower-field").is(":visible") === true)
+		{
+			var c = $("#category-select").val();
+			var name =  $("#manpower-text").val();
+			var m =  $("#modus-select").val();
+			$.ajax({
+				url: "/default/manpower/getmanpowerbyname",
+				dataType: "json",
+				data: {
+					name: name, 
+					c: c,
+					m: m
+				},
+				success: function( data ) {
+					if(data === false)
+					{
+						$("body").mLoading('hide');
+						alert("Data Man Power tidak terdapat di list, mohon di perbaiki");
+					}
+					else
+					{
+						$.ajax({
+							url: '/default/issue/submitissue',
+							type: 'POST',
+							data: new FormData($('form')[0]),
+							cache: false,
+							contentType: false,
+							processData: false,
+
+							xhr: function () {
+								var myXhr = $.ajaxSettings.xhr();
+								if (myXhr.upload) {
+									myXhr.upload.addEventListener('progress', function (e) {
+									if (e.lengthComputable) {
+										$('progress').attr({
+										value: e.loaded,
+										max: e.total
+										});
+									}
+									}, false);
+								}
+								return myXhr;
+							},
+							success: function(response) {
+								if(response === "1")
+								{
+									location.href="/default/issue/listissues";
+								}
+								else {
+									location.href="/default/index/index/err/1";
+								}
+							}
+						});
+					}
+				}
+			});
+		}
+		else
+		{
+			$.ajax({
+				url: '/default/issue/submitissue',
+				type: 'POST',
+				data: new FormData($('form')[0]),
+				cache: false,
+				contentType: false,
+				processData: false,
+
+				xhr: function () {
+					var myXhr = $.ajaxSettings.xhr();
+					if (myXhr.upload) {
+						myXhr.upload.addEventListener('progress', function (e) {
+						if (e.lengthComputable) {
+							$('progress').attr({
+							value: e.loaded,
+							max: e.total
+							});
+						}
+						}, false);
+					}
+					return myXhr;
+				},
+				success: function(response) {
+					if(response === "1")
+					{
+						location.href="/default/issue/listissues";
+					}
+					else {
+						location.href="/default/index/index/err/1";
+					}
+				}
+			});
+		}
+	});
+});	
+</script>
+

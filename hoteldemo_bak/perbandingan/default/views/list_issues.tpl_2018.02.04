@@ -1,0 +1,55 @@
+<!-- page content -->
+<div class="right_col" role="main">
+	<div class="row">
+	  <div class="col-md-12 col-sm-12 col-xs-12">
+		  <table id="list-issues">
+			<tr>
+				<th>Image</th>
+				<th>Detail</th>
+				<th>Comments</th>
+			</tr>
+			<?php
+				if(!empty($this->issues))
+				{
+					$i = 1;
+					foreach($this->issues as $issue) { 
+			?>
+				<tr <?php if($i%2==0) echo 'class="even-row"'; ?>>
+					<td align="center"><img src="/images/issues/<?php echo $issue['thumb_pic']; ?>" data-large="/images/issues/<?php echo $issue['large_pic']; ?>" width="50px" /></td>
+					<td><?php echo "<p><strong>Location:</strong><br/>".$issue['location']."</p><p><strong>Category:</strong><br/>".$issue['category']['category_name']."</p><p><strong>Discussion:</strong><br/>".$issue['description']."</p><p><strong>Issue Date:</strong><br/>".$issue['issue_date']; ?></p></td>
+					<td><?php echo $issue['comments']; ?></td>
+				</tr>
+			<?php
+						$i++;
+					}
+				}
+			?>
+		  </table>
+	  </div>
+	</div>
+  </div>
+</div>
+<!-- /page content -->
+
+<div id="popup1" class="overlay">
+	<div class="popup">
+		<img id="close" src="/images/close.png" />
+		<div id="large-img"></div>
+	</div>
+</div>
+
+<script>
+    $(document).ready(function() {
+		$('#popup1').hide();
+		$( "#list-issues img" ).click(function() {
+			console.log("click");
+			$("#large-img").html('<img class="large-pic" src="'+this.dataset.large+'">');
+			$('#popup1').show();
+		});
+		
+		$( "#close" ).click(function() {
+			$('#popup1').hide();
+		});
+    });
+</script>
+ 

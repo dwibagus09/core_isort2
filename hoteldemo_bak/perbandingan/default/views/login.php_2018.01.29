@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Pakuwon Smart Reporting Toole</title>
+<!-- For-Mobile-Apps -->
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="keywords" content="pakuwon, smart, reporting, tool" />
+<script type="application/x-javascript"> addEventListener("load", function() { setTimeout(hideURLbar, 0); }, false); function hideURLbar(){ window.scrollTo(0,1); } </script>
+<!-- //For-Mobile-Apps -->
+<!-- Style --> <link rel="stylesheet" href="/css/login_styles.css" type="text/css" media="all" />
+</head>
+<body>
+<div class="container">
+
+<img src="/images/pakuwon.png" alt="logo pakuwon" width="375">
+<h1>Smart Reporting Tool</h1>
+	<div class="signin">
+     	<form action="/default/user/login" method="POST">
+	      	<input type="text" class="user" id="username" name="username" placeholder="username" />
+              <input type="password" class="pass" id="password" name="password" placeholder="password" />
+              <div class="form-group">
+                    <label for="shift">Select Shift:</label>
+                    <select class="form-control" id="shift" name="shift">
+                      <option>Malam, 23.00- 07.00 WIB</option>
+                      <option>Pagi</option>
+                      <option>Siang</option>
+                      <option>Sore</option>
+                    </select>
+                </div>
+          	<input type="submit" value="LOGIN" />
+	 	</form>
+	</div>
+</div>
+<div class="footer">
+        <p>Copyright &copy; <?php echo date("Y"); ?> Pakuwon Group</p>
+</div>
+</body>
+</html>

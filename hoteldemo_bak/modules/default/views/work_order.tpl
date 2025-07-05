@@ -1,0 +1,409 @@
+<!-- Magnific Popup core CSS file -->
+<link rel="stylesheet" href="/css/magnific-popup.css">
+<link rel="stylesheet" href="/css/jquery-ui.min.css">
+<link href='/js/fullcalendar_540/lib/main.css' rel='stylesheet' />
+
+	<div class="row">
+		<div class="col-md-12 col-sm-12 col-xs-12">
+			<div style="margin-bottom:10px;">
+				<h2 class="pagetitle"><?php echo $this->ident['initial']." - "; ?>Work Order</h2>
+				
+				<div style="margin-top:10px;">
+					<div id='calendar'></div>
+				</div>
+			</div>
+		</div>
+	</div>
+</div>
+<!-- /page content -->
+
+
+<!-- WO Form -->
+  <form action="/default/workorder/updatestatus" id="wo-form" method="POST" class="mfp-hide white-popup-block" enctype="multipart/form-data">
+	<div id="status-form">
+		<input type="hidden" name="wo_id" id="wo_id" />
+		<input type="hidden" name="issue_id" id="wo_issue_id" />
+		<input type="hidden" name="status" id="wo_status" />
+		<div id="wo_info"></div>
+		<div id="dv-upload-progress">
+			Upload Progress <a class="add-progress" style="cursor:pointer;"><i class="fa fa-plus-square"></i></a><br>
+			<table id="uploader-table">
+				<tr>
+					<th>Description</th>
+					<th>File</th>
+				</tr>
+				<tr>
+					<td align="center"><textarea name="description[]" id="description" class="file-description1"></textarea></td>
+					<td align="center"><input type="file" name="attachment[]" id="attachment" class="attachment-uploader1" accept="application/pdf,image/jpeg"></td>
+				</tr>
+			</table>
+			<input type="submit" class="submit-btn form-btn" id="upload" name="upload" value="Upload Progress">
+			<input type="button" class="finish-btn form-btn" id="finish" name="finish" value="Upload & Complete">
+		</div> 
+		<div id="start-working">
+			<input type="submit" class="submit-btn form-btn" id="start-working-btn" name="start-working" value="Start Working">
+		</div>
+		<div id="approval">
+			Comment<br/>
+			<textarea rows="2" style="width:100%" name="comment" id="comment" class="wo-comment" required></textarea>
+			<input type="button" class="submit-btn form-btn" id="reject-btn" name="reject" value="Reject"> <input type="button" class="submit-btn form-btn" id="approve-btn" name="approve" value="Approve">
+		</div>
+	</div>
+		
+	</div>
+  </form>
+
+<!-- Magnific Popup core JS file -->
+<script src="/js/jquery.magnific-popup.min.js"></script>  
+<script type="text/javascript" src="/js/Chart.js2.9.3/dist/Chart.min.js"></script>
+<script type="text/javascript" src="/js/Chart.js2.9.3/utils.js"></script>
+<script src="/js/jquery-ui.min.js"></script>
+<script src='/js/fullcalendar_540/lib/main.js'></script>
+<script type="text/javascript">
+
+$(document).ready(function() {
+	var report_date;
+	
+	$('#comment').prop('required',false);
+
+	<?php if($this->isMobile == false) { ?>
+		$("#cal-date").height($( window ).height()-235);
+		$("#activity-list").height($( window ).height()-241);
+		$("#cal-date").width($( window ).width()-780);
+		$("#calendar-layout").width($( window ).width()-798);
+	<?php } ?>
+
+	<?php if(!empty($this->wo_id)) { ?>
+		$( "#form-title" ).html("Edit Schedule");
+		$.ajax({
+			url: "/default/workorder/getschedulebyid",
+			data: { id : <?php echo $this->wo_id; ?> }
+		}).done(function(response) {
+			var schedule = jQuery.parseJSON(response);			
+			var superAdmin = 1;
+			$("#wo_id").val(schedule['wo_id']);
+			$("#wo_issue_id").val(schedule['issue_id']);
+			$( "#wo_info" ).html(schedule['info']);
+			if(schedule['status'] == 1) 
+			{
+				if(schedule['show_progress_btn'] == "1") 
+				{
+					$("#wo_status").val("2");
+					$("#finish").attr( "data-id" , schedule['wo_id'] );
+					$("#finish").attr( "data-issue_id" , schedule['issue_id'] );
+					$( "#dv-upload-progress" ).show();
+					$(".add-progress").click(function(e) {
+						e.stopImmediatePropagation();
+						var row;
+						row = '<tr><td align="center"><textarea name="description[]" id="description" class="file-description1"></textarea></td><td align="center"><input type="file" name="attachment[]" id="attachment" class="attachment-uploader1" accept="application/pdf,image/jpeg" /></td></tr>';
+						$( "#uploader-table").append(row);
+					});
+					
+					$(".delete-wo-att").click(function() {
+						var res = confirm("Are you sure you want to delete this file?");
+						if(res == true) 
+						{
+							$.ajax({
+								url: "/default/workorder/deleteattachmentbyid",
+								data: { id : this.dataset.id  }
+							}).done(function(resp) {
+								if(resp > 0)
+								{
+									alert("Deleting file successful");
+									console.log("resp="+resp);
+									$("#progressatt"+resp).remove();
+								}
+							});
+						}
+					});
+				}
+			}
+			if(schedule['show_start_btn'] == "1") 
+			{
+				$("#wo_status").val("1");
+				$( "#start-working" ).show();
+			}
+			if(schedule['show_approve_btn'] == "1") 
+			{
+				$("#wo_status").val("3");
+				$( "#approval" ).show();
+			}
+		});	
+		
+		$.magnificPopup.open({
+			items: {
+				src: '#wo-form',
+			},
+			type: 'inline',
+			closeOnBgClick: false,
+			callbacks: {
+				open: function() {
+					$( "#dv-upload-progress" ).hide();
+					$('.file-description1').prop('required', false);
+					$('.attachment-uploader1').prop('required', false);
+					$( "#start-working" ).hide();
+					$( "#approval" ).hide();
+				},
+				close: function() {	
+					$("#wo_id").val("");
+				}
+			}
+		});
+	<?php } ?>
+	
+	$("#finish").click(function() {
+		if($("#description").val() == "" || $("#attachment").val() == "")
+		{
+			alert("Please upload picture to show if this work is done"); 
+		}
+		else
+		{
+			var res = confirm("Are you sure you have completed this task?");
+			if(res == true)
+			{
+				$("body").mLoading();
+				$.ajax({
+					url: '/default/workorder/completewo',
+					type: 'POST',
+					data: new FormData($('form')[0]),
+					cache: false,
+					contentType: false,
+					processData: false,
+
+					xhr: function () {
+						var myXhr = $.ajaxSettings.xhr();
+						if (myXhr.upload) {
+							myXhr.upload.addEventListener('progress', function (e) {
+							if (e.lengthComputable) {
+								$('progress').attr({
+								value: e.loaded,
+								max: e.total
+								});
+							}
+							}, false);
+						}
+						return myXhr;
+					},
+					success: function(response) {
+						$("body").mLoading('hide');	
+						alert("Task is completed, please wait for the approval");
+						$( "#dv-upload-progress" ).hide();
+						$('.file-description1').prop('required', false);
+						$('.attachment-uploader1').prop('required', false);
+						location.href="/default/workorder/view";
+					}
+				});
+			}
+		}
+	});
+
+	$("#reject-btn").click(function() {
+		if($("#comment").val() == "") alert("Please write a comment");
+		else
+		{
+			var res = confirm("Are you sure you want to reject this task?");
+			if(res == true)
+			{
+				$.ajax({
+					url: "/default/workorder/woapproval",
+					data: { id : $("#wo_id").val(), comment: $("#comment").val(), issue_id: $("#wo_issue_id").val(), stat: 0  }
+				}).done(function(resp) {
+					alert("Task has been rejected");
+					$( "#approval" ).hide();
+					location.href="/default/workorder/view";
+				});
+			}
+		}
+	});
+	
+	$("#approve-btn").click(function() {
+		if($("#comment").val() == "") alert("Please write a comment");
+		else
+		{
+			var res = confirm("Are you sure you want to approve this task?");
+			if(res == true)
+			{
+				$.ajax({
+					url: "/default/workorder/woapproval",
+					data: { id : $("#wo_id").val(), comment: $("#comment").val(), issue_id: $("#wo_issue_id").val(), stat: 1  }
+				}).done(function(resp) {
+					alert("Task has been approved");
+					location.href="/default/workorder/view";
+				});
+			}
+		}
+	});
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+
+var calendarEl = document.getElementById('calendar');
+
+var calendar = new FullCalendar.Calendar(calendarEl, {
+  initialDate: '<?php echo Date("Y-m-d"); ?>',
+  height: window.innerHeight - 130,
+  editable: true,
+  selectable: true,
+  businessHours: true,
+  firstDay: 1,
+  headerToolbar: {
+        left: 'title today dayGridMonth,timeGridWeek,listMonth prev,next',
+        center: '',
+        right: ''
+  },
+  dayMaxEvents: true,
+  events: [
+  <?php foreach($this->schedules as $schedule) { 
+  ?>
+	{
+	  title: '<?php echo $schedule['description']; ?>',
+	  start: '<?php echo str_replace(" ", "T", $schedule['start_scheduled_date']); ?>',
+	  end: '<?php echo str_replace(" ", "T", $schedule['end_scheduled_date']); ?>',
+	  url: '#wo-form',
+	  id: '<?php echo $schedule['wo_id']; ?>',
+	  color: '<?php echo $schedule['color']; ?>',
+	},
+  <?php } ?>
+  ],
+	eventMouseEnter: function(event, el, jsEvent, view) {
+		$(event.el).tooltip({
+            title: event.event.title,
+			container: "body"
+        });
+	},
+	eventMouseout: function(event, jsEvent, view) {
+		$('#'+event.id).remove();
+	},
+  eventClick: function(info) {
+	var id = info.event.id;
+	$( "#form-title" ).html("Edit Schedule");
+	$.ajax({
+		url: "/default/workorder/getschedulebyid",
+		data: { id : id }
+	}).done(function(response) {
+		var schedule = jQuery.parseJSON(response);			
+		var superAdmin = 1;
+		$("#wo_id").val(schedule['wo_id']);
+		$("#wo_issue_id").val(schedule['issue_id']);
+		$( "#wo_info" ).html(schedule['info']);
+		if(schedule['status'] == 1) 
+		{
+			if(schedule['show_progress_btn'] == "1") 
+			{
+				$("#wo_status").val("2");
+				$("#finish").attr( "data-id" , schedule['wo_id'] );
+				$("#finish").attr( "data-issue_id" , schedule['issue_id'] );
+				$( "#dv-upload-progress" ).show();
+				$('.file-description1').prop('required', true);
+				$('.attachment-uploader1').prop('required', true);
+				$(".add-progress").click(function(e) {
+					e.stopImmediatePropagation();
+					var row;
+					row = '<tr><td align="center"><textarea name="description[]" id="description" class="file-description1"></textarea></td><td align="center"><input type="file" name="attachment[]" id="attachment" class="attachment-uploader1" accept="application/pdf,image/jpeg" /></td></tr>';
+					$( "#uploader-table").append(row);
+				});
+				
+				$(".delete-wo-att").click(function() {
+					var res = confirm("Are you sure you want to delete this file?");
+					if(res == true) 
+					{
+						$.ajax({
+							url: "/default/workorder/deleteattachmentbyid",
+							data: { id : this.dataset.id  }
+						}).done(function(resp) {
+							if(resp > 0)
+							{
+								alert("Deleting file successful");
+								console.log("resp="+resp);
+								$("#progressatt"+resp).remove();
+							}
+						});
+					}
+				});
+			}
+		}
+		if(schedule['show_start_btn'] == "1") 
+		{
+			$("#wo_status").val("1");
+			$( "#start-working" ).show();
+		}
+		if(schedule['show_approve_btn'] == "1") 
+		{
+			$("#wo_status").val("3");
+			$( "#approval" ).show();
+		}
+	});	
+	
+	$.magnificPopup.open({
+		items: {
+			src: '#wo-form',
+		},
+		type: 'inline',
+		closeOnBgClick: false,
+		callbacks: {
+			open: function() {
+				$( "#dv-upload-progress" ).hide();
+				$('.file-description1').prop('required', false);
+				$('.attachment-uploader1').prop('required', false);
+				$( "#start-working" ).hide();
+				$( "#approval" ).hide();
+			},
+			close: function() {	
+				$("#wo_id").val("");
+			}
+		}
+	});
+	}
+});
+
+calendar.render();
+
+$(".fc-prev-button").click(function(event){
+	var date = calendar.getDate();
+	var m = date.getMonth()+1;
+	var y = date.getFullYear();
+	$.ajax({
+		url: "/default/workorder/getschedulebymonthyear",
+		data: { m : m, y : y }
+	}).done(function(response) {
+		events = calendar.getEvents();
+		if(m<10) m = "0"+m;
+		events.forEach(event => {
+			if(event.startStr >= y+"-"+m+"-01" && event.startStr <= y+"-"+m+"-31")
+			{
+				event.remove();
+			}
+		});
+		var obj = jQuery.parseJSON(response);
+		$.each( obj, function( key, value ) {
+			calendar.addEvent(value);	
+		});
+			
+	});		
+});
+
+$(".fc-next-button").click(function(event){
+	var date = calendar.getDate();
+	var m = date.getMonth()+1;
+	var y = date.getFullYear();
+	$.ajax({
+		url: "/default/workorder/getschedulebymonthyear",
+		data: { m : m, y : y }
+	}).done(function(response) { 
+		events = calendar.getEvents();
+		if(m<10) m = "0"+m;
+		events.forEach(event => {
+			if(event.startStr >= y+"-"+m+"-01" && event.startStr <= y+"-"+m+"-31")
+			{
+				event.remove();
+			}
+		});
+		var obj = jQuery.parseJSON(response);
+		$.each( obj, function( key, value ) {
+			calendar.addEvent(value);	
+		});	
+	});	
+});
+
+});
+</script>

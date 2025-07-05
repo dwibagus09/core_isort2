@@ -1,0 +1,374 @@
+<?php
+
+require_once('defaultClass.php');
+require_once('dbClass.php');
+
+class equipmentClass extends defaultClass
+{	
+	function getSecurityEquipments() {
+		$selTable = new security_equipment_list(array('db'=>'db'));
+		//$select = $selTable->select();
+		$select->from(array("sel"=>"security_equipment_list"), array("sel.*"));
+		$select->joinLeft(array("v"=>"security_vendor"), "v.vendor_id=sel.vendor_id", array("v.vendor_name"));
+		$select->where('sel.site_id = ?', $this->site_id);
+		$equipments = $selTable->getAdapter()->fetchAll($select);
+		return $equipments;
+	}
+	
+	function getPerlengkapanByChiefSecurityReport($id) {
+		$securityPerlengkapanTable = new security_equipment_list(array('db'=>'db'));
+		
+		$select = $securityPerlengkapanTable->getAdapter()->select();
+		$select->from(array("sel"=>"security_equipment_list"), array("sel.*"));
+		$select->joinLeft(array("se"=>"security_equipment"), "se.security_equipment_list_id=sel.security_equipment_list_id and se.chief_security_report_id = ".$id, array("se.equipment_id","se.chief_security_report_id","se.total_equipment","se.ok_condition","se.bad_condition","se.description"));
+		$select->joinLeft(array("v"=>"security_vendor"), "v.vendor_id=sel.vendor_id", array("v.vendor_name"));
+		$select->where('sel.site_id = ?', $this->site_id);
+		$select->order("sel.equipment_name");
+		$select->order("v.vendor_name");
+		$security = $securityPerlengkapanTable->getAdapter()->fetchAll($select);
+		return $security;
+	}
+	
+	function addPerlengkapan($params) {
+		$securityPerlengkapanTable = new security_equipment(array('db'=>'db'));
+		
+		$data = array(
+			"chief_security_report_id" => $params["chief_security_report_id"],
+			"security_equipment_list_id" => $params["security_equipment_list_id"],
+			//"vendor" => $params["vendor"],
+			"total_equipment" => $params["total_equipment"],
+			"ok_condition" => $params["ok_condition"],
+			"bad_condition" => $params["bad_condition"],
+			"description" => $params["description"]
+		);
+		$securityPerlengkapanTable->insert($data);
+		return $this->db->lastInsertId();
+	}
+	
+	function deletePerlengkapanByChiefSecurityId($chief_security_report_id)
+	{
+		$securityPerlengkapanTable = new security_equipment(array('db'=>'db'));
+		
+		if ( is_numeric($chief_security_report_id) && $chief_security_report_id > 0 )
+		{		
+			$where = $securityPerlengkapanTable->getAdapter()->quoteInto('chief_security_report_id = ?', $chief_security_report_id);
+			$securityPerlengkapanTable->delete($where);
+		}
+	}
+	
+	function getVendorSecurityEquipments() {
+		$selTable = new security_equipment_list(array('db'=>'db'));
+		$select = $selTable->select()->where('site_id = ?', $this->site_id)->group('vendor');
+		$equipments = $selTable->getAdapter()->fetchAll($select);
+		return $equipments;
+	}
+	
+	/*** SAFETY ***/
+	
+	function getSafetyEquipments($code="", $safety_report_id = 0) {
+		$equipmentTable = new safety_equipment_list(array('db' => 'db')); //use db object from registry
+
+		$select = $equipmentTable->getAdapter()->select();
+		$select->from(array("i"=>"safety_equipment_list_items"), array('i.*'));
+		$select->joinLeft(array("e"=>"safety_equipment_list"), "e.safety_equipment_list_id=i.safety_equipment_list_id", array("e.*"));
+		if($safety_report_id > 0) {
+			$select->joinLeft(array("se"=>"safety_equipment"), "se.equipment_item_id=i.equipment_item_id and se.safety_report_id=".$safety_report_id, array("se.status_pressure_cut_in", "se.status_pressure_cut_off", "se.shift2", "se.shift3"));
+		}
+		if(!empty($code)) {
+			if($code == 'ab') $select->where('e.no NOT like "%C%"');
+			else $select->where('e.no like "%'.$code.'%"');
+		}
+		$select->where('i.site_id = ?', $this->site_id);
+		$select->order(array("e.no", "e.equipment_name", "i.item_name"));
+		return $this->db->fetchAll($select);
+	}
+	
+	function deleteEquipmentBySafetyReportId($safety_report_id)
+	{
+		$equipmentTable = new safety_equipment(array('db'=>'db'));
+		
+		if ( is_numeric($safety_report_id) && $safety_report_id > 0 )
+		{		
+			$where = $equipmentTable->getAdapter()->quoteInto('safety_report_id = ?', $safety_report_id);
+			$equipmentTable->delete($where);
+		}
+	}
+	
+	function addSafetyEquipment($params) {
+		$equipmentTable = new safety_equipment(array('db'=>'db'));
+		
+		$data = array(
+			"safety_report_id" => $params["safety_report_id"],
+			"equipment_item_id" => $params["equipment_item_id"],
+			"status_pressure_cut_in" => $params["status_pressure_cut_in"],
+			"status_pressure_cut_off" => $params["status_pressure_cut_off"],
+			"shift2" => $params["shift2"],
+			"shift3" => $params["shift3"]
+		);
+		$equipmentTable->insert($data);
+		return $this->db->lastInsertId();
+	}
+	
+	/*** PARKING EQUIPMENT ***/
+	
+	function getParkingEquipments($type, $id = 0) {
+		$equipTable = new parking_equipment_list(array('db'=>'db'));
+		/*$select = $equipTable->select()->where('equipment_type = ?', $type)->order("equipment_name");
+		return $equipTable->getAdapter()->fetchAll($select);*/
+		$select = $equipTable->getAdapter()->select();
+		$select->from(array("pel"=>"parking_equipment_list"), array("pel.*"));
+		$select->joinLeft(array("pe"=>"parking_equipment"), "pe.parking_equipment_list_id=pel.parking_equipment_list_id and pe.parking_report_id = ".$id, array("pe.equipment_id","pe.parking_report_id","pe.total_equipment","pe.ok_condition","pe.bad_condition","pe.description"));
+		$select->where('pel.equipment_type = ?', $type);
+		$select->where('pel.site_id = ?', $this->site_id);
+		$select->order("pel.equipment_name");
+		$equipments = $equipTable->getAdapter()->fetchAll($select);
+		return $equipments;
+	}
+	
+	function deletePerlengkapanByParkingReportId($parking_report_id)
+	{
+		$equipTable = new parking_equipment(array('db'=>'db'));
+		
+		if ( is_numeric($parking_report_id) && $parking_report_id > 0 )
+		{		
+			$where = $equipTable->getAdapter()->quoteInto('parking_report_id = ?', $parking_report_id);
+			$equipTable->delete($where);
+		}
+	}
+	
+	function addPerlengkapanParking($params) {
+		$equipTable = new parking_equipment(array('db'=>'db'));
+		
+		$data = array(
+			"parking_report_id" => $params["parking_report_id"],
+			"parking_equipment_list_id" => $params["parking_equipment_list_id"],
+			"total_equipment" => $params["total_equipment"],
+			"ok_condition" => $params["ok_condition"],
+			"bad_condition" => $params["bad_condition"],
+			"description" => $params["description"]
+		);
+		$equipTable->insert($data);
+		return $this->db->lastInsertId();
+	}
+	
+	/*** MOD EQUIPMENT ***/
+	
+	function getModEquipments($id = 0) {
+		$equipTable = new mod_equipment_list(array('db'=>'db'));
+		$select = $equipTable->getAdapter()->select();
+		$select->from(array("mel"=>"mod_equipment_list"), array("mel.*"));
+		$select->joinLeft(array("me"=>"mod_equipment"), "me.mod_equipment_list_id=mel.mod_equipment_list_id and me.mod_report_id = ".$id, array("me.equipment_id","me.image","me.area","me.keterangan"));
+		$select->where('mel.site_id = ?', $this->site_id);
+		$select->order("mel.equipment_name");
+		$equipments = $equipTable->getAdapter()->fetchAll($select);
+		return $equipments;
+	}
+	
+	function deleteEquipmentByModReportId($mod_report_id)
+	{
+		$equipTable = new mod_equipment(array('db'=>'db'));
+		
+		if ( is_numeric($mod_report_id) && $mod_report_id > 0 )
+		{		
+			$where = $equipTable->getAdapter()->quoteInto('mod_report_id = ?', $mod_report_id);
+			$equipTable->delete($where);
+		}
+	}
+	
+	function saveModEquipment($params) {
+		$equipTable = new mod_equipment(array('db'=>'db'));
+		
+		$data = array(
+			"mod_report_id" => $params["mod_report_id"],
+			"mod_equipment_list_id" => $params["mod_equipment_list_id"],
+			"site_id" => $params["site_id"],
+			"area" => addslashes($params["area"]),
+			"keterangan" => $params["keterangan"]
+		);
+		if(empty($params['equipment_id'])) 
+		{	
+			$equipTable->insert($data);
+			$equipment_id = $this->db->lastInsertId();
+		}
+		else
+		{
+			$where = $equipTable->getAdapter()->quoteInto('equipment_id = ?', $params['equipment_id']);
+			$equipTable->update($data, $where);
+			$equipment_id = $params['equipment_id'];
+		}
+		return $equipment_id;
+	}
+	
+	function updateModEquipmentFileName($id, $fieldname, $filename)
+	{
+		$equipTable = new mod_equipment(array('db'=>'db'));
+		
+		$data = array(
+			$fieldname => $filename
+		);
+		$where = $equipTable->getAdapter()->quoteInto('equipment_id = ?', $id);
+		$equipTable->update($data, $where);
+	}
+
+	/*** PERALATAN PROTEKSI GEDUNG ***/
+
+	function getBuildingProtectionEquipment($type, $monthly_analysis_id = 0) {
+		$equipTable = new building_protection_equipment(array('db'=>'db'));
+		$select = $equipTable->getAdapter()->select();
+		$select->from(array("bpe"=>"building_protection_equipment"), array("bpe.*"));
+		$select->joinLeft(array("bpei"=>"building_protection_equipment_item"), "bpei.equipment_id=bpe.equipment_id", array("bpei.equipment_item_id", "bpei.item_name"));
+		if(!empty($monthly_analysis_id))
+		{
+			$select->joinLeft(array("bpeid"=>"building_protection_equipment_item_detail"), "bpeid.equipment_item_id=bpei.equipment_item_id and bpeid.safety_monthly_analysis_id = {$monthly_analysis_id}", array("bpeid.item_detail_id", "bpeid.description", "bpeid.location", "bpeid.total_item", "bpeid.item_condition"));
+		}
+		else
+		{
+			$select->joinLeft(array("bpeid"=>"building_protection_equipment_item_detail"), "bpeid.equipment_item_id=bpei.equipment_item_id", array("bpeid.item_detail_id", "bpeid.description", "bpeid.location", "bpeid.total_item", "bpeid.item_condition"));
+		}
+		$select->where('(bpe.site_id = ?', $this->site_id);
+		if(!empty($type)) $select->where('bpe.type = ?', $type);
+		$select->where('bpei.enable = "1")');
+		//if(!empty($monthly_analysis_id)) $select->orWhere('bpeid.safety_monthly_analysis_id = '. $monthly_analysis_id. ' AND bpe.type = "'.$type.'"');
+		$select->order("bpe.sort_order");
+		$select->order("bpei.sort_order");
+		$equipments = $equipTable->getAdapter()->fetchAll($select);
+		return $equipments;
+	}
+
+	function getFireAccidentEquipment($monthly_analysis_id) {
+		$equipTable = new fire_accident_equipment(array('db'=>'db'));
+		$select = $equipTable->getAdapter()->select();
+		$select->from(array("fae"=>"fire_accident_equipment"), array("fae.equipment_id", "fae.equipment_name"));
+		$select->joinLeft(array("faed"=>"fire_accident_equipment_detail"), "faed.fire_accident_equipment_id=fae.equipment_id and faed.safety_monthly_analysis_id = ".$monthly_analysis_id, array("faed.*"));
+		$select->where('fae.site_id = ?', $this->site_id);
+		$select->where('fae.enable = ?', '1');
+		$select->order("fae.sort_order");
+		$equipments = $equipTable->getAdapter()->fetchAll($select);
+		return $equipments;
+	}
+
+	function getFireAccidentEquipmentDetail($monthly_analysis_id) {
+		$equipTable = new fire_accident_equipment_detail(array('db'=>'db'));
+		$select = $equipTable->getAdapter()->select();
+		$select->from(array("faed"=>"fire_accident_equipment_detail"), array("count(*) as total"));
+		$select->where('safety_monthly_analysis_id = ?', $monthly_analysis_id);
+		$total = $equipTable->getAdapter()->fetchRow($select);
+		return $total['total'];
+	}
+
+	function saveBuildingProtectionDetail($params) {
+		$equipTable = new building_protection_equipment_item_detail(array('db'=>'db'));
+		
+		$data = array(
+			"site_id" => $this->site_id,
+			"equipment_item_id" => $params["equipment_item_id"],
+			"safety_monthly_analysis_id" => $params["safety_monthly_analysis_id"],
+			"description" => addslashes($params["description"]),
+			"location" => addslashes($params["location"]),
+			"total_item" => $params["total_item"],
+			"item_condition" => addslashes($params["item_condition"])
+		);
+		if(empty($params['item_detail_id'])) 
+		{	
+			$equipTable->insert($data);
+		}
+		else
+		{
+			$where = $equipTable->getAdapter()->quoteInto('item_detail_id = ?', $params['item_detail_id']);
+			$equipTable->update($data, $where);
+		}
+	}
+
+	function saveFalseAlarm($params) {
+		$falseAlarmTable = new false_alarm(array('db'=>'db'));
+		
+		$data = array(
+			"site_id" => $this->site_id,
+			"safety_monthly_analysis_id" => $params["monthly_analysis_id"],
+			"kerusakan_system" => addslashes($params["false_alarm_kerusakan_system"]),
+			"kerusakan_alat_pendeteksi" => addslashes($params["false_alarm_kerusakan_alat_pendeteksi"]),
+			"keteledoran_pekerja_customer" => addslashes($params["false_alarm_keteledoran_pekerja_customer"])
+		);
+		if(empty($params['false_alarm_id'])) 
+		{	
+			$falseAlarmTable->insert($data);
+		}
+		else
+		{
+			$where = $falseAlarmTable->getAdapter()->quoteInto('false_alarm_id = ?', $params['false_alarm_id']);
+			$falseAlarmTable->update($data, $where);
+		}
+	}
+
+	function getFalseAlarm($safety_monthly_analysis_id) {
+		$faTable = new false_alarm(array('db'=>'db'));
+		$select = $faTable->select()->where('safety_monthly_analysis_id = ?', $safety_monthly_analysis_id);
+		$falseAlarm = $faTable->getAdapter()->fetchRow($select);
+		return $falseAlarm;
+	}
+
+	function getFireProtectionTenant($safety_monthly_analysis_id) {
+		$fpteTable = new fire_protection_tenant_equipment(array('db'=>'db'));
+		$select = $fpteTable->select()->where('safety_monthly_analysis_id = ?', $safety_monthly_analysis_id);
+		$fireProtectionTenantEquipment = $fpteTable->getAdapter()->fetchAll($select);
+		return $fireProtectionTenantEquipment;
+	}
+
+	function deleteFireProtectionTenant($safety_monthly_analysis_id)
+	{
+		$equipTable = new fire_protection_tenant_equipment(array('db'=>'db'));
+		
+		if ( is_numeric($safety_monthly_analysis_id) && $safety_monthly_analysis_id > 0 )
+		{		
+			$where = $equipTable->getAdapter()->quoteInto('safety_monthly_analysis_id = ?', $safety_monthly_analysis_id);
+			$equipTable->delete($where);
+		}
+	}
+
+	function saveFireProtectionTenant($params) {
+		$equipTable = new fire_protection_tenant_equipment(array('db'=>'db'));
+		
+		$data = array(
+			"site_id" => $this->site_id,
+			"safety_monthly_analysis_id" => $params["safety_monthly_analysis_id"],
+			/*"tenant_name" => addslashes($params["tenant_name"]),
+			"floor" => addslashes($params["floor"]),
+			"proteksi_kebakaran" => addslashes($params["proteksi_kebakaran"]),*/
+			"issue_id" => $params["issue_id"],
+			"potensi_bahaya" => addslashes($params["potensi_bahaya"]),
+			"keterangan" => addslashes($params["keterangan"])
+		);
+		if(!empty($params['perlengkapan_tenant_id'])) 
+		{	
+			$where = $equipTable->getAdapter()->quoteInto('perlengkapan_tenant_id = ?', $params['perlengkapan_tenant_id']);
+			$equipTable->update($data, $where);
+		}
+		else
+		{
+			$equipTable->insert($data);
+		}
+	}
+
+	function saveFireAccidentEquipmentDetail($params) {
+		$equipTable = new fire_accident_equipment_detail(array('db'=>'db'));
+		
+		$data = array(
+			"site_id" => $this->site_id,
+			"safety_monthly_analysis_id" => $params["safety_monthly_analysis_id"],
+			"fire_accident_equipment_id" => $params["fire_accident_equipment_id"],
+			"location" => addslashes($params["location"]),
+			"total" => addslashes($params["total"]),
+			"item_condition" => addslashes($params["item_condition"])
+		);
+		if(empty($params['equipment_detail_id'])) 
+		{	
+			$equipTable->insert($data);
+		}
+		else
+		{
+			$where = $equipTable->getAdapter()->quoteInto('equipment_detail_id = ?', $params['equipment_detail_id']);
+			$equipTable->update($data, $where);
+		}
+	}
+}
+?>

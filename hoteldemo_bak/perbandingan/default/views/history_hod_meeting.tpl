@@ -1,0 +1,121 @@
+<!-- Magnific Popup core CSS file -->
+<link rel="stylesheet" href="/css/magnific-popup.css">
+
+	<div class="row">
+	  <div class="col-md-12 col-sm-12 col-xs-12">
+			<h2 class="pagetitle">Digital MOM Issues / Projects History</h2>
+
+			<div class="filter">
+				<form id="filter-form" action="/default/hod/history"  method="post">
+					<div class="filter-field">Filter by Site: 
+						<select id="site-select" name="site" style="width:120px; padding:3px;">
+							<option value="0">All</option>
+							<?php foreach($this->sitesSelections as $site) { ?>
+							<option value="<?php echo $site['site_id']; ?>" <?php if($site['site_id'] == $this->site_id) echo "selected"; ?>><?php echo $site['site_name']; ?></option>
+							<?php } ?>
+						</select>
+					</div>
+					<div class="filter-field"> 
+						Issue/Project Name : <input type="text" name="project_name" name="project_name" value="<?php echo $this->project_name; ?>">
+					</div>
+					<div class="filter-field"> <input type="submit" id="filter-issue" name="filter-issue" value="Go" style="width:40px;" class="form-btn"></div>
+				</form>
+			</div>
+
+			<?php if($this->totalPage > 0) { ?>
+			<div class="paging">
+				<div class="record-indicator">Showing <?php echo intval($this->startRec)." - ".intval($this->endRec)." of ".intval($this->totalRec); ?>  Issues/Projects </div>
+				<div class="paging-section">
+					<?php if(!empty($this->firstPageUrl)) { ?><a href="<?php echo $this->firstPageUrl; ?>" data-id="<?php echo $issue['issue_id']; ?>"><i class="fa fa-angle-double-left" ></i></a><?php } ?>
+					<?php if(!empty($this->prevUrl)) { ?><a href="<?php echo $this->prevUrl; ?>" data-id="<?php echo $issue['issue_id']; ?>"><i class="fa fa-angle-left" ></i></a><?php } ?>
+					<span class="page-indicator" style="margin-right:10px; margin-left:10px;">Page <?php echo $this->curPage; ?> of <?php echo $this->totalPage; ?></span>
+					<?php /*<a class="create-report"><img src="/images/report-icon.png" /></a>*/ ?>
+					<?php if(!empty($this->nextUrl)) { ?><a href="<?php echo $this->nextUrl; ?>" data-id="<?php echo $issue['issue_id']; ?>"><i class="fa fa-angle-right" ></i></a><?php } ?>
+					<?php if(!empty($this->lastPageUrl)) { ?><a href="<?php echo $this->lastPageUrl; ?>" data-id="<?php echo $issue['issue_id']; ?>"><i class="fa fa-angle-double-right"></i></a><?php } ?>
+				</div>
+			</div>
+			<?php } ?>
+		  <table class="table table-striped">
+			  <thead>
+				<tr>
+					<th width="100" rowspan="2">Site</th>
+					<th rowspan="2">Projects / Issues</th>					  
+					<th colspan="3">Date</th>
+					<th rowspan="2">Follow Up</th>
+					</tr>
+					<tr>
+					<th width="90">Target</th>
+					<th width="90">Start</th>
+					<th width="90">Finish</th>						  
+				</tr>
+			  </thead>
+			  <?php
+				if(!empty($this->topics))
+				{
+			?>
+				<tbody>
+				<?php
+					$i = 1;
+					foreach($this->topics as $topic) { 
+				?>
+				<tr>
+				  	<td><?php echo $topic['site_name']; ?></td>
+					<td><?php echo $topic['topic']; ?>
+						<?php if(!empty($topic['images'])) {
+							echo "<br/>";
+							foreach($topic['images'] as $image)
+							{
+								$filename = explode("/",$image['filename']);
+								echo '<a target="_blank" href="/images/hod_meeting'.$image['filename'].'"><i class="fa fa-paperclip"></i> '.$filename[2].'</a><br/>';
+							}
+						} ?>
+					</td>
+					<td align="center"><div id="target-date<?php echo $topic['topic_id']; ?>"><?php echo $topic['targetdate']; ?></div></td>
+					<td align="center"><div id="start-date<?php echo $topic['topic_id']; ?>"><?php echo $topic['startdate']; ?></div></td>
+					<td align="center"><?php echo $topic['finishdate']; ?></td>
+					<td><?php echo $topic['follow_up']; ?></td>
+				</tr>
+				<?php
+						$i++;
+					}
+				?>				
+			  </tbody>
+			<?php
+				}
+			?>
+			</table>
+		<?php if($this->totalPage > 0) { ?>
+		  <div class="paging">
+				<div class="paging-section">
+					<?php if(!empty($this->firstPageUrl)) { ?><a href="<?php echo $this->firstPageUrl; ?>" data-id="<?php echo $issue['issue_id']; ?>"><i class="fa fa-angle-double-left" ></i></a><?php } ?>
+					<?php if(!empty($this->prevUrl)) { ?><a href="<?php echo $this->prevUrl; ?>" data-id="<?php echo $issue['issue_id']; ?>"><i class="fa fa-angle-left" ></i></a><?php } ?>
+					<span class="page-indicator" style="margin-right:10px; margin-left:10px;">Page <?php echo $this->curPage; ?> of <?php echo $this->totalPage; ?></span>
+					<?php /*<a class="create-report"><img src="/images/report-icon.png" /></a>*/ ?>
+					<?php if(!empty($this->nextUrl)) { ?><a href="<?php echo $this->nextUrl; ?>" data-id="<?php echo $issue['issue_id']; ?>"><i class="fa fa-angle-right" ></i></a><?php } ?>
+					<?php if(!empty($this->lastPageUrl)) { ?><a href="<?php echo $this->lastPageUrl; ?>" data-id="<?php echo $issue['issue_id']; ?>"><i class="fa fa-angle-double-right"></i></a><?php } ?>
+				</div>
+				<div class="record-indicator">Showing <?php echo intval($this->startRec)." - ".intval($this->endRec)." of ".intval($this->totalRec); ?> Issues/Projects </div>
+			</div>
+		<?php } ?>
+	  </div>
+	</div>
+</div>
+<!-- /page content -->
+
+
+<!-- Magnific Popup core JS file -->
+<script src="/js/jquery.magnific-popup.min.js"></script>  
+  
+<script type="text/javascript">
+$(document).ready(function() {
+	var id;
+	$('.image-popup-vertical-fit').magnificPopup({
+		type: 'image',
+		closeOnContentClick: true,
+		mainClass: 'mfp-img-mobile',
+		image: {
+			verticalFit: true
+		}
+	});
+});
+</script>

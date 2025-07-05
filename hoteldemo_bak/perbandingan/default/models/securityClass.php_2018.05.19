@@ -1,0 +1,449 @@
+<?php
+
+require_once('defaultClass.php');
+require_once('dbClass.php');
+
+class securityClass extends defaultClass
+{
+	function addSecurity($params, $saveFromChief=0) {
+		$securityTable = new security(array('db'=>'db'));
+		
+		$data = array(
+			"site_id" => $this->site_id,
+			"shift" => $params["shift"],
+			"supervisor" => $params["supervisor-inhouse"],
+			"staff_posko" => $params["staff-posko-inhouse"],
+			"staff_cctv" => $params["staff-cctv-inhouse"],
+			"safety" => $params["safety-inhouse"],
+			"chief_spd" => $params["chief-spd"],
+			"panwas_spd" => $params["panwas-spd"],
+			"danton_spd" => $params["danton-spd"],
+			"jumlah_spd" => $params["jumlah-spd"],
+			"chief_army" => $params["chief-army"],
+			"panwas_army" => $params["panwas-army"],
+			"danton_army" => $params["danton-army"],
+			"jumlah_army" => $params["jumlah-army"],
+			"briefing" => addslashes(str_replace("\n","<br>",$params["briefing"])),
+			"created_date" => date("Y-m-d H:i:s"),
+			"user_id" => $params["user_id"],
+			"chief_security_report_id" => $params["chief_security_report_id"]
+		);
+		if($saveFromChief=='1')
+		{
+			unset($data['chief_spd']);
+			unset($data['panwas_spd']);
+			unset($data['danton_spd']);
+			unset($data['jumlah_spd']);
+			unset($data['chief_army']);
+			unset($data['panwas_army']);
+			unset($data['danton_army']);
+			unset($data['jumlah_army']);
+			$data['briefing2'] = $params["briefing2"];
+			$data['briefing3'] = $params["briefing3"];
+			$data['created_date'] = $params['report_date']." ".date("H:i:s");
+		}
+		$securityTable->insert($data);
+		return $this->db->lastInsertId();
+	}
+	
+	function updateSecurity($params, $saveFromChief=0) {
+		$securityTable = new security(array('db'=>'db'));
+		
+		$data = array(
+			"shift" => $params["shift"],
+			"supervisor" => $params["supervisor-inhouse"],
+			"staff_posko" => $params["staff-posko-inhouse"],
+			"staff_cctv" => $params["staff-cctv-inhouse"],
+			"safety" => $params["safety-inhouse"],
+			"chief_spd" => $params["chief-spd"],
+			"panwas_spd" => $params["panwas-spd"],
+			"danton_spd" => $params["danton-spd"],
+			"jumlah_spd" => $params["jumlah-spd"],
+			"chief_army" => $params["chief-army"],
+			"panwas_army" => $params["panwas-army"],
+			"danton_army" => $params["danton-army"],
+			"jumlah_army" => $params["jumlah-army"],
+			"briefing" => addslashes(str_replace("\n","<br>",$params["briefing"])),			
+			"briefing2" => addslashes(str_replace("\n","<br>",$params["briefing2"])),
+			"briefing3" => addslashes(str_replace("\n","<br>",$params["briefing3"])),
+			"user_id" => $params["user_id"],
+			"chief_security_report_id" => $params["chief_security_report_id"]
+		);
+		
+		if($params['role_id'] == '2')
+		{
+			unset($data['briefing2']);
+			unset($data['briefing3']);
+		}
+		
+		if($saveFromChief=='1')
+		{
+			unset($data['chief_spd']);
+			unset($data['panwas_spd']);
+			unset($data['danton_spd']);
+			unset($data['jumlah_spd']);
+			unset($data['chief_army']);
+			unset($data['panwas_army']);
+			unset($data['danton_army']);
+			unset($data['jumlah_army']);
+			$data['briefing2'] = $params["briefing2"];
+			$data['briefing3'] = $params["briefing3"];
+		}
+		$where = $securityTable->getAdapter()->quoteInto('security_id = ?', $params['security_id']);
+		$securityTable->update($data, $where);
+		return $params['security_id'];
+	}
+	
+	function addDefectList($params) {
+		$security_defect_listTable = new security_defect_list(array('db'=>'db'));
+		
+		$data = array(
+			"security_id" => $params["security_id"],
+			"area" => $params["area"],
+			"detail" => $params["detail"],
+			"follow_up" => $params["follow_up"]
+		);
+		$security_defect_listTable->insert($data);
+		return $this->db->lastInsertId();
+	}
+	
+	function addIncident($params) {
+		$security_incidentTable = new security_incident(array('db'=>'db'));
+		
+		$data = array(
+			"security_id" => $params["security_id"],
+			"issue_id" => $params["issue_id"],
+			"status" => $params["status"]
+		);
+		$security_incidentTable->insert($data);
+		return $this->db->lastInsertId();
+	}
+	
+	function addGlitch($params) {
+		$security_glitchTable = new security_glitch(array('db'=>'db'));
+		
+		$data = array(
+			"security_id" => $params["security_id"],
+			"issue_id" => $params["issue_id"],
+			"status" => $params["status"]
+		);
+		$security_glitchTable->insert($data);
+		return $this->db->lastInsertId();
+	}
+	
+	function addLostFound($params) {
+		$security_lost_foundTable = new security_lost_found(array('db'=>'db'));
+		
+		$data = array(
+			"security_id" => $params["security_id"],
+			"issue_id" => $params["issue_id"],
+			"status" => $params["status"]
+		);
+		$security_lost_foundTable->insert($data);
+		return $this->db->lastInsertId();
+	}
+	
+	function getSecurityReports() {
+		$securityTable = new security(array('db'=>'db'));
+		$select = $securityTable->getAdapter()->select();
+		$select->from(array("s"=>"security"), array("s.*"));
+		$select->joinLeft(array("sh"=>"shift"), "sh.shift_id = s.shift", array("sh.shift_name"));
+		$select->order('s.created_date desc');
+		$security = $securityTable->getAdapter()->fetchAll($select);
+		return $security;
+	}
+	
+	function getSecurityReportById($id) {
+		$securityTable= new security(array('db'=>'db'));
+		
+		//$securityTable = new security_glitch(array('db'=>'db'));
+		$select = $securityTable->getAdapter()->select();
+		$select->from(array("s"=>"security"), array("s.*"));
+		$select->joinLeft(array("u"=>"users"), "u.user_id = s.user_id", array("u.name"));
+		$select->where('s.security_id = ?', $id);
+		$security = $securityTable->getAdapter()->fetchRow($select);
+		return $security;
+	}
+	
+	function getDefectListBySecurityId($id) {
+		$security_defect_listTable = new security_defect_list(array('db'=>'db'));
+		$select = $security_defect_listTable->select()->where("security_id='".$id."'")->order("sdl_id desc");
+		$defect_list = $security_defect_listTable->getAdapter()->fetchAll($select);
+		return $defect_list;
+	}
+	
+	function getIncidentBySecurityId($id) {
+		$security_incidentTable = new security_incident(array('db'=>'db'));
+		$select = $security_incidentTable->getAdapter()->select();
+		$select->from(array("si"=>"security_incident"), array("si.*"));
+		$select->joinLeft(array("i"=>"issues"), "i.issue_id = si.issue_id", array("i.*"));
+		$select->where('si.security_id = ?', $id);
+		$select->order('incident_id desc');
+		$incident = $security_incidentTable->getAdapter()->fetchAll($select);
+		return $incident;
+	}
+	
+	function getGlitchBySecurityId($id) {
+		$security_glitchTable = new security_glitch(array('db'=>'db'));
+		$select = $security_glitchTable->getAdapter()->select();
+		$select->from(array("sg"=>"security_glitch"), array("sg.*"));
+		$select->joinLeft(array("i"=>"issues"), "i.issue_id = sg.issue_id", array("i.*"));
+		$select->where('sg.security_id = ?', $id);
+		$select->order('glitch_id desc');
+		$glitch = $security_glitchTable->getAdapter()->fetchAll($select);
+		return $glitch;
+	}
+	
+	function getLostFoundBySecurityId($id) {
+		$security_lost_foundTable = new security_lost_found(array('db'=>'db'));
+		$select = $security_lost_foundTable->getAdapter()->select();
+		$select->from(array("slf"=>"security_lost_found"), array("slf.*"));
+		$select->joinLeft(array("i"=>"issues"), "i.issue_id = slf.issue_id", array("i.*"));
+		$select->where('slf.security_id = ?', $id);
+		$select->order('lost_found_id desc');
+		$lost_found = $security_lost_foundTable->getAdapter()->fetchAll($select);
+		return $lost_found;
+	}
+	
+	function deleteDefectListBySecurityId($security_id)
+	{
+		$security_defect_listTable = new security_defect_list(array('db'=>'db'));
+		
+		if ( is_numeric($security_id) && $security_id > 0 )
+		{		
+			$where = $security_defect_listTable->getAdapter()->quoteInto('security_id = ?', $security_id);
+			$security_defect_listTable->delete($where);
+		}
+	}
+	
+	function deleteIncidentBySecurityId($security_id)
+	{
+		$security_incidentTable = new security_incident(array('db'=>'db'));
+		
+		if ( is_numeric($security_id) && $security_id > 0 )
+		{		
+			$where = $security_incidentTable->getAdapter()->quoteInto('security_id = ?', $security_id);
+			$security_incidentTable->delete($where);
+		}
+	}
+	
+	function deleteGlitchBySecurityId($security_id)
+	{
+		$security_glitchTable = new security_glitch(array('db'=>'db'));
+		
+		if ( is_numeric($security_id) && $security_id > 0 )
+		{		
+			$where = $security_glitchTable->getAdapter()->quoteInto('security_id = ?', $security_id);
+			$security_glitchTable->delete($where);
+		}
+	}
+	
+	function deleteLostFoundBySecurityId($security_id)
+	{
+		$security_lost_foundTable = new security_lost_found(array('db'=>'db'));
+		
+		if ( is_numeric($security_id) && $security_id > 0 )
+		{		
+			$where = $security_lost_foundTable->getAdapter()->quoteInto('security_id = ?', $security_id);
+			$security_lost_foundTable->delete($where);
+		}
+	}
+	
+	function deleteSecurityById($id)
+	{
+		$securityTable = new security(array('db'=>'db'));
+		
+		if ( is_numeric($id) && $id > 0 )
+		{		
+			$where = $securityTable->getAdapter()->quoteInto('security_id = ?', $id);
+			$securityTable->delete($where);
+		}
+	}
+	
+	function saveChiefReport($params) {
+		$chiefTable = new chief_security_report(array('db'=>'db'));
+		
+		$data = array(
+			"site_id" => $this->site_id,
+			"chief_spd" => $params["chief_spd"],
+			"chief_army" => $params["chief_army"],
+			"panwas_spd" => $params["panwas_spd"],
+			"panwas_army" => $params["panwas_army"],
+			"danton_pagi_spd" => $params["danton_pagi_spd"],
+			"danton_pagi_army" => $params["danton_pagi_army"],
+			"sosialisasi_sop_a" => $params["sosialisasi_sop_a"],
+			"sosialisasi_sop_b" => $params["sosialisasi_sop_b"],
+			"sosialisasi_sop_c" => $params["sosialisasi_sop_c"],
+			"created_date" => date("Y-m-d H:i:s"),
+			"user_id" => $params["user_id"]
+		);
+		if(empty($params['chief_security_report_id']))
+		{
+			$chiefTable->insert($data);
+			return $this->db->lastInsertId();
+		}
+		else
+		{
+			unset($data['created_date']);
+			$where = $chiefTable->getAdapter()->quoteInto('chief_security_report_id = ?', $params['chief_security_report_id']);
+			$chiefTable->update($data, $where);
+			return $params['chief_security_report_id'];
+		}
+	}
+	
+	function getChiefSecurityReports() {
+		$securityTable = new security(array('db'=>'db'));
+		$select = $securityTable->select()->where('site_id = ?', $this->site_id)->group('date(created_date)')->order('security_id desc');
+		$security = $securityTable->getAdapter()->fetchAll($select);
+		return $security;
+	}
+	
+	function getChiefSecurityReportById($id) {
+		$chiefTable = new chief_security_report(array('db'=>'db'));
+		
+		$select = $chiefTable->getAdapter()->select();
+		$select->from(array("cs"=>"chief_security_report"), array("cs.*"));
+		$select->joinLeft(array("u"=>"users"), "u.user_id = cs.user_id", array("u.name"));
+		$select->where('cs.chief_security_report_id = ?', $id);
+		$security = $chiefTable->getAdapter()->fetchRow($select);
+		return $security;
+	}
+	
+	function addSpecificReport($params) {
+		$specificReportTable = new security_specific_report(array('db'=>'db'));
+		
+		$data = array(
+			"chief_security_report_id" => intval($params["chief_security_report_id"]),
+			"issue_type" => intval($params["issue_type"]),
+			"time" => $params["time"],
+			"detail" => $params["detail"],
+			"status" => $params["status"],
+			"created_date" => date("Y-m-d H:i:s"),
+			"security_id" =>  intval($params["security_id"]),
+			"issue_id" => intval($params["issue_id"]),
+			"area" => $params["area"]
+		);
+		if(empty($params["chief_security_report_id"])) {
+			unset($data['chief_security_report_id']);
+		}
+		$specificReportTable->insert($data);
+		return $this->db->lastInsertId();
+	}
+	
+	function deleteSpecificReportByChiefSecurityId($chief_security_report_id)
+	{
+		$specificReportTable = new security_specific_report(array('db'=>'db'));
+		
+		if ( is_numeric($chief_security_report_id) && $chief_security_report_id > 0 )
+		{		
+			$where = $specificReportTable->getAdapter()->quoteInto('chief_security_report_id = ?', $chief_security_report_id);
+			$specificReportTable->delete($where);
+		}
+	}
+	
+	function deleteSpecificReportBySecurityId($security_id)
+	{
+		$specificReportTable = new security_specific_report(array('db'=>'db'));
+		
+		if ( is_numeric($security_id) && $security_id > 0 )
+		{		
+			$where = $specificReportTable->getAdapter()->quoteInto('security_id = ?', $security_id);
+			$specificReportTable->delete($where);
+		}
+	}
+	
+	function getSpecificReportByChiefSecurityReport($chief_security_report_id) {
+		$specificReportTable = new security_specific_report(array('db'=>'db'));
+		
+		$select = $specificReportTable->getAdapter()->select();
+		$select->from(array("ssr"=>"security_specific_report"), array("ssr.*"));
+		$select->joinLeft(array("it"=>"issue_type"), "it.issue_type_id = ssr.issue_type", array("it.issue_type_id","it.issue_type as issue_type_name"));
+		$select->where('ssr.chief_security_report_id = ?', $chief_security_report_id);
+		$specific_reports = $specificReportTable->getAdapter()->fetchAll($select);
+		return $specific_reports;
+	}
+	
+	function getSpecificReportByIds($security_ids, $chief_security_report_id) {
+		$specificReportTable = new security_specific_report(array('db'=>'db'));
+		
+		$select = $specificReportTable->getAdapter()->select();
+		$select->from(array("ssr"=>"security_specific_report"), array("ssr.*"));
+		$select->joinLeft(array("it"=>"issue_type"), "it.issue_type_id = ssr.issue_type", array("it.issue_type_id","it.issue_type as issue_type_name"));
+		$select->joinLeft(array("i"=>"issues"), "i.issue_id = ssr.issue_id", array("i.issue_date","i.description"));
+		$select->where('ssr.security_id in ('.$security_ids.')');
+		if($chief_security_report_id > 0) $select->orwhere('ssr.chief_security_report_id = ?', $chief_security_report_id);
+		$specific_reports = $specificReportTable->getAdapter()->fetchAll($select);
+		return $specific_reports;
+	}
+	
+	function deleteChiefSecurityReportById($id)
+	{
+		$chiefTable = new chief_security_report(array('db'=>'db'));
+		
+		if ( is_numeric($id) && $id > 0 )
+		{		
+			$where = $chiefTable->getAdapter()->quoteInto('chief_security_report_id = ?', $id);
+			$chiefTable->delete($where);
+		}
+	}
+	
+	function getSecurityReportByShift($date, $shift) {
+		$securityTable= new security(array('db'=>'db'));
+		
+		$select = $securityTable->getAdapter()->select();
+		$select->from(array("s"=>"security"), array("s.*"));
+		$select->joinLeft(array("u"=>"users"), "u.user_id = s.user_id", array("u.name"));
+		$select->where('s.shift = ?', $shift);
+		$select->where('date(s.created_date) = ?', $date);
+		$security = $securityTable->getAdapter()->fetchRow($select);
+		return $security;
+	}
+	
+	function getGlitchByDate($date)
+	{
+		$securityTable= new security(array('db'=>'db'));
+		$select = $securityTable->getAdapter()->select();
+		$select = "select * from security_glitch sg left join security s  on sg.security_id = s.security_id where  date(created_date) = '".$date."'";
+		$security_glitch = $securityTable->getAdapter()->fetchRow($select);
+		return $security_glitch;
+	}
+	
+	function getIncidentByDate($date)
+	{
+		$securityTable= new security(array('db'=>'db'));
+		$select = $securityTable->getAdapter()->select();
+		$select = "select * from security_incident sg left join security s  on sg.security_id = s.security_id where  date(created_date) = '".$date."'";
+		$security_glitch = $securityTable->getAdapter()->fetchRow($select);
+		return $security_glitch;
+	}
+	
+	function getLostFound($date)
+	{
+		$securityTable= new security(array('db'=>'db'));
+		$select = $securityTable->getAdapter()->select();
+		$select = "select * from security_lost_found sg left join security s  on sg.security_id = s.security_id where  date(created_date) = '".$date."'";
+		$security_glitch = $securityTable->getAdapter()->fetchRow($select);
+		return $security_glitch;
+	}
+	
+	function getDefectListByIds($ids) {
+		$select = "select *, 4 as issue_type_id from security_defect_list where security_id in (".$ids.")";
+		$issues = $this->db->fetchAll($select);
+		return $issues;
+	}
+	
+	function getSpecificReportBySecurityIdIssueType($security_id, $issue_type) {
+		$specificReportTable = new security_specific_report(array('db'=>'db'));
+		$select = $specificReportTable->getAdapter()->select();
+		$select->from(array("ssr"=>"security_specific_report"), array("ssr.*"));
+		$select->joinLeft(array("it"=>"issue_type"), "it.issue_type_id = ssr.issue_type", array("it.issue_type_id","it.issue_type as issue_type_name"));
+		$select->joinLeft(array("i"=>"issues"), "i.issue_id = ssr.issue_id", array("i.issue_date","i.description"));
+		$select->where('ssr.security_id = ?', $security_id);
+		$select->where("ssr.issue_type = ?", $issue_type);
+		$specific_reports = $specificReportTable->getAdapter()->fetchAll($select);
+		return $specific_reports;
+	}
+	
+	
+}
+?>

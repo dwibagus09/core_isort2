@@ -1,0 +1,34 @@
+<!-- page content -->
+<div class="right_col" role="main">
+	<div class="row">
+	  <div class="col-md-12 col-sm-12 col-xs-12">
+		  <table id="list-issues">
+			<tr>
+				<th>Image</th>
+				<th>Detail</th>
+				<th>Comments</th>
+			</tr>
+			<?php
+				if(!empty($this->issues))
+				{
+					foreach($this->issues as $issue) { 
+			?>
+				<tr>
+					<td align="center"><img src="/images/issues/<?php echo $issue['picture']; ?>" width="50px" /></td>
+					<td><?php echo "<strong>Location:</strong><br/>".$issue['location']."<br/><br/><strong>Discussion:</strong><br/>".$issue['description']."<br/><br/><strong>Issue Date:</strong><br/>".$issue['issue_date']; ?></td>
+					<td><?php echo $issue['comments']; ?></td>
+				</tr>
+			<?php
+					}
+				}
+			?>
+		  </table>
+	  </div>
+	</div>
+  </div>
+  <br /> 
+  
+
+</div>
+<!-- /page content -->
+

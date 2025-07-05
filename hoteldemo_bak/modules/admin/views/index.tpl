@@ -1,0 +1,165 @@
+        <!-- page content -->
+        <div class="right_col" role="main">
+			<?php if(!empty($this->msg)) echo '<div class="msg">'.$this->msg.'</div>'; ?>
+			<form id="issue-form" action="/default/issue/submitissue"  method="post" enctype="multipart/form-data">
+			  <div class="row">
+				<div class="col-md-12 col-sm-12 col-xs-12">
+				  <div class="dashboard">
+					<div id="issue-finding-field" class="col-md-1 col-sm-4 col-xs-4">	
+						<div class="menu-icon">
+							 <label for="picture-issue">
+								<div class="icon-img"><img src="/images/newlogo_issue_finding.png" /></div>
+								<div class="icon-title">Report Issue</div>
+							</label>
+							<input id="picture-issue" name="picture" type="file" accept="image/*" capture="capture" />		
+						</div>
+					</div>
+
+					<div class="col-md-1 col-sm-4 col-xs-4">
+						<div class="menu-icon">
+							<a href="/default/issue/listissues">
+								<div class="icon-img"><img src="/images/newlogo_list_issue.png" /></div>
+								<div class="icon-title">List &nbsp;Issue&nbsp;</div>
+							</a>	
+						</div>
+					</div>		
+
+					<div class="col-md-1 col-sm-4 col-xs-4">	
+						<div class="menu-icon">
+							<a href="/default/issue/solvedissues">
+								<div class="icon-img"><img id="solved-issue-icon" src="/images/checklist.png" /></div>
+								<div class="icon-title">Solved Issue</div>	
+							</a>
+						</div>
+					</div>		
+					<?php if($this->curUser['role_id'] == '1' || $this->curUser['role_id'] == '2' || $this->curUser['role_id'] == '3') { ?>
+					<div class="col-md-1 col-sm-4 col-xs-4">	
+						<div class="menu-icon">
+							<a href="/default/security/<?php if($this->curUser['role_id'] == '2') echo 'view'; else echo 'viewchiefreport'; ?>">
+								<div class="icon-img"><img id="security-icon" src="/images/security_icon.png" /></div>
+								<div class="icon-title">Security Report</div>	
+							</a>
+						</div>
+					</div>	
+					<?php } ?>
+					<?php if($this->curUser['role_id'] == '1' || $this->curUser['role_id'] == '7') { ?>
+					<div class="col-md-1 col-sm-4 col-xs-4">	
+						<div class="menu-icon">
+							<a href="/default/safety/viewreport">
+								<div class="icon-img"><img id="security-icon" src="/images/safety-icon.png" /></div>
+								<div class="icon-title">Safety Report</div>	
+							</a>
+						</div>
+					</div>	
+					<?php } ?>
+					<?php if($this->curUser['user_id'] == '1') { ?>
+					<div class="col-md-1 col-sm-4 col-xs-4">	
+						<div class="menu-icon">
+							<a href="/default/parking/viewreport">
+								<div class="icon-img"><img id="parking-icon" src="/images/parking_icon.png" /></div>
+								<div class="icon-title">Parking &amp; Traffic Report</div>	
+							</a>
+						</div>
+					</div>	
+					<div class="col-md-1 col-sm-4 col-xs-4">	
+						<div class="menu-icon">
+							<a href="/default/housekeeping/viewreport">
+								<div class="icon-img"><img id="housekeeping-icon" src="/images/housekeeping_icon.png" /></div>
+								<div class="icon-title">Housekeeping Report</div>	
+							</a>
+						</div>
+					</div>	
+					<?php } ?>
+					<div class="clearfix"></div>
+				  </div>
+				  
+				  <div id="other-info">
+					<div id="image-holder"></div>
+					<?php if(!empty($this->categories)) { ?>
+					<div id="category-field">
+						Category:<br/>
+						<select id="category-select" name="category">
+						<?php foreach($this->categories as $category) { ?>
+						  <option value="<?php echo $category['category_id']; ?>"><?php echo $category['category_name']; ?></option>
+						 <?php } ?>
+						</select><br/>
+						<?php /*<input type="button" id="cancel-issue" name="cancel-issue" value="Cancel" /> <input type="button" id="category-next" name="category-next" value="Next" /> */ ?>
+					</div>
+					<?php } ?>
+					<div id="location-field">
+						Location:<br/>
+						<textarea rows="4" cols="50" id="location-txtarea" name="location"></textarea><br/>
+						<?php /*<input type="button" id="cancel-issue" name="cancel-issue" value="Cancel" /> <input type="button" id="location-next" name="location-next" value="Next" /> */ ?>
+					</div>
+					<div id="type-field">
+						Type:<br/>
+						<select id="type-select" name="type_id">
+						<?php foreach($this->type as $type) { ?>
+						  <option value="<?php echo $type['issue_type_id']; ?>"><?php echo $type['issue_type']; ?></option>
+						 <?php } ?>
+						</select>
+					</div>
+					<div id="discussion-field">
+						Discussion:<br/>
+						<textarea rows="4" cols="50" id="discussion-txtarea" name="description"></textarea><br/>
+						<!--<input type="radio" name="sendwa" value="4" checked> Send Anonymous Notification<br>-->
+						<!--<input type="radio" name="sendwa" value="1" checked> Send WhatsApp to Chief/Manager<br>-->
+						<!--<input type="radio" name="sendwa" value="2"> Send WhatsApp to Group/Contact List<br>-->
+						<!--<input type="radio" name="sendwa" value="3"> Do not send Notification<br/><br/>-->
+						<input type="button" id="cancel-issue" name="cancel-issue" value="Cancel" /> <input type="submit" id="issue-submit" name="issue-submit" value="Submit">
+					</div>
+					<br/><br/>
+				  </div>
+				</div>
+			</form>
+          </div>
+          <br /> 
+		  
+
+        </div>
+        <!-- /page content -->
+
+    
+<script type="text/javascript">
+$("#issue-form")[0].reset();
+$("#other-info").hide();
+
+function filePreview(input) {
+    if (input.files && input.files[0]) {
+        var reader = new FileReader();
+        reader.addEventListener('load', function() {
+			$(".dashboard").hide();
+			/*$("#discussion-field").hide();*/
+			$("#other-info").show();
+			$("<img />", {
+				"src": reader.result,
+                "class": "thumb-image"
+            }).appendTo("#image-holder");
+		});
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+$( "#picture-issue" ).change(function() {
+	$(".msg").hide();
+  filePreview(this);
+});
+
+$( "#cancel-issue" ).click(function() {
+  location.href="/default/index/index";
+});
+
+$('#issue-form').on('submit', function(event){
+	$("body").mLoading();
+});
+
+/*$( "#location-next" ).click(function() {
+	$("#location-field").hide();
+	$("#discussion-field").show();
+});*/
+
+$("#category-select").change(function() {
+	console.log($("#category-select").val());
+});
+
+</script>

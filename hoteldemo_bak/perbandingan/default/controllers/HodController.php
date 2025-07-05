@@ -1,0 +1,2008 @@
+<?php
+
+require_once('actionControllerBase.php');
+require_once('Zend/Json.php');
+
+class HodController extends actionControllerBase
+{
+    public function dashboardAction() {
+		$logsTable = $this->loadModel('logs');
+		$logData['user_id'] = intval($this->ident['user_id']);
+		$logData['action'] = "View HOD Dashboard";
+		$logData['data'] = "View HOD Dashboard";
+		$logsTable->insertLogs($logData);	
+
+		$this->renderTemplate('hod_dashboard.tpl'); 
+	}
+    
+	public function addAction() {
+		if($this->showAddHOD)
+		{
+			$logsTable = $this->loadModel('logs');
+			$logData['user_id'] = intval($this->ident['user_id']);
+			$logData['action'] = "Add Digital MOM";
+			$logData['data'] = "Add Digital MOM";
+			$logsTable->insertLogs($logData);	
+
+			$category = $this->loadModel('category');
+			$this->view->categories = $category->getCategories();
+
+            if($this->teacher) $this->view->title = "Add Digital MOM";
+			else $this->view->title = "Add Digital MOM";
+
+			$hodTable = $this->loadModel('hod');
+			$prevHodMeeting = $hodTable->getPrevHodMeeting("");
+			if(!empty($prevHodMeeting['hod_meeting_id'])) {
+				$attendance = $hodTable->getAttendanceByHodMeetingId($prevHodMeeting['hod_meeting_id']);
+				foreach($attendance as &$att)
+				{
+					unset($att['attendance_id']);
+				}
+				$this->view->attendance = $attendance;
+			}
+
+			$this->renderTemplate('form_hod_meeting.tpl'); 
+		}
+		else {
+			$this->_response->setRedirect($this->baseUrl);
+			$this->_response->sendResponse();
+			exit();
+		}
+	}
+
+	public function editAction() {
+		if($this->showAddHOD)
+		{
+			$params = $this->_getAllParams();
+
+			$logsTable = $this->loadModel('logs');
+			$logData['user_id'] = intval($this->ident['user_id']);
+			$logData['action'] = "Edit Digital MOM";
+			$logData['data'] = json_encode($params);
+			$logsTable->insertLogs($logData);	
+
+			$category = $this->loadModel('category');
+			$this->view->categories = $category->getCategories();
+
+			$hodTable = $this->loadModel('hod');
+			$hodMeeting = $hodTable->getHodMeetingById($params['id']);
+			$hodMeetingDateTime = explode(" ", $hodMeeting['meeting_date']);
+			$hodMeeting['tanggal'] =$hodMeetingDateTime[0];
+			$this->view->hodMeeting = $hodMeeting;
+
+			$this->view->attendance = $hodTable->getAttendanceByHodMeetingId($params['id']);
+
+            if($this->teacher) $this->view->title = "Edit Digital MOM";
+			else $this->view->title = "Edit Digital MOM";
+
+			$this->renderTemplate('form_hod_meeting.tpl'); 
+		}
+		else {
+			$this->_response->setRedirect($this->baseUrl);
+			$this->_response->sendResponse();
+			exit();
+		}
+	}
+
+	public function saveAction() {
+		if($this->showAddHOD)
+		{
+			$params = $this->_getAllParams();
+
+			$params['user_id'] = $this->ident['user_id'];
+			$hodTable = $this->loadModel('hod');
+			$data['hod_meeting_id'] = $hodTable->saveHod($params);
+
+			$i = 0;
+			foreach($params['attendance_site_id'] as $site_id)
+			{
+				$data["attendance_id"] = $params["attendance_id"][$i];
+				$data["category_id"] = 1;
+				$data["site_id"] = $site_id;
+				$data["attendance_name"] = $params["attendance_name"][$i];
+				$hodTable->saveAttendance($data);
+				$i++;
+			}
+
+			$logsTable = $this->loadModel('logs');
+			$logData['user_id'] = intval($this->ident['user_id']);
+			$logData['action'] = "Save Digital MOM";
+			$logData['data'] = json_encode($params);
+			$logsTable->insertLogs($logData);	
+
+			$this->_response->setRedirect($this->baseUrl."/default/hod/hodmeetingform2/id/".$data['hod_meeting_id']);
+			$this->_response->sendResponse();
+			exit();
+		}
+		else {
+			$this->_response->setRedirect($this->baseUrl);
+			$this->_response->sendResponse();
+			exit();
+		}
+	}
+
+	public function hodmeetingform2Action() {
+		if($this->showAddHOD)
+		{
+			$params = $this->_getAllParams();
+
+			$logsTable = $this->loadModel('logs');
+			$logData['user_id'] = intval($this->ident['user_id']);
+			$logData['action'] = "Open Form Digital MOM 2";
+			$logData['data'] = json_encode($params);
+			$logsTable->insertLogs($logData);	
+
+			$hodTable = $this->loadModel('hod');
+			$hodMeeting = $hodTable->getHodMeetingById($params['id']);
+			$hodMeetingDateTime = explode(" ", $hodMeeting['meeting_date']);
+			$hodMeeting['tanggal_jam'] = date("l, j F Y", strtotime($hodMeetingDateTime[0]))." / ". $hodMeeting['meeting_time'];
+			$hodMeeting['tanggal'] = date("j-M", strtotime($hodMeetingDateTime[0]));
+			$this->view->hodMeeting = $hodMeeting;
+
+			$this->view->attendance = $hodTable->getAttendanceByHodMeetingId($params['id']);
+			
+			$topic = $hodTable->getHodMeetingTopics($params['id']);
+			foreach($topic as &$t)
+			{
+				if($t['start_date'] == "0000-00-00 00:00:00") $t['startdate'] = "";
+				else {
+					$startdate = explode(" ", $t['start_date']);
+					$t['startdate'] = date("j M Y", strtotime($startdate[0]));
+				} 
+
+				if($t['finish_date'] == "0000-00-00 00:00:00") $t['finishdate'] = "";
+				else {
+					$finishdate = explode(" ", $t['finish_date']);
+					$t['finishdate'] = date("j M Y", strtotime($finishdate[0]));
+				} 
+
+				if(!empty($t['filename']))
+				{
+					$t['images'] = $hodTable->getTopicImages($t['topic_id']);
+				}
+			}
+			$this->view->topic = $topic;
+
+			$category = $this->loadModel('category');
+			$this->view->categories = $category->getCategories();
+
+			$this->view->hod_meeting_id = $params['id'];
+
+			$this->renderTemplate('form_hod_meeting2.tpl'); 
+		}
+		else {
+			$this->_response->setRedirect($this->baseUrl);
+			$this->_response->sendResponse();
+			exit();
+		}
+	}
+
+	public function savetopicAction() {
+		if($this->showAddHOD)
+		{
+			$params = $this->_getAllParams();
+			$params['user_id'] = $this->ident['user_id'];
+			$hodTable = $this->loadModel('hod');
+			$params["department_id"] = 1;
+			$params['hod_meeting_topic_id'] = $topic_id = $hodTable->saveTopic($params);
+
+			if(!empty($_FILES["topic_image"]))
+			{
+				$magickPath = "/usr/bin/convert";
+				$datafolder = $this->config->paths->html."/images/hod_meeting/".date("Ym")."/";
+				if(!is_dir($datafolder)) mkdir($datafolder, 0777, true);
+				$i = 0;
+				foreach($_FILES["topic_image"]['tmp_name'] as $tmpname)
+				{
+					$ext = explode(".",$_FILES["topic_image"]['name'][$i]);
+					$filename = "topic_".$topic_id."_".date("YmdHis")."_".$i.".".$ext[count($ext)-1];
+					if(move_uploaded_file($tmpname, $datafolder.$filename))
+					{
+						if(in_array(strtolower($ext[count($ext)-1]), array("jpg", "jpeg", "png", "gif"))) 
+						{
+							/*** convert to jpg ***/
+							if(!in_array(strtolower($ext[count($ext)-1]), array("jpg"))) 
+							{
+								$newFilename =  "topic_".$topic_id."_".date("YmdHis")."_".$i.".jpg";
+								exec($magickPath . ' ' . $datafolder.$filename . ' ' . $datafolder.$newFilename);
+							}
+							else  $newFilename = "topic_".$topic_id."_".date("YmdHis")."_".$i.".".$ext[count($ext)-1];
+
+							$params['filename'] = "/".date("Ym")."/".$newFilename;
+							$hodTable->saveTopicImage($params);
+							
+							/*** create thumbnail image ***/
+							exec($magickPath . ' ' . $datafolder.$newFilename . ' -resize 128x128 ' . $datafolder."topic_".$topic_id."_".date("YmdHis")."_".$i."_thumb.jpg");
+							/*** resize image if size greater than 500 Kb ***/
+							if(filesize($datafolder.$newFilename) > 500000) exec($magickPath . ' ' . $datafolder.$newFilename . ' -resize 800x800\> ' . $datafolder.$newFilename);
+						}
+						else
+						{
+							$newFilename = "topic_".$topic_id."_".date("YmdHis")."_".$i.".".$ext[count($ext)-1];
+							$params['filename'] = "/".date("Ym")."/".$newFilename;
+							$hodTable->saveTopicImage($params);							
+						}
+					}
+					$i++;
+				}
+			}
+
+			$logsTable = $this->loadModel('logs');
+			$logData['user_id'] = intval($this->ident['user_id']);
+			$logData['action'] = "Save Digital MOM Topic";
+			$logData['data'] = json_encode($params);
+			$logsTable->insertLogs($logData);	
+
+			$this->_response->setRedirect($this->baseUrl."/default/hod/hodmeetingform2/id/".$params['hod_meeting_id']);
+			$this->_response->sendResponse();
+			exit();
+		}
+		else {
+			$this->_response->setRedirect($this->baseUrl);
+			$this->_response->sendResponse();
+			exit();
+		}
+	}
+
+	public function viewAction() {
+		$params = $this->_getAllParams();
+		
+		$hodTable = $this->loadModel('hod');
+
+		if(empty($params['start'])) $params['start'] = '0';
+		$params['pagesize'] = 10;
+		$this->view->start = $params['start'];
+		$hod = $hodTable->getHodMeetingMom($params);
+		foreach($hod as &$h)
+		{
+			$date = explode(" ", $h['meeting_date']);
+			$arr_date = explode("-",$date[0]);
+			$h['day_date'] = date("l, j F Y", mktime(0, 0, 0, $arr_date[1], $arr_date[2], $arr_date[0]));
+
+			$h['comments'] = $hodTable->getCommentsByHODMeetingId($h['hod_meeting_id'], '3');
+		}
+		$this->view->hodMeeting = $hod;	
+		
+		$totalReport = $hodTable->getTotalHodMom();
+		if($totalReport['total'] > 10)
+		{
+			if($params['start'] >= 10)
+			{
+				$this->view->firstPageUrl = "/default/hod/view";
+				$this->view->prevUrl = "/default/hod/view/start/".($params['start']-$params['pagesize']);
+			}
+			if($params['start'] < (floor(($totalReport['total']-1)/10)*10))
+			{
+				$this->view->nextUrl = "/default/hod/view/start/".($params['start']+$params['pagesize']);
+				$this->view->lastPageUrl = "/default/hod/view/start/".(floor(($totalReport['total']-1)/10)*10);
+			}
+		}
+		$this->view->curPage = ($params['start']/$params['pagesize'])+1;
+		$this->view->totalPage = ceil($totalReport['total']/$params['pagesize']);
+		if($totalReport['total'] > 0) $this->view->startRec = $params['start'] + 1;
+		else $this->view->startRec = 0;
+		$endRec = $params['start'] + $params['pagesize'];
+		if($totalReport['total'] >=  $endRec) $this->view->endRec =  $endRec;
+		else $this->view->endRec =  $totalReport['total'];		
+		$this->view->totalRec = $totalReport['total'];
+
+	
+		$this->view->site_id = $this->site_id;
+
+		$this->view->showHODMeetingAdmin = $this->showHODMeetingAdmin;
+
+		$logsTable = $this->loadModel('logs');
+		$logData['user_id'] = intval($this->ident['user_id']);
+		$logData['action'] = "View Digital MOM List";
+		$logData['data'] = json_encode($params);
+		$logsTable->insertLogs($logData);	
+
+		$this->renderTemplate('view_hod_meeting.tpl');  
+	}
+
+	public function viewdetailAction() {
+		if($this->showHODMeeting == 1 || $this->showHODMeetingAdmin == 1)
+		{
+
+			$params = $this->_getAllParams();
+			$logsTable = $this->loadModel('logs');
+			$logData['user_id'] = intval($this->ident['user_id']);
+			$logData['action'] = "View Digital MOM";
+			$logData['data'] = json_encode($params);
+			$logsTable->insertLogs($logData);	
+
+			$hodTable = $this->loadModel('hod');
+			$hodMeeting = $hodTable->getHodMeetingById($params['id']);
+			$hodMeetingDateTime = explode(" ", $hodMeeting['meeting_date']);
+			$hodMeeting['tanggal_jam'] = date("l, j F Y", strtotime($hodMeetingDateTime[0]))." / ".$hodMeeting['meeting_time'];
+			$hodMeeting['tanggal'] = date("j-M", strtotime($hodMeetingDateTime[0]));
+			$this->view->hodMeeting = $hodMeeting;
+			$this->view->currentMeetingDate = $hodMeetingDateTime[0];
+
+			if($this->showSiteSelection == 1)
+			{
+				$siteTable = $this->loadModel('site');
+				if($hodMeeting['site_id'] != $this->ident['site_id'])
+				{
+					$siteTable->setSite($hodMeeting['site_id']);
+					//$this->ident['site_id'] = $hodMeeting['site_id'];
+					$this->_response->setRedirect($this->baseUrl."/default/hod/viewdetail/id/".$params['id']);
+					$this->_response->sendResponse();
+					exit();
+				}
+			}
+			
+			$this->view->attendance = $attendance = $hodTable->getAttendanceByHodMeetingId($params['id']);	
+			$pic = array();
+			$a=0;
+			if(!empty($attendance))
+			{
+				foreach($attendance as $att)
+				{
+					$pic[$att['site_id']] .= "<br/>".$att['attendance_name'];
+				}
+			}
+			$this->view->pic = $pic;
+
+			/*$role_ids = implode(",",$this->ident['role_ids']);
+			Zend_Loader::LoadClass('userClass', $this->modelDir);
+			$userClass = new userClass();
+			$cat_ids = $userClass->getCategoriesByRoles($role_ids);
+			$dept_ids = "";
+			if(!empty($cat_ids))
+			{
+				foreach($cat_ids as $ci)
+				{
+					if($ci['category_id'] > 0)
+						$dept_ids .= $ci['category_id'].",";
+					else
+					{
+						$dept_ids = "";
+						break;
+					}
+				}
+				$dept_ids = substr($dept_ids, 0, -1);
+			}
+			$this->view->dept_ids = $dept_ids;*/
+			
+			if(in_array($this->ident['role_id'], array('2','3')))
+			    $this->view->site_ids = $site_ids = $this->ident['site_id'];
+			
+
+			$topic = $hodTable->getHodMeetingTopics($params['id'], $hodMeetingDateTime[0], $site_ids);
+			if(!empty($topic))
+			{
+				foreach($topic as &$t)
+				{
+					/*if($t['start_date'] == "0000-00-00 00:00:00") $t['startdate'] = "";
+					else {
+						$startdate = explode(" ", $t['start_date']);
+						$t['startdate'] = date("j M Y", strtotime($startdate[0]));
+					} */
+
+					if(!empty($t['topic_target_id']))
+					{
+						$topic_target_date = $hodTable->getTopicTargetDate($t['topic_id']);
+						foreach($topic_target_date as $target_date)
+						{
+							$t['targetdate'] .= date("j M Y", strtotime($target_date['target_date'])).' <i class="fa fa-trash remove-target-date" data-id="'.$target_date['topic_target_id'].'" data-topicid="'.$t['topic_id'].'" style="cursor:pointer;"></i><br/>';
+						}						
+					}
+
+					if(!empty($t['topic_start_id']))
+					{
+						$topic_start_date = $hodTable->getTopicStartDate($t['topic_id']);
+						foreach($topic_start_date as $start_date)
+						{
+							$t['startdate'] .= date("j M Y", strtotime($start_date['start_date'])).' <i class="fa fa-trash remove-start-date" data-id="'.$start_date['topic_start_id'].'" data-topicid="'.$t['topic_id'].'" style="cursor:pointer;"></i><br/>';
+						}	
+					}
+
+					if(empty($t['finish_date']) || $t['finish_date'] == "0000-00-00 00:00:00") $t['finishdate'] = $t['finish_date'] = "";
+					else {
+						$finishdate = explode(" ", $t['finish_date']);
+						$t['finishdate'] = $finishdate[0];
+						$t['finish_date'] = date("j M Y", strtotime($finishdate[0]));
+					} 
+
+					if(!empty($t['filename']))
+					{
+						$t['images'] = $hodTable->getTopicImages($t['topic_id']);
+					}
+				}
+			}
+			$this->view->topic = $topic;
+
+			if($this->showHODMeetingAdmin == 1) $limitFollowUp = 1;
+			else $limitFollowUp = 2;
+
+			$prevHodMeetingFollowUp = $hodTable->getPrevHodMeetingFollowUp($params['id'], $hodMeetingDateTime[0], $dept_ids);
+			if(!empty($prevHodMeetingFollowUp))
+			{
+				$prevFollowUpTopic = array();
+				$prevTopicId = 0;
+				foreach($prevHodMeetingFollowUp as $prevfu)
+				{
+					if($prevTopicId != $prevfu['topic_id'])
+					{	
+						$f = 0;		
+						$prevTopicId = $prevfu['topic_id'];
+					}
+					if(!empty($prevfu['follow_up']))
+					{	
+						if($this->showHODMeetingAdmin == 1 && $prevfu['hod_meeting_id'] == $params['id'] && $hodMeeting['approved'] != 1)
+						{
+							$currentFollowUp = $hodTable->getCurrentFollowUp($prevfu['topic_id'], $params['id']);
+							if(!empty($currentFollowUp))
+							{								
+								$curFollowUpTopic = "";
+								$fu=0;
+								foreach($currentFollowUp as $curfu)
+								{
+									if(!empty($curfu['follow_up']))
+									{	
+										
+										$fuDateTime = explode(" ", $curfu['added_date']);
+										$fuDate = date("j M Y", strtotime($fuDateTime[0]));
+										if($fu==0) $curFollowUpTopic .= "<strong>".$fuDate.'</strong><br/>';
+										$curFollowUpTopic .= nl2br($curfu['follow_up']);
+										if(!empty($curfu['filename']))
+										{
+											$curFollowUpTopic .= '<br/>';
+											$currentFollowUpImages = $hodTable->getFollowUpImages($curfu['followup_id']);
+											foreach($currentFollowUpImages as $img)
+											{
+												$filename = explode("/",$img['filename']);
+												$curFollowUpTopic .= '<a target="_blank" href="/images/hod_meeting'.$img['filename'].'"><i class="fa fa-paperclip"></i> '.$filename[2].'</a><br/>'; 
+											}
+										}
+										$curFollowUpTopic .= "<br/><br/>";
+									}
+									$fu++;
+								}
+								$currentFollowUpTopic[$prevfu['topic_id']] = $curFollowUpTopic;
+								$this->view->curFollowUpTopic = $currentFollowUpTopic;
+							}
+						}
+						else
+						{
+							if($f < $limitFollowUp) {
+								$fuDateTime = explode(" ", $prevfu['meeting_date']);
+								$fuDate = date("j M Y", strtotime($fuDateTime[0]));
+								$prevFollowUpTopic[$prevfu['topic_id']] .= "<strong>".$fuDate."</strong><br/>".nl2br($prevfu['follow_up']);								
+								$prevFollowUpImages = array();
+								$prevFollowUpImages = $hodTable->getFollowUpImages($prevfu['followup_id']);
+								if(!empty($prevFollowUpImages))
+								{
+									$prevFollowUpTopic[$prevfu['topic_id']] .= '<br/>';
+									foreach($prevFollowUpImages as $img)
+									{
+										$filename = explode("/",$img['filename']);
+										$prevFollowUpTopic[$prevfu['topic_id']] .= '<a target="_blank" href="/images/hod_meeting'.$img['filename'].'"><i class="fa fa-paperclip"></i> '.$filename[2].'</a><br/>'; 
+									}
+								}
+								$prevFollowUpTopic[$prevfu['topic_id']] .= "<br/><br/>";
+								$f++;
+							}
+							else {
+								if($f == $limitFollowUp)
+									$prevFollowUpTopic[$prevfu['topic_id']] .= '<a class="view-more-link" href="#followup-form" data-id="'.$prevfu['topic_id'].'">View More...</a><br/>';
+								$f++;
+							}
+						}						
+					}
+				}
+				$this->view->prevFollowUpTopic = $prevFollowUpTopic;
+			}
+			
+			
+			$this->view->comments = $hodTable->getCommentsByHODMeetingId($params['id'], 0, 'asc');
+
+			if($this->showHODMeetingAdmin == 1 && $hodMeeting['approved'] != 1) {
+				$this->renderTemplate('view_hod_meeting_detail_admin.tpl');  
+			} else {
+				$this->view->approveHODMeeting = $this->approveHODMeeting;
+				$this->renderTemplate('view_hod_meeting_detail.tpl'); 
+			}
+		}
+		else {
+			$this->_response->setRedirect($this->baseUrl);
+			$this->_response->sendResponse();
+			exit();
+		}
+	}
+
+	public function gettopicbyidAction() {
+		if($this->showAddHOD)
+		{
+			$params = $this->_getAllParams();
+
+			$logsTable = $this->loadModel('logs');
+			$logData['user_id'] = intval($this->ident['user_id']);
+			$logData['action'] = "Get Digital MOM Topic By Id";
+			$logData['data'] = json_encode($params);
+			$logsTable->insertLogs($logData);	
+
+			$hodTable = $this->loadModel('hod');
+			$hodMeetingTopic = $hodTable->getHodMeetingTopicById($params['id']);
+			$start_date = explode(" ", $hodMeetingTopic['start_date']);
+			$hodMeetingTopic['startdate'] = $start_date[0];
+			$finish_date = explode(" ", $hodMeetingTopic['finish_date']);
+			$hodMeetingTopic['finishdate'] = $finish_date[0];
+			$images = $hodTable->getTopicImages($hodMeetingTopic['topic_id']);
+			if(!empty($images))
+			{
+				$imagelist = '<ul class="hod_image_list">';
+				foreach($images as $image)
+				{
+					$filename = explode("/",$image['filename']);
+					$imagelist .= '<li><a target="_blank" href="/images/hod_meeting'.$image['filename'].'"><i class="fa fa-paperclip"></i> '.$filename[2].'</a>  <i class="fa fa-trash remove-image-db" data-id="'.$image['image_id'].'" style="cursor:pointer;"></i></li>'; 
+				}
+				$imagelist .= "</ul>";
+				$hodMeetingTopic['imagelist'] = $imagelist;
+			}
+			echo json_encode($hodMeetingTopic);
+		}
+		else {
+			$this->_response->setRedirect($this->baseUrl);
+			$this->_response->sendResponse();
+			exit();
+		}
+	}
+
+	public function deletetopicAction() {
+		if($this->showAddHOD)
+		{
+			$params = $this->_getAllParams();
+
+			$logsTable = $this->loadModel('logs');
+			$logData['user_id'] = intval($this->ident['user_id']);
+			$logData['action'] = "Delete Digital MOM Topic By Id";
+			$logData['data'] = json_encode($params);
+			$logsTable->insertLogs($logData);	
+
+			$hodTable = $this->loadModel('hod');
+			$hodTable->deleteTopic($params['id']);
+			
+			$this->_response->setRedirect($this->baseUrl."/default/hod/hodmeetingform2/id/".$params['hodid']);
+			$this->_response->sendResponse();
+			exit();
+		}
+		else {
+			$this->_response->setRedirect($this->baseUrl);
+			$this->_response->sendResponse();
+			exit();
+		}
+	}
+
+	public function addtargetdateAction() {
+		if($this->showAddHOD)
+		{
+			$params = $this->_getAllParams();
+			$params['user_id'] = $this->ident['user_id'];
+			$hodTable = $this->loadModel('hod');
+			$hodTable->addTopicTargetDate($params);
+
+			$logsTable = $this->loadModel('logs');
+			$logData['user_id'] = intval($this->ident['user_id']);
+			$logData['action'] = "Add Digital MOM Topic Target Date";
+			$logData['data'] = json_encode($params);
+			$logsTable->insertLogs($logData);	
+
+			$target_dates = $hodTable->getTopicTargetDate($params['topic_id']);
+			if(!empty($target_dates))
+			{
+				$tdate = "";
+				foreach($target_dates as $date)
+				{
+					$tdate .= date("j M Y", strtotime($date['target_date'])).' <i class="fa fa-trash remove-target-date" data-id="'.$date['topic_target_id'].'" data-topicid="'.$params['topic_id'].'" style="cursor:pointer;"></i><br/>';
+				}
+				echo $tdate;
+			}
+		}
+		else {
+			$this->_response->setRedirect($this->baseUrl);
+			$this->_response->sendResponse();
+			exit();
+		}
+	}
+
+	public function addstartdateAction() {
+		if($this->showAddHOD)
+		{
+			$params = $this->_getAllParams();
+			$params['user_id'] = $this->ident['user_id'];
+			$hodTable = $this->loadModel('hod');
+			$hodTable->addTopicStartDate($params);
+
+			$logsTable = $this->loadModel('logs');
+			$logData['user_id'] = intval($this->ident['user_id']);
+			$logData['action'] = "Add Digital MOM Topic Start Date";
+			$logData['data'] = json_encode($params);
+			$logsTable->insertLogs($logData);	
+
+			$start_dates = $hodTable->getTopicStartDate($params['topic_id']);
+			if(!empty($start_dates))
+			{
+				$sdate = "";
+				foreach($start_dates as $date)
+				{
+					$sdate .= date("j M Y", strtotime($date['start_date'])).' <i class="fa fa-trash remove-start-date" data-id="'.$date['topic_start_id'].'" data-topicid="'.$params['topic_id'].'" style="cursor:pointer;"></i><br/>';
+				}
+				echo $sdate;
+			}
+		}
+		else {
+			$this->_response->setRedirect($this->baseUrl);
+			$this->_response->sendResponse();
+			exit();
+		}
+	}
+
+	public function savedetailadminAction() {
+		if($this->showAddHOD)
+		{
+			$params = $this->_getAllParams();
+			if(!empty($params['topic_id']))
+			{
+				$hodTable = $this->loadModel('hod');
+				$i=0;
+				foreach($params['topic_id'] as $topic_id)
+				{
+					$data['topic_id'] = $topic_id;
+					$data['finish_date'] = $params['finish_date'][$i];
+					$data['done'] = $params['done'][$i];
+					if($data['done'] == '1') $data['done_hod_meeting_id'] = $params['hod_meeting_id'];
+					else $data['done_hod_meeting_id'] = 0;
+					$hodTable->updateFinishDate($data);
+					if(!empty($params['followup'][$i]))
+					{
+						$data['followup'] = $params['followup'][$i];
+						$data['user_id'] = $this->ident['user_id'];
+						$data['followup_id'] = $params['followup_id'][$i];
+						$data['hod_meeting_id'] = $params['hod_meeting_id'];
+						if(empty($data['followup_id']))
+						{
+							$data['followup_id'] = $hodTable->checkIfFollowUpExist($data['topic_id'], $data['hod_meeting_id']);
+						}
+						$hodTable->saveFollowUp($data);
+					}
+					$i++;
+				}
+			}
+			
+			
+			$logsTable = $this->loadModel('logs');
+			$logData['user_id'] = intval($this->ident['user_id']);
+			$logData['action'] = "Save Digital MOM Detail Admin";
+			$logData['data'] = json_encode($params);
+			$logsTable->insertLogs($logData);	
+
+			$this->_response->setRedirect($this->baseUrl."/default/hod/viewdetail/id/".$params['hod_meeting_id']);
+			$this->_response->sendResponse();
+			exit();
+		}
+		else {
+			$this->_response->setRedirect($this->baseUrl);
+			$this->_response->sendResponse();
+			exit();
+		}
+	}
+
+	public function savedetailAction() {
+		if($this->showHODMeeting)
+		{
+			$params = $this->_getAllParams();
+			if(!empty($params['topic_id']))
+			{
+				$hodTable = $this->loadModel('hod');
+				$i=0;
+				foreach($params['topic_id'] as $topic_id)
+				{
+					$data['topic_id'] = $topic_id;
+					$data['done_by_pic'] = $params['done_by_pic'][$i];
+					if($data['done_by_pic'] == '1') $data['done_hod_meeting_id_pic'] = $params['hod_meeting_id'];
+					else $data['done_hod_meeting_id_pic'] = 0;
+					$hodTable->updateDoneByPic($data);
+					$i++;
+				}
+			}			
+			
+			$logsTable = $this->loadModel('logs');
+			$logData['user_id'] = intval($this->ident['user_id']);
+			$logData['action'] = "Save Digital MOM Detail";
+			$logData['data'] = json_encode($params);
+			$logsTable->insertLogs($logData);	
+
+			$this->_response->setRedirect($this->baseUrl."/default/hod/viewdetail/id/".$params['hod_meeting_id']);
+			$this->_response->sendResponse();
+			exit();
+		}
+		else {
+			$this->_response->setRedirect($this->baseUrl);
+			$this->_response->sendResponse();
+			exit();
+		}
+	}
+
+	public function approvemomAction() {
+		if($this->approveHODMeeting)
+		{
+			$params = $this->_getAllParams();
+			
+			if(!empty($params['hod_meeting_id']))
+			{
+				$hodTable = $this->loadModel('hod');
+			
+				if(!empty($params['topic_id']))
+				{
+					$i=0;
+					foreach($params['topic_id'] as $topic_id)
+					{
+						$data['topic_id'] = $topic_id;
+						$data['done_by_pic'] = $params['done_by_pic'][$i];
+						if($data['done_by_pic'] == '1') $data['done_hod_meeting_id_pic'] = $params['hod_meeting_id'];
+						else $data['done_hod_meeting_id_pic'] = 0;
+						$hodTable->updateDoneByPic($data);
+						$i++;
+					}
+				}	
+				$params['user_id'] = $this->ident['user_id'];
+				$hodTable->approveMoM($params);
+
+				$logsTable = $this->loadModel('logs');
+				$logData['user_id'] = intval($this->ident['user_id']);
+				$logData['action'] = "Approve Digital MOM";
+				$logData['data'] = json_encode($params);
+				$logsTable->insertLogs($logData);	
+
+				/*$this->_response->setRedirect($this->baseUrl."/default/hod/viewdetail/id/".$params['hod_meeting_id']);
+				$this->_response->sendResponse();
+				exit();*/
+			}		
+		}
+		else {
+			$this->_response->setRedirect($this->baseUrl);
+			$this->_response->sendResponse();
+			exit();
+		}
+	}
+
+	public function getfollowupAction() {
+		if($this->showHODMeeting == 1 || $this->showHODMeetingAdmin == 1)
+		{
+			$params = $this->_getAllParams();
+			$logsTable = $this->loadModel('logs');
+			$logData['user_id'] = intval($this->ident['user_id']);
+			$logData['action'] = "Get Follow Up MOM";
+			$logData['data'] = json_encode($params);
+			$logsTable->insertLogs($logData);	
+
+			$hodTable = $this->loadModel('hod');
+			$hodMeetingFollowUp = $hodTable->getFollowUpByTopicId($params['id']);
+			$followUpTopic="";
+			if(!empty($hodMeetingFollowUp))
+			{
+				foreach($hodMeetingFollowUp as $fu)
+				{
+					if(!empty($fu['follow_up']))
+					{	
+						$fuDateTime = explode(" ", $fu['meeting_date']);
+						$fuDate = date("j M Y", strtotime($fuDateTime[0]));
+						$followUpTopic .= "<strong>".$fuDate."</strong><br/>".nl2br($fu['follow_up']);
+						
+						$fuImages = $hodTable->getFollowUpImages($fu['followup_id']);
+						if(!empty($fuImages))
+						{
+							$followUpTopic .=  '<br/>';
+							foreach($fuImages as $img)
+							{
+								$filename = explode("/",$img['filename']);
+								$followUpTopic .=  '<a target="_blank" href="/images/hod_meeting'.$img['filename'].'"><i class="fa fa-paperclip"></i> '.$filename[2].'</a><br/>'; 
+							}
+						}						
+						$followUpTopic .= "<br/><br/>";		
+					}
+				}
+			}
+			echo $followUpTopic;
+		}
+		else {
+			$this->_response->setRedirect($this->baseUrl);
+			$this->_response->sendResponse();
+			exit();
+		}
+	}
+
+	public function deleteattendancebyidAction() {
+		if($this->showAddHOD)
+		{
+			$params = $this->_getAllParams();
+
+			$logsTable = $this->loadModel('logs');
+			$logData['user_id'] = intval($this->ident['user_id']);
+			$logData['action'] = "Delete Digital MOM Attendance";
+			$logData['data'] = json_encode($params);
+			$logsTable->insertLogs($logData);	
+
+			$hodTable = $this->loadModel('hod');
+			$hodTable->deleteAttendanceById($params['id']);
+		}
+		else {
+			$this->_response->setRedirect($this->baseUrl);
+			$this->_response->sendResponse();
+			exit();
+		}
+	}
+
+
+	public function exporttopdfAction() {	
+		$params = $this->_getAllParams();
+
+		$logsTable = $this->loadModel('logs');
+		$logData['user_id'] = intval($this->ident['user_id']);
+		$logData['action'] = "Export Digital MOM to PDF";
+		$logData['data'] = json_encode($params);
+		$logsTable->insertLogs($logData);	
+
+		$hodTable = $this->loadModel('hod');
+		$hodMeeting = $hodTable->getHodMeetingById($params['id']);
+		$hodMeetingDateTime = explode(" ", $hodMeeting['meeting_date']);
+		$hodMeeting['tanggal_jam'] = date("l, j F Y", strtotime($hodMeetingDateTime[0]))." / ".$hodMeeting['meeting_time'];
+		$hodMeeting['tanggal'] = date("j-M", strtotime($hodMeetingDateTime[0]));
+			
+		$attendance = $hodTable->getAttendanceByHodMeetingId($params['id']);	
+		$pic = array();
+		foreach($attendance as $att)
+		{
+			$pic[$att['site_id']] .= "\n".$att['attendance_name'];
+		}
+
+		/*$role_ids = implode(",",$this->ident['role_ids']);
+		Zend_Loader::LoadClass('userClass', $this->modelDir);
+		$userClass = new userClass();
+		$cat_ids = $userClass->getCategoriesByRoles($role_ids);
+		$dept_ids = "";
+		if(!empty($cat_ids))
+		{
+			foreach($cat_ids as $ci)
+			{
+				if($ci['category_id'] > 0)
+					$dept_ids .= $ci['category_id'].",";
+				else
+				{
+					$dept_ids = "";
+					break;
+				}
+			}
+			$dept_ids = substr($dept_ids, 0, -1);
+		}*/
+		
+		$site_ids = $this->ident['site_id'];
+
+		$commentsTable = $this->loadModel('comments');
+
+		Zend_Loader::LoadClass('issueClass', $this->modelDir);
+		$issueClass = new issueClass();
+		$issues = $issueClass->getHODIssues($site_ids);
+
+		$topic = $hodTable->getHodMeetingTopics($params['id'], $hodMeetingDateTime[0], $dept_ids);
+		if(!empty($topic))
+		{
+			foreach($topic as &$t)
+			{
+				if(!empty($t['topic_target_id']))
+				{
+					$topic_target_date = $hodTable->getTopicTargetDate($t['topic_id']);
+					foreach($topic_target_date as $target_date)
+					{
+						$t['targetdate'] .= date("j M Y", strtotime($target_date['target_date']))."\n";
+					}						
+				}
+
+				if(!empty($t['topic_start_id']))
+				{
+					$topic_start_date = $hodTable->getTopicStartDate($t['topic_id']);
+					foreach($topic_start_date as $start_date)
+					{
+						$t['startdate'] .= date("j M Y", strtotime($start_date['start_date']))."\n";
+					}	
+				}
+
+				if(empty($t['finish_date']) ||  $t['finish_date'] == "0000-00-00 00:00:00") $t['finishdate'] = $t['finish_date'] = "";
+				else {
+					$finishdate = explode(" ", $t['finish_date']);
+					$t['finish_date'] = $finishdate[0];
+					$t['finishdate'] = date("j M Y", strtotime($finishdate[0]));
+				}
+				
+				if(!empty($t['filename']))
+				{
+					$t['images'] = $hodTable->getTopicImages($t['topic_id']);
+				}
+			}
+		}
+
+		$limitFollowUp = 2;
+
+		$prevHodMeetingFollowUp = $hodTable->getPrevHodMeetingFollowUp($params['id'], $hodMeetingDateTime[0], $dept_ids);
+		$prevHodFollowUp = array();
+		foreach($prevHodMeetingFollowUp as $prevhodfu) {
+			$prevHodFollowUp[$prevhodfu['topic_id']][]= $prevhodfu;
+		}
+		
+		$hodcomments = $hodTable->getCommentsByHODMeetingId($params['id'], 0, 'asc');
+		
+		require_once('fpdf/mc_table.php');
+		$pdf=new PDF_MC_Table();
+		$pdf->AddPage();
+		if($this->teacher) $pdf->SetTitle($this->ident['initial']." - Digital MOM");
+		else $pdf->SetTitle($this->ident['initial']." - Digital MOM");
+		$pdf->SetFont('Arial','B',15);
+		if($this->teacher) $pdf->Write(10,$this->ident['initial']." - Digital MOM");
+		else  $pdf->Write(10,$this->ident['initial']." - Digital MOM");
+		$pdf->ln(10);
+
+		$pdf->SetFont('Arial','B',8);
+		//$pdf->Cell(50,6,'Nama Site',0,0,'L');
+		//$pdf->Cell(138,6,$this->ident['site_fullname'],0,0,'L');
+		//$pdf->Ln();
+		$pdf->Cell(50,6,'Title',0,0,'L');
+		$pdf->Cell(138,6,$hodMeeting['meeting_title'],0,0,'L');
+		$pdf->Ln();
+		$pdf->Cell(50,6,'Date / Time',0,0,'L');
+		$pdf->Cell(138,6,$hodMeeting['tanggal_jam'],0,0,'L');
+		$pdf->Ln();
+		$pdf->Cell(50,6,'Attendance',0,0,'L');
+
+		if(!empty($attendance))
+		{
+			$i = 1;
+			foreach($attendance as $a) {
+				$pdf->Cell(50,4,$a['attendance_name'],0,0,'L');
+				if($i > 1 && $i % 3 == 0)
+				{
+					$pdf->Ln();
+					$pdf->Cell(50,4,'',0,0,'L');
+				}
+				$i++;
+			}
+		}
+		$pdf->Ln(9);
+
+		if(!empty($issues))
+		{
+			$pdf->SetFont('Arial','B',9);
+			$pdf->SetTextColor(0,0,0);
+			$pdf->Write(10,"Opened Kaizen");
+			$pdf->Ln();
+			$pdf->SetFont('Arial','B',8);
+			$pdf->SetFillColor(158,130,75);
+			$pdf->SetTextColor(255,255,255);
+			$pdf->Cell(20,7,'Site',1,0,'C',true);
+			$pdf->Cell(45,7,'Kaizen',1,0,'C',true);
+			$pdf->Cell(20,7,'Picture',1,0,'C',true);
+			$pdf->Cell(35,7,'Location',1,0,'C',true);
+			$pdf->Cell(20,7,'Date',1,0,'C',true);
+			$pdf->Cell(50,7,'Comment',1,0,'C',true);
+			$pdf->Ln();
+			$pdf->SetFont('Arial','',7);
+			$pdf->SetTextColor(0,0,0);
+			$pdf->SetWidths(array(20, 45, 20, 35, 20, 50));	
+			
+			foreach($issues as $issue) { 	
+				$issue_date_time = explode(" ",$issue['issue_date']);
+				$issue['date'] = date("j-M-Y", strtotime($issue_date_time[0]));
+
+				$issue['comments'] = $commentsTable->getCommentsByIssueId($issue['issue_id'], '3');
+
+				$comments = "";
+				if(!empty($issue['comments'])) { 
+					foreach($issue['comments'] as $comment)
+					{
+						$comments .= $comment['name'].' : '.trim($comment['comment'])."\n";
+						if(!empty($comment['filename'])) 
+						{
+							//$comments .= $comment['filename']."\n";							
+						}
+						$comments .= $comment['comment_date']."\n\n";
+					}
+				}
+				$x1 = $pdf->GetY();
+				$pdf->Row(array($issue['site_name'].$pic[$issue['site_id']],$issue['description'],"\n\n\n\n",$issue['location'],$issue['date'], $comments));
+				$x2= $pdf->GetY();
+				if($x2<$x1) $y = 11;
+				else $y = $pdf->GetY()-($x2-$x1-1);		
+				$issuedate = explode("-",$issue['issue_date']); 
+				$issueImageURL = $this->baseUrl."/images/issues/".$issuedate[0]."/";
+				$issueImagePath = $this->config->paths->html.'/images/issues/'.$issuedate[0]."/";
+				if(!empty($issue['picture']) && @getimagesize($issueImagePath.str_replace(".", "_thumb.", $issue['picture']))) {
+					list($width, $height) = getimagesize($issueImagePath.str_replace(".", "_thumb.", $issue['picture']));
+					if($width > $height)
+					{
+						$w = 18;
+						$h = 0;
+					}
+					else {
+						$w = 0;
+						$h = 18;
+					}
+					$fkaizen = fopen($issueImagePath.str_replace(".", "_thumb.", $issue['picture']), 'rb');
+
+					if (!$fkaizen) {
+						echo 'Error: Unable to open image for reading';
+						exit;
+					}
+					
+					$exifimgkaizen = exif_read_data($fkaizen);
+					
+					if($exifimgkaizen['Orientation'] == '3'  || $exifimgkaizen['Orientation'] == '6' || $exifimgkaizen['Orientation']=='8')
+					{
+						if($exifimgkaizen['Orientation'] == '3') $angleKaizen = 180;
+						if($exifimgkaizen['Orientation'] == '6') $angleKaizen = -90;
+						if($exifimgkaizen['Orientation'] == '8') $angleKaizen = 90;
+						$pdf->Rotate($angleKaizen,76,$y);
+						$pdf->Image($issueImagePath.str_replace(".", "_thumb.", $issue['picture']),76,$y-18, $w,$h);
+						$pdf->Rotate(0);
+					}
+					else
+						$pdf->Image($issueImageURL.str_replace(".", "_thumb.", $issue['picture']),76,$y, $w, $h);
+				}
+			}
+		}
+		
+		$pdf->Ln(10);
+
+		if(!empty($topic))
+		{
+			$pdf->SetFont('Arial','B',9);
+			$pdf->SetTextColor(0,0,0);
+			$pdf->Write(10,"Projects/Issues");
+			$pdf->Ln();
+			$pdf->SetFont('Arial','B',8);
+			$pdf->SetFillColor(158,130,75);
+			$pdf->SetTextColor(255,255,255);
+			$pdf->Cell(20,7,'Site',1,0,'C',true);
+			$pdf->Cell(60,7,'Projects / Issues',1,0,'C',true);
+			$pdf->Cell(20,7,'Target Date',1,0,'C',true);
+			$pdf->Cell(20,7,'Start Date',1,0,'C',true);			
+			$pdf->Cell(20,7,'Finish Date',1,0,'C',true);
+			$pdf->Cell(50,7,'Follow Up',1,0,'C',true);
+			$pdf->Ln();
+			$pdf->SetFont('Arial','',7);
+			$pdf->SetTextColor(0,0,0);
+			$pdf->SetWidths(array(20, 60, 20, 20, 20, 50));	
+
+			$hodImagePath = $this->config->paths->html.'/images/hod_meeting';
+			$hodImageURL = $this->baseUrl."/images/hod_meeting";
+			foreach($topic as $to) {
+				$curX =  $pdf->GetX();
+				$curY = $pdf->GetY();
+				if($curY > 245) {
+					$curY = 10;
+					$pdf->AddPage();
+				}
+				if(!empty($to['filename']))
+				{
+					$to['images'] = $hodTable->getTopicImages($to['topic_id']);
+					if(!empty($to['images']))
+					{
+						$totalLetter = strlen($to['topic']);
+						$topicY = $curY + (ceil($totalLetter/52) * 5);
+						$topicX = $curX+21;
+						foreach($to['images'] as $image)
+						{
+							if (file_exists($hodImagePath.$image['filename'])) {
+								/*list($width, $height) = getimagesize($hodImagePath.str_replace(".", "_thumb.", $image['filename']));
+								if($width > $height)
+								{
+									$w = 15;
+									$h = 0;
+								}
+								else {
+									$w = 0;
+									$h = 15;
+								}
+								$to['topic'] .= $pdf->Image($hodImageURL.str_replace(".", "_thumb.", $image['filename']), $topicX, $topicY, $w, $h)." ";
+								$topicX = $topicX+18;*/
+								$ti_filename = explode("/",$image['filename']);
+					
+								/*$pdf->Cell(35,5,'',0,0,'L');
+								$pdf->write(5,"- ".$ti_filename[2]);					
+								$pdf->Link(40, $pdf->getY(), 100, 5, $hodImageURL.$image['filename']);
+								$pdf->Ln(5);*/
+								
+								$to['topic'] .= " \n* ".$ti_filename[2];
+								$pdf->Link($topicX, $topicY, 45, 5, $hodImageURL.$image['filename']);
+								$topicY += 5;
+							}
+						}		
+						//$to['topic'] .= "\n\n\n\n\n";				
+					}
+				}
+				
+				$prevFollowUpTopic = "";
+				if(!empty($prevHodFollowUp[$to['topic_id']]))
+				{
+					$j = 0;
+					$fuY = $fuX = 0;
+					foreach($prevHodFollowUp[$to['topic_id']] as $prevfu) {
+						if($j < 2)
+						{
+							$fuDateTime = explode(" ", $prevfu['meeting_date']);
+							$fuDate = date("j M Y", strtotime($fuDateTime[0]));
+							$prevFollowUpTopic .= $fuDate."\n".$prevfu['follow_up'];
+							
+							$totalLetter = strlen($prevfu['follow_up']);
+							$fuY = $curY + (ceil($totalLetter/42) * 5) + 5;
+							$fuX = $curX+141;
+
+							$prevFollowUpTopicImages = $hodTable->getFollowUpImages($prevfu['followup_id']);
+							if(!empty($prevFollowUpTopicImages))
+							{
+								foreach($prevFollowUpTopicImages as $image2) {
+									if (file_exists($hodImagePath.$image2['filename'])) {
+										/*list($width, $height) = getimagesize($hodImagePath.str_replace(".", "_thumb.", $image2['filename']));
+										if($width > $height)
+										{
+											$w = 15;
+											$h = 0;
+										}
+										else {
+											$w = 0;
+											$h = 15;
+										}
+										$prevFollowUpTopic .= $pdf->Image($hodImageURL.str_replace(".", "_thumb.", $image2['filename']), $fuX, $fuY, $w, $h)." ";
+										$fuX = $fuX+16;*/
+										$fu_filename = explode("/",$image2['filename']);
+					
+										$prevFollowUpTopic .= " \n* ".$fu_filename[2];
+										$pdf->Link($fuX, $fuY, 45, 5, $hodImageURL.$image2['filename']);
+									}
+								}
+								//$prevFollowUpTopic .= "\n\n";								
+								//$curY = $fuY + 15;
+							}
+							else {
+								$curY = $fuY + 5;
+							}
+							$prevFollowUpTopic .= "\n\n";	
+							$j++;
+						}
+					}
+				}
+				$pdf->Row(array($to['site_name'].$pic[$to['site_id']],$to['topic'],$to['targetdate'],$to['startdate'], $to['finishdate'], $prevFollowUpTopic));	
+			}
+		}
+		
+		if(!empty($hodcomments))
+		{
+			$pdf->Ln();
+			$pdf->SetFont('Arial','B',9);
+			$pdf->SetTextColor(0,0,0);
+			$pdf->Write(10,"Comments");
+			$pdf->Ln();
+			
+			foreach($hodcomments as $hodcmt)
+			{
+				$hod_comment_date = date("l, j F Y", strtotime(substr($hodcmt['comment_date'], 0, 10)));
+				$pdf->SetFont('Arial','B',8);
+				$pdf->SetTextColor(0,0,0);
+				$pdf->Cell(10,4,$hodcmt['name'],0,0,'L');
+				$pdf->Ln();
+				$pdf->SetFont('Arial','',6);
+				$pdf->SetTextColor(170,170,170);
+				$pdf->Cell(10,3,$hod_comment_date,0,0,'L');
+				$pdf->Ln();
+				$pdf->SetFont('Arial','',8);
+				$pdf->SetTextColor(0,0,0);
+				$pdf->Write(5,str_replace("<br>","\n",$hodcmt['comment']));
+				if(!empty($hodcmt['filename']))
+				{
+					$pdf->Ln();
+					$pdf->SetTextColor(0,67,187);
+					$pdf->write(5,'# '.$hodcmt['filename']);
+					$pdf->Link(10, $pdf->getY(), 189, 5, $this->baseUrl.'/images/hod_meeting/comments_'.substr($hodcmt['comment_date'], 0, 4).substr($hodcmt['comment_date'], 5, 2).'/'.$hodcmt['filename']);
+				}
+				$pdf->Ln(10);
+			}
+		}
+		
+		$pdf->Output('I', $this->ident['initial']."_hod_meeting_mom.pdf", false);
+		
+	}
+
+	public function deletestartdateAction() {
+		if($this->allowDeleteHODMeeting)
+		{
+			$params = $this->_getAllParams();
+			$params['user_id'] = $this->ident['user_id'];
+			$hodTable = $this->loadModel('hod');
+			$hodTable->deleteTopicStartDate($params['id']);
+
+			$logsTable = $this->loadModel('logs');
+			$logData['user_id'] = intval($this->ident['user_id']);
+			$logData['action'] = "Delete Digital MOM Topic Start Date";
+			$logData['data'] = json_encode($params);
+			$logsTable->insertLogs($logData);	
+
+			$start_dates = $hodTable->getTopicStartDate($params['topic_id']);
+			if(!empty($start_dates))
+			{
+				$sdate = "";
+				foreach($start_dates as $date)
+				{
+					$sdate .= date("j M Y", strtotime($date['start_date'])).' <i class="fa fa-trash remove-start-date" data-id="'.$date['topic_start_id'].'" data-topicid="'.$params['topic_id'].'" style="cursor:pointer;"></i><br/>';
+				}
+				echo $sdate;
+			}
+		}
+		else {
+			$this->_response->setRedirect($this->baseUrl);
+			$this->_response->sendResponse();
+			exit();
+		}
+	}
+
+	public function deletetargetdateAction() {
+		if($this->allowDeleteHODMeeting)
+		{
+			$params = $this->_getAllParams();
+			$params['user_id'] = $this->ident['user_id'];
+			$hodTable = $this->loadModel('hod');
+			$hodTable->deleteTopicTargetDate($params['id']);
+
+			$logsTable = $this->loadModel('logs');
+			$logData['user_id'] = intval($this->ident['user_id']);
+			$logData['action'] = "Delete Digital MOM Topic Target Date";
+			$logData['data'] = json_encode($params);
+			$logsTable->insertLogs($logData);	
+
+			$target_dates = $hodTable->getTopicTargetDate($params['topic_id']);
+			if(!empty($target_dates))
+			{
+				$tdate = "";
+				foreach($target_dates as $date)
+				{
+					$tdate .= date("j M Y", strtotime($date['target_date'])).' <i class="fa fa-trash remove-target-date" data-id="'.$date['topic_target_id'].'" data-topicid="'.$params['topic_id'].'" style="cursor:pointer;"></i><br/>';
+				}
+				echo $tdate;
+			}
+		}
+		else {
+			$this->_response->setRedirect($this->baseUrl);
+			$this->_response->sendResponse();
+			exit();
+		}
+	}
+
+	public function historyAction() {
+		if($this->showHistoryHOD)
+		{
+			$params = $this->_getAllParams();
+			
+			$hodTable = $this->loadModel('hod');
+
+			if(empty($params['start'])) $params['start'] = '0';
+			$params['pagesize'] = 10;
+			$this->view->start = $params['start'];
+			$topics = $hodTable->getHodMeetingTopicsHistory($params);
+			
+			foreach($topics as &$t)
+			{
+				if(!empty($t['finish_date']) && $t['finish_date']!= "0000-00-00 00:00:00")
+				{
+					$date = explode(" ", $t['finish_date']);
+					$arr_date = explode("-",$date[0]);
+					$t['finishdate'] = date("j M Y", mktime(0, 0, 0, $arr_date[1], $arr_date[2], $arr_date[0]));
+				}
+				else
+				{
+					$t['finishdate'] = "";
+				}
+					
+				$topic_target_date = $hodTable->getTopicTargetDate($t['topic_id']);
+				if(!empty($topic_target_date))
+				{
+					foreach($topic_target_date as $target_date)
+					{
+						$t['targetdate'] .= date("j M Y", strtotime($target_date['target_date'])).'<br/>';
+					}
+				}
+
+				$topic_start_date = $hodTable->getTopicStartDate($t['topic_id']);
+				if(!empty($topic_start_date))
+				{
+					foreach($topic_start_date as $start_date)
+					{
+						$t['startdate'] .= date("j M Y", strtotime($start_date['start_date'])).'<br/>';
+					}	
+				}
+
+				$topicFollowUp = $hodTable->getFollowUpByTopicId($t['topic_id']);
+				$followUpTopic="";
+				if(!empty($topicFollowUp))
+				{
+					foreach($topicFollowUp as $fu)
+					{
+						if(!empty($fu['follow_up']))
+						{	
+							$fuDateTime = explode(" ", $fu['meeting_date']);
+							$fuDate = date("j M Y", strtotime($fuDateTime[0]));
+							$followUpTopic .= "<strong>".$fuDate."</strong><br/>".nl2br($fu['follow_up']);	
+							if(!empty($fu['filename']))
+							{
+								$followUpTopic .= '<br/>';
+								$currentFollowUpImages = $hodTable->getFollowUpImages($fu['followup_id']);
+								foreach($currentFollowUpImages as $img)
+								{
+									$filename = explode("/",$img['filename']);
+									$followUpTopic .= '<a target="_blank" href="/images/hod_meeting'.$img['filename'].'"><i class="fa fa-paperclip"></i> '.$filename[2].'</a><br/>';
+								}
+							}
+							$followUpTopic .= "<br/><br/>";									
+						}
+					}
+				}
+				$t['follow_up'] = $followUpTopic;
+				
+				if(!empty($t['filename']))
+				{
+					$t['images'] = $hodTable->getTopicImages($t['topic_id']);
+				}
+			}
+			$this->view->topics = $topics;	
+			
+			$totalReport = $hodTable->getTotalHodMeetingTopicsHistory($params);
+			if($totalReport['total'] > $params['pagesize'])
+			{
+				if($params['start'] >= $params['pagesize'])
+				{
+					$this->view->firstPageUrl = "/default/hod/history";
+					$this->view->prevUrl = "/default/hod/history/start/".($params['start']-$params['pagesize']);
+				}
+				if($params['start'] < (floor(($totalReport['total']-1)/$params['pagesize'])*$params['pagesize']))
+				{
+					$this->view->nextUrl = "/default/hod/history/start/".($params['start']+$params['pagesize']);
+					$this->view->lastPageUrl = "/default/hod/history/start/".(floor(($totalReport['total']-1)/$params['pagesize'])*$params['pagesize']);
+				}
+			}
+			$this->view->curPage = ($params['start']/$params['pagesize'])+1;
+			
+			if($totalReport['total'] > 0) 
+			{
+				$this->view->startRec = $params['start'] + 1;
+				$this->view->totalPage = ceil($totalReport['total']/$params['pagesize']);
+			}
+			else 
+			{
+				$this->view->startRec = 0;
+				$this->view->totalPage = 1;
+			}
+			$endRec = $params['start'] + $params['pagesize'];
+			if($totalReport['total'] >=  $endRec) $this->view->endRec =  $endRec;
+			else $this->view->endRec =  $totalReport['total'];		
+			$this->view->totalRec = $totalReport['total'];
+
+			$category = $this->loadModel('category');
+			$this->view->categories = $category->getCategories();
+
+			$this->view->category_id = $params['category'];
+			$this->view->project_name = $params['project_name'];
+
+			$logsTable = $this->loadModel('logs');
+			$logData['user_id'] = intval($this->ident['user_id']);
+			$logData['action'] = "View History Digital MOM Projects";
+			$logData['data'] = json_encode($params);
+			$logsTable->insertLogs($logData);	
+
+			$this->renderTemplate('history_hod_meeting.tpl');  
+		}
+		else {
+			$this->_response->setRedirect($this->baseUrl);
+			$this->_response->sendResponse();
+			exit();
+		}
+	}
+
+	public function sendapprovalreminderAction() {
+		$params = $this->_getAllParams();
+		
+		$siteTable = $this->loadModel('site');
+		$sites = $siteTable->getSites();
+		if(!empty($sites))
+		{
+			$hodTable = $this->loadModel('hod');
+			foreach($sites as $site)
+			{
+				if($site['site_id'] < 4)
+				{
+					$hodMeeting = $hodTable->getUnapprovedHodMeeting($site['site_id'], date("Y-m-d"));
+					if(!empty($hodMeeting))
+					{
+						$html = '<p>Dear GM,</p>
+						<p>Please approve Digital MOM below:</p>
+						<table cellpadding="0" cellspacing="0">
+						<tr>
+							<th style="background-color:#555; color: #fff; border:1px solid #fff; padding:5px;">Day/Date</th>
+							<th style="background-color:#555; color: #fff; border:1px solid #fff; padding:5px;">Title</th>
+						</tr>';
+
+						foreach($hodMeeting as $hod)
+						{
+							$date = explode(" ",$hod['meeting_date']);
+							$schedule_date = date("l / j F Y", strtotime($date[0]));
+							$html.='<tr>
+									<td style="border:1px solid #bbb; padding:5px;">'.$schedule_date.'</td>
+									<td style="border:1px solid #bbb; padding:5px;"><a href="'.$this->baseUrl.'/default/hod/viewdetail/id/'.$hod['hod_meeting_id'].'" target="_blank">'.$hod['meeting_title'].'</a></td>
+								</tr>';
+						}
+						$html .= "</table>";
+
+						require_once 'Zend/Mail.php';
+						$mail = new Zend_Mail();
+						$mail->setBodyHtml($html);
+						$mail->setFrom("mail@isort.com");
+
+						$mail->addTo("edarmawan@isort.id");
+						$mail->addCC("mkusuma@isort.id");
+						$mail->addBcc("edarmawan@isort.id");
+					
+						$mail->setSubject($site['initial'] . ' - Digital MOM needs to be approved');
+						
+						try {
+							$mail->send();
+							echo "success";
+						}
+						catch (Exception  $ex) {
+							echo "failed=".$ex;
+						}
+						unset($mail);
+							
+						echo $html;
+					}
+				}
+			}
+		}
+	}
+
+	public function deletetopicimageAction() {
+		if($this->allowDeleteHODMeeting)
+		{
+			$params = $this->_getAllParams();
+			$params['user_id'] = $this->ident['user_id'];
+			$hodTable = $this->loadModel('hod');
+			$image = $hodTable->getTopicImageById($params['id']);	
+			
+			$id = $hodTable->deleteTopicImage($params['id']);
+			if($id > 0) 
+			{
+				$datafolder = $this->config->paths->html."/images/hod_meeting";
+				unlink($datafolder.$image['filename']);
+				unlink($datafolder.str_replace(".","_thumb.",$image['filename']));
+			}
+			$logsTable = $this->loadModel('logs');
+			$logData['user_id'] = intval($this->ident['user_id']);
+			$logData['action'] = "Delete Digital MOM Topic Image";
+			$logData['data'] = json_encode($params);
+			$logsTable->insertLogs($logData);	
+		}
+		else {
+			$this->_response->setRedirect($this->baseUrl);
+			$this->_response->sendResponse();
+			exit();
+		}
+	}
+
+	public function gethodissuesAction() {
+		$params = $this->_getAllParams();
+		$commentsTable = $this->loadModel('comments');
+		Zend_Loader::LoadClass('issueClass', $this->modelDir);
+		$issueClass = new issueClass();
+		$params['id'] = 0;
+		$issues = $issueClass->getHODIssues($params['id']);
+		foreach($issues as &$i)
+		{
+			$issue_date_time = explode(" ",$i['issue_date']);
+			$i['date'] = date("j-M-Y", strtotime($issue_date_time[0]));
+			
+			if(!empty($i['floor_id'])) {
+				$floorTable = $this->loadModel('floor');
+				$selFloor = $floorTable->getFloorById($i['floor_id'],$i['category_id']);
+				$i['location'] = $selFloor['floor'] . " - ". $i['location'];
+			}
+
+			$i['comments'] = $commentsTable->getCommentsByIssueId($i['issue_id'], '1');
+		}
+		$this->view->issues = $issues;
+		
+		$hodTable = $this->loadModel('hod');
+		$attendance = $hodTable->getAttendanceByHodMeetingId($params['hod_meeting_id']);	
+		$pic = array();
+		$a=0;
+		if(!empty($attendance))
+		{
+			foreach($attendance as $att)
+			{
+				$pic[$att['site_id']] .= "<br/>".$att['attendance_name'];
+			}
+		}
+		$this->view->pic = $pic;
+
+		echo $this->view->render('hod_issue_finding.tpl');
+	}
+
+	public function addprogressAction() {
+		if($this->showAddHOD)
+		{
+			$params = $this->_getAllParams();
+			$params['user_id'] = $this->ident['user_id'];
+			$hodTable = $this->loadModel('hod');
+			$resp['followup_id'] = $params['followup_id'] = $followup_id = $hodTable->saveFollowUp($params);
+
+			if(!empty($_FILES["followup_image"]))
+			{
+				$magickPath = "/usr/bin/convert";
+				$datafolder = $this->config->paths->html."/images/hod_meeting/".date("Ym")."/";
+				if(!is_dir($datafolder)) mkdir($datafolder, 0777, true);
+				$i = 0;
+				foreach($_FILES["followup_image"]['tmp_name'] as $tmpname)
+				{
+					$ext = explode(".",$_FILES["followup_image"]['name'][$i]);
+					$filename = "followup_".$followup_id."_".date("YmdHis")."_".$i.".".$ext[count($ext)-1];
+					if(move_uploaded_file($tmpname, $datafolder.$filename))
+					{
+						if(in_array(strtolower($ext[count($ext)-1]), array("jpg", "jpeg", "png", "gif"))) 
+						{
+							/*** convert to jpg ***/
+							if(!in_array(strtolower($ext[count($ext)-1]), array("jpg"))) 
+							{
+								$newFilename =  "followup_".$followup_id."_".date("YmdHis")."_".$i.".jpg";
+								exec($magickPath . ' ' . $datafolder.$filename . ' ' . $datafolder.$newFilename);
+							}
+							else  $newFilename = "followup_".$followup_id."_".date("YmdHis")."_".$i.".".$ext[count($ext)-1];
+
+							$params['filename'] = "/".date("Ym")."/".$newFilename;
+							$hodTable->saveFollowUpImage($params);
+							
+							/*** create thumbnail image ***/
+							exec($magickPath . ' ' . $datafolder.$newFilename . ' -resize 128x128 ' . $datafolder."followup_".$followup_id."_".date("YmdHis")."_".$i."_thumb.jpg");
+							/*** resize image if size greater than 500 Kb ***/
+							if(filesize($datafolder.$newFilename) > 500000) exec($magickPath . ' ' . $datafolder.$newFilename . ' -resize 800x800\> ' . $datafolder.$newFilename);
+						}
+						else {
+							$newFilename = "followup_".$followup_id."_".date("YmdHis")."_".$i.".".$ext[count($ext)-1];
+							$params['filename'] = "/".date("Ym")."/".$newFilename;
+							$hodTable->saveFollowUpImage($params);
+						}
+					}
+					$i++;
+				}
+			}
+
+			$logsTable = $this->loadModel('logs');
+			$logData['user_id'] = intval($this->ident['user_id']);
+			$logData['action'] = "Save Digital MOM Topic Follow Up Progress";
+			$logData['data'] = json_encode($params);
+			$logsTable->insertLogs($logData);	
+
+			$currentFollowUp = $hodTable->getCurrentFollowUp($params['topic_id'], $params['hod_meeting_id']);
+			if(!empty($currentFollowUp))
+			{
+				$curFollowUpTopic = "";
+				$j = 0;
+				foreach($currentFollowUp as $curfu)
+				{
+					if(!empty($curfu['follow_up']))
+					{	
+						if($j == 0)
+						{
+							$fuDateTime = explode(" ", $curfu['added_date']);
+							$fuDate = date("j M Y", strtotime($fuDateTime[0]));
+							$curFollowUpTopic .= "<strong>".$fuDate.'</strong><br/>';
+						}
+						$curFollowUpTopic .= '<div id="progress-topic-'.$curfu['followup_id'].'">'.nl2br($curfu['follow_up']);
+						if(!empty($curfu['filename']))
+						{
+							$curFollowUpTopic .= "<br/>";
+							$currentFollowUpImages = $hodTable->getFollowUpImages($curfu['followup_id']);
+							foreach($currentFollowUpImages as $img)
+							{
+								$filename = explode("/",$img['filename']);
+								$curFollowUpTopic .= '<a target="_blank" href="/images/hod_meeting'.$img['filename'].'"><i class="fa fa-paperclip"></i> '.$filename[2].'</a><br/>'; 
+							}
+						}
+						$curFollowUpTopic .= "</div><br/><br/>";
+						$j++;
+					}
+				}
+			}
+			$resp['progress'] = $curFollowUpTopic;
+			
+			echo json_encode($resp);
+
+		}
+		else {
+			$this->_response->setRedirect($this->baseUrl);
+			$this->_response->sendResponse();
+			exit();
+		}
+	}
+
+	public function getfollowupbyidAction() {
+		if($this->showAddHOD)
+		{
+			$params = $this->_getAllParams();
+
+			$logsTable = $this->loadModel('logs');
+			$logData['user_id'] = intval($this->ident['user_id']);
+			$logData['action'] = "Get Digital MOM Topic Follow By Id";
+			$logData['data'] = json_encode($params);
+			$logsTable->insertLogs($logData);	
+
+			$hodTable = $this->loadModel('hod');
+			$topicFollowUp = $hodTable->getFollowUpById($params['id']);
+			$topicFollowUpImages = $hodTable->getFollowUpImages($params['id']);
+			if(!empty($topicFollowUpImages))
+			{
+				$imagelist = '<ul class="hod_image_list">';
+				foreach($topicFollowUpImages as $image)
+				{
+					$filename = explode("/",$image['filename']);
+					$imagelist .= '<li><a target="_blank" href="/images/hod_meeting'.$image['filename'].'"><i class="fa fa-paperclip"></i> '.$filename[2].'</a>  <i class="fa fa-trash remove-image-db" data-id="'.$image['image_id'].'" style="cursor:pointer;"></i></li>';
+				}
+				$imagelist .= "</ul>";
+				$topicFollowUp['imagelist'] = $imagelist;
+			}
+			echo json_encode($topicFollowUp);
+		}
+		else {
+			$this->_response->setRedirect($this->baseUrl);
+			$this->_response->sendResponse();
+			exit();
+		}
+	}
+
+	public function deletefollowupimageAction() {
+		if($this->allowDeleteHODMeeting)
+		{
+			$params = $this->_getAllParams();
+			$params['user_id'] = $this->ident['user_id'];
+			$hodTable = $this->loadModel('hod');
+			
+			$image = $hodTable->getFollowUpImageById($params['id']);
+			
+			$id = $hodTable->deleteFollowUpImage($params['id']);
+			if($id > 0) 
+			{
+				$datafolder = $this->config->paths->html."/images/hod_meeting";
+				unlink($datafolder.$image['filename']);
+				unlink($datafolder.str_replace(".","_thumb.",$image['filename']));
+			}
+			$logsTable = $this->loadModel('logs');
+			$logData['user_id'] = intval($this->ident['user_id']);
+			$logData['action'] = "Delete Digital MOM Topic Follow Up Image";
+			$logData['data'] = json_encode($params);
+			$logsTable->insertLogs($logData);	
+		}
+		else {
+			$this->_response->setRedirect($this->baseUrl);
+			$this->_response->sendResponse();
+			exit();
+		}
+	}
+
+	/*** COMMENTS ***/
+
+	public function addcommentAction() {
+		if($this->showHODMeeting || $this->showHODMeetingAdmin)
+		{
+			$params = $this->_getAllParams();
+			$params['user_id'] = $this->ident['user_id'];
+			$hodTable = $this->loadModel('hod');
+
+			if($_FILES["attachment"]["size"] > 0)
+			{
+				$datafolder = $this->config->paths->html."/images/hod_meeting/comments_".date("Ym")."/";
+				if(!is_dir($datafolder)) mkdir($datafolder, 0777, true);
+				$ext = explode(".",$_FILES["attachment"]['name']);
+				$filename = "hod_meeting_cmt_".date("YmdHis").".".$ext[count($ext)-1];
+				if(move_uploaded_file($_FILES["attachment"]["tmp_name"], $datafolder.$filename))
+				{
+					
+					if(in_array(strtolower($ext[count($ext)-1]), array("jpg", "jpeg", "png","bmp")))
+					{
+						$magickPath = "/usr/bin/convert";
+						/*** resize image if size greater than 500 Kb ***/
+						if(filesize($datafolder.$filename) > 500000) exec($magickPath . ' ' . $datafolder.$filename . ' -resize 800x800\> ' . $datafolder.$filename);
+					}					
+					$params['filename'] = $filename;	
+					$hodTable->addComment($params);
+				}		
+			}
+			else{
+				$hodTable->addComment($params);
+			}	
+
+			$logsTable = $this->loadModel('logs');
+			$logData['user_id'] = intval($this->ident['user_id']);
+			$logData['action'] = "Add Digital MOM Comment";
+			$logData['data'] = json_encode($params);
+			$logsTable->insertLogs($logData);	
+
+			echo $params['filename'];
+		}
+		else {
+			$this->_response->setRedirect($this->baseUrl);
+			$this->_response->sendResponse();
+			exit();
+		}
+	}
+
+	function getcommentsbymeetingidAction()
+	{
+		$params = $this->_getAllParams();
+		$this->view->ident = $this->ident;
+		$category = $this->loadModel('category');
+		$hodTable = $this->loadModel('hod');
+		$comments = $hodTable->getCommentsByHODMeetingId($params['id']);
+		$commentText = "";
+		if(!empty($comments)) {
+			foreach($comments as $comment)
+			{
+				$comment_date = explode("-", $comment['comment_date']); 
+				$commentText .= '<div style="border-bottom:1px solid #ccc; text-align:left; clear:both; margin-bottom:5px; padding-bottom:5px;"><strong>'.$comment['name'].' : </strong>'.$comment['comment'].'<br/>';
+				if(!empty($comment['filename'])) $commentText .= '<a href="'.$this->baseUrl."/images/hod_meeting/comments_".$comment_date[0].$comment_date[1]."/".$comment['filename'].'" target="_blank"><i class="fa fa-paperclip"></i> '.$comment['filename'].'</a>';
+				$commentText .= '<div style="font-size:10px; color:#aaa; text-align:right;">'.$comment['comment_date']."</div></div>";
+			}
+		}
+		
+		echo $commentText;	
+	}
+
+	function updatecommentsAction()
+	{
+		$params = $this->_getAllParams();
+		$params['pagesize'] = 10;
+		
+		$hodTable = $this->loadModel('hod');
+		
+		$data= array();
+
+		$commentCacheName = "hod_comments_".$this->site_id."_".$params["start"];
+		//$data = $this->cache->load($commentCacheName);
+		$i=0;
+		if(empty($data))
+		{
+			$hodMeetingMoM = $hodTable->getReportIds($params);	
+			foreach($hodMeetingMoM as $s) {
+				$data[$i]['hod_meeting_id'] = $s['hod_meeting_id'];
+				$comments = $hodTable->getCommentsByHODMeetingId($s['hod_meeting_id'], '3');
+				if(!empty($comments)) { 
+					$comment_content = "";
+					foreach($comments as $comment)
+					{
+						$comment_date = explode("-", $comment['comment_date']); 
+						$comment_content .= '<div style="border-bottom:1px solid #ccc; text-align:left; clear:both; margin-bottom:5px; padding-bottom:5px;"><strong>'.$comment['name'].' : </strong>'.$comment['comment'].'<br/>';
+						if(!empty($comment['filename'])) $comment_content .= '<a href="'.$this->baseUrl."/images/hod_meeting/comments_".$comment_date[0].$comment_date[1]."/".$comment['filename'].'" target="_blank"><i class="fa fa-paperclip"></i> '.$comment['filename'].'</a>';
+						$comment_content .= '<div style="font-size:10px; color:#aaa; text-align:right;">'.$comment['comment_date']."</div></div>";
+					}
+					$data[$i]['comment'] = $comment_content;
+				}
+				$i++;
+			}
+			//$this->cache->save($data, $commentCacheName, array($commentCacheName), 60);
+		}		
+		echo json_encode($data);
+	}
+	
+	public function exporttopictopdfAction() {	
+		$params = $this->_getAllParams();
+
+		$logsTable = $this->loadModel('logs');
+		$logData['user_id'] = intval($this->ident['user_id']);
+		$logData['action'] = "Export Digital MOM Topic to PDF";
+		$logData['data'] = json_encode($params);
+		$logsTable->insertLogs($logData);	
+
+		$hodTable = $this->loadModel('hod');
+		$topic = $hodTable->getHodMeetingTopicById($params['id']);
+		$pic = $hodTable->getAttendanceByMeetingSiteId($topic['hod_meeting_id'], $topic['site_id']);
+		if(!empty($pic))
+		{
+		    foreach($pic as $p)
+		    {
+		        $topicPIC .= $p['attendance_name']. ", "; 
+		    }
+		    $topicPIC = substr($topicPIC, 0, -2);
+		}
+		$topic_images = $hodTable->getTopicImages($params['id']);
+		$topic_target_date = $hodTable->getTopicTargetDate($params['id']);
+		if(!empty($topic_target_date))
+		{
+    		foreach($topic_target_date as $target_date)
+    		{
+    			$topic['targetdate'] .= date("j M Y", strtotime($target_date['target_date'])).", ";
+    		}		
+    		$topic['targetdate'] = substr($topic['targetdate'], 0, -2);
+		}
+		
+		$topic_start_date = $hodTable->getTopicStartDate($params['id']);
+		if(!empty($topic_start_date))
+		{
+    		foreach($topic_start_date as $start_date)
+    		{
+    			$topic['startdate'] .= date("j M Y", strtotime($start_date['start_date'])).", ";
+    		}	
+    		$topic['startdate'] = substr($topic['startdate'], 0, -2);
+		}
+		
+		if(empty($topic['finish_date']) ||  $topic['finish_date'] == "0000-00-00 00:00:00") $topic['finishdate'] = $topic['finish_date'] = "";
+		else {
+			$finishdate = explode(" ", $topic['finish_date']);
+			$topic['finish_date'] = $finishdate[0];
+			$topic['finishdate'] = date("j M Y", strtotime($finishdate[0]));
+		}
+		$followUp = $hodTable->getFollowUpByTopicId($params['id']);
+		
+		$scImagePath = $this->config->paths->html.'/images/hod_meeting';
+		$scImageURL =  $this->baseUrl."/images/hod_meeting";
+		
+		require_once('fpdf/mc_table.php');
+		$pdf=new PDF_MC_Table();
+		$pdf->AddPage();
+		$pdf->SetTitle("Digital MOM Project/Issue");
+		$pdf->SetFont('Arial','B',15);
+		$pdf->Write(10,"Digital MOM Project/Issue");
+		$pdf->ln(10);
+
+		$pdf->SetFont('Arial','B',8);
+		$pdf->Cell(35,6,'Site',0,0,'L');
+		$pdf->Cell(138,6,$topic['site_name'],0,0,'L');
+		$pdf->Ln();
+		$pdf->Cell(35,6,'PIC',0,0,'L');
+		$pdf->Cell(138,6,$topicPIC,0,0,'L');
+		$pdf->Ln();
+		$pdf->Cell(35,6,'Project/Issue',0,0,'L');
+		$pdf->Cell(138,6,$topic['topic'],0,0,'L');
+		$pdf->Ln();
+		$curY = $pdf->getY();
+		if(!empty($topic_images))
+		{
+			$j = 0;
+			//$pdf->Cell(35,5,'',0,0,'L');
+			$tiimgctr = 0;
+			$tiY = $curY;
+			$tiX = 46;
+			foreach($topic_images as $ti) {				
+				if (file_exists($scImagePath.$ti['filename'])) {
+				
+    				/*list($width, $height) = getimagesize($scImagePath.str_replace(".", "_thumb.", $ti['filename']));
+    				if($width > $height)
+    				{
+    					$w = 14;
+    					$h = 0;
+    				}
+    				else {
+    					$w = 0;
+    					$h = 14;
+    				}
+					
+					$ftopicimg = fopen($scImagePath.str_replace(".", "_thumb.", $ti['filename']), 'rb');
+
+					if (!$ftopicimg) {
+						echo 'Error: Unable to open image for reading';
+						exit;
+					}
+					
+					$exifimgclose = exif_read_data($ftopicimg);
+					
+					if($exifimgclose['Orientation'] == '3'  || $exifimgclose['Orientation'] == '6' || $exifimgclose['Orientation']=='8')
+					{
+						if($exifimgclose['Orientation'] == '3') $angleTopic = 180;
+						if($exifimgclose['Orientation'] == '6') $angleTopic = -90;
+						if($exifimgclose['Orientation'] == '8') $angleTopic = 90;
+						$pdf->Rotate($angleTopic,$tiX,$tiY);
+						$pdf->Image($scImagePath.str_replace(".", "_thumb.", $ti['filename']),$tiX,$tiY-12, $w,$h);
+						$pdf->Rotate(0);
+					}
+					else
+						$pdf->Image($scImageURL.str_replace(".", "_thumb.", $ti['filename']), $tiX, $tiY, $w, $h);
+						
+    				if($tiimgctr%2 == 1)
+    				{
+    				    $tiX = $curX+105;
+    				    $tiY = $tiY+14.5;
+    				}
+    				else
+    				    $tiX = $tiX+14.5;
+    				    
+    				$tiimgctr++; */
+					
+					$ti_filename = explode("/",$ti['filename']);
+					
+					$pdf->Cell(35,5,'',0,0,'L');
+					$pdf->write(5,"- ".$ti_filename[2]);					
+					$pdf->Link(40, $pdf->getY(), 100, 5, $scImageURL.$ti['filename']);
+					$pdf->Ln(5);
+    			}
+			}
+			//$tiY = $tiY + 14.5;
+			//$pdf->Ln(15);
+		}
+		
+		//$pdf->Ln();
+		$pdf->Cell(35,6,'Start Date',0,0,'L');
+		$pdf->Cell(138,6,$topic['startdate'],0,0,'L');
+		$pdf->Ln();
+		$pdf->Cell(35,6,'Target Date',0,0,'L');
+		$pdf->Cell(138,6,$topic['targetdate'],0,0,'L');
+		$pdf->Ln();
+		$pdf->Cell(35,6,'Finish Date',0,0,'L');
+		$pdf->Cell(138,6,$topic['finishdate'],0,0,'L');
+		$pdf->Ln();
+		$pdf->Cell(35,6,'Follow Up',0,0,'L');
+		
+		if(!empty($followUp))
+		{
+			$j = 0;
+			$followUpTopic = "";
+			$fuY = $fuX = 0;
+			foreach($followUp as $fu) {
+			    if($j > 0) $pdf->Cell(35,6,'',0,0,'L');
+			    $pdf->SetFont('Arial','B',8);
+				$fuDateTime = explode(" ", $fu['meeting_date']);
+				$fuDate = date("j M Y", strtotime($fuDateTime[0]));
+				$pdf->Cell(138,5,$fuDate,0,0,'L');
+				$pdf->Ln();
+				$pdf->SetFont('Arial','',8);
+				$pdf->Cell(35,5,'',0,0,'L');
+				$pdf->MultiCell(150,5,str_replace("<br />", " ",nl2br($fu['follow_up'])),0,'L');
+				$pdf->Ln();
+				$curY = $pdf->getY();
+				$fuY = $curY;
+				$fuX = $curX+46;
+
+				$prevFollowUpTopicImages = $hodTable->getFollowUpImages($fu['followup_id']);
+				if(!empty($prevFollowUpTopicImages))
+				{
+				    $fuimgctr = 0;
+				    //$pdf->Cell(35,5,'',0,0,'L');
+					foreach($prevFollowUpTopicImages as $image2) {
+						if (file_exists($scImagePath.$image2['filename'])) {
+							/*list($width, $height) = getimagesize($scImagePath.str_replace(".", "_thumb.", $image2['filename']));
+							if($width > $height)
+							{
+								$w = 14;
+								$h = 0;
+							}
+							else {
+								$w = 0;
+								$h = 14;
+							}
+							$pdf->Image($scImageURL.str_replace(".", "_thumb.", $image2['filename']), $fuX, $fuY, $w, $h);
+						    $fuX = $fuX+14.5;
+							    
+							$fuimgctr++;*/
+							$fu_filename = explode("/",$image2['filename']);
+							$pdf->Cell(35,5,'',0,0,'L');
+							$pdf->write(5,"- ".$fu_filename[2]);					
+							$pdf->Link(40, $pdf->getY(), 100, 5, $scImageURL.$image2['filename']);
+							$pdf->Ln(5);
+						}
+					}							
+					//$fuY = $fuY + 14.5;
+					//$pdf->Ln(15);
+				}
+				else {
+					$fuY = $fuY + 5;
+				}	
+				$j++;
+			}
+		}
+		
+		$pdf->Output('I', $this->ident['initial']."_hod_meeting_mom.pdf", false);
+		
+	}
+}
+?>

@@ -1,0 +1,108 @@
+        <!-- page content -->
+        <div class="right_col" role="main">
+			<?php if(!empty($this->msg)) echo '<div class="msg">'.$this->msg.'</div>'; ?>
+			<form id="issue-form" action="/default/issue/submitissue"  method="post" enctype="multipart/form-data">
+			  <div class="row">
+				<div class="col-md-12 col-sm-12 col-xs-12">
+				  <div class="dashboard">
+					<div id="issue-finding-field" class="col-md-1 col-sm-4 col-xs-4">	
+						<div class="menu-icon">
+							 <label for="picture-issue">
+								<div class="icon-img"><img src="/images/newlogo_issue_finding.png" /></div>
+								<div class="icon-title">Issue Finding</div>
+							</label>
+							<input id="picture-issue" name="picture" type="file" accept="image/*" capture="capture" />		
+						</div>
+					</div>
+
+					<div class="col-md-1 col-sm-4 col-xs-4">
+						<div class="menu-icon">
+							<a href="/default/issue/listissues">
+								<div class="icon-img"><img src="/images/newlogo_list_issue.png" /></div>
+								<div class="icon-title">List &nbsp;Issues&nbsp;</div>
+							</a>	
+						</div>
+					</div>		
+
+					<div class="col-md-1 col-sm-4 col-xs-4">	
+						<div class="menu-icon">
+							<div class="icon-img"><img id="pdf-icon" src="/images/newlogo_pdf.png" /></div>
+							<div class="icon-title">Export to PDF</div>		
+						</div>
+					</div>							
+					<div class="clearfix"></div>
+				  </div>
+				  
+				  <div id="other-info">
+					<div id="image-holder"></div>
+					<?php if(!empty($this->categories)) { ?>
+					<div id="category-field">
+						Category:<br/>
+						<select id="category-select" name="category">
+						<?php foreach($this->categories as $category) { ?>
+						  <option value="<?php echo $category['category_id']; ?>"><?php echo $category['category_name']; ?></option>
+						 <?php } ?>
+						</select><br/>
+						<?php /*<input type="button" id="cancel-issue" name="cancel-issue" value="Cancel" /> <input type="button" id="category-next" name="category-next" value="Next" /> */ ?>
+					</div>
+					<?php } ?>
+					<div id="location-field">
+						Location:<br/>
+						<textarea rows="4" cols="50" id="location-txtarea" name="location"></textarea><br/>
+						<?php /*<input type="button" id="cancel-issue" name="cancel-issue" value="Cancel" /> <input type="button" id="location-next" name="location-next" value="Next" /> */ ?>
+					</div>
+					<div id="discussion-field">
+						Discussion:<br/>
+						<textarea rows="4" cols="50" id="discussion-txtarea" name="description"></textarea><br/>
+						<input type="radio" name="sendwa" value="1" checked> Send WhatsApp to Chief/Manager<br>
+						<input type="radio" name="sendwa" value="2"> Send WhatsApp to Group/Contact List<br>
+						<input type="radio" name="sendwa" value="3"> Do not send WhatsApp Notification<br/><br/>
+						<input type="button" id="cancel-issue" name="cancel-issue" value="Cancel" /> <input type="submit" id="issue-submit" name="issue-submit" value="Submit">
+					</div>
+					<br/><br/>
+				  </div>
+				</div>
+			</form>
+          </div>
+          <br /> 
+		  
+
+        </div>
+        <!-- /page content -->
+
+    
+<script type="text/javascript">
+$("#issue-form")[0].reset();
+$("#other-info").hide();
+
+function filePreview(input) {
+    if (input.files && input.files[0]) {
+        var reader = new FileReader();
+        reader.addEventListener('load', function() {
+			$(".dashboard").hide();
+			/*$("#discussion-field").hide();*/
+			$("#other-info").show();
+			$("<img />", {
+				"src": reader.result,
+                "class": "thumb-image"
+            }).appendTo("#image-holder");
+		});
+        reader.readAsDataURL(input.files[0]);
+    }
+}
+
+$( "#picture-issue" ).change(function() {
+	$(".msg").hide();
+  filePreview(this);
+});
+
+$( "#cancel-issue" ).click(function() {
+  location.href="/default/index/index";
+});
+
+/*$( "#location-next" ).click(function() {
+	$("#location-field").hide();
+	$("#discussion-field").show();
+});*/
+
+</script>

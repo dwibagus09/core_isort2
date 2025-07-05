@@ -1,0 +1,945 @@
+<?php
+require_once("Zend/Date.php");
+require_once('exception.php');
+require ('facebook/facebook.php');
+
+define("BANNER_CACHE", 24*3600);
+define("LOOK_AND_FEEL_CACHE", 0);
+define("GALLERY_CACHE", 0);
+define("ARTICLE_CACHE", 0);
+define("GALLERY_WITH_VIEW_COUNT_CACHE", 30);
+
+class actionControllerBase extends Zend_Controller_Action 
+{
+	public $config;		// global configuration
+    public $db;			// databse object
+    public $session;	// online ads session namespace.     
+    public $view;		// view object
+    public $auth;		// authentication object
+    public $dbLogger;	// log object
+    public $modelDir;
+
+    public $site_id;		// LEGACY storage of site data (should use the $site array instead)
+    public $siteName;	// LEGACY storage of site data (should use the $site array instead)
+  	public $perpage = 10;
+  	public $areaName;
+  	public $environment;
+	
+	public function init()
+	{
+		$this->startTime = microtime(true);
+		// Retrieve objects needed globally from the registry.
+		$this->db		= Zend_Registry::get('db');
+		$this->auth		= Zend_Registry::get('auth');
+		$this->dbLogger	= Zend_Registry::get('dbLogger');
+		$this->config	= Zend_Registry::get('config');
+		
+		if(strpos(" ".$_SERVER['SERVER_NAME'], "admin")) {
+    		$this->_response->setRedirect("/admin");
+    		$this->_response->sendResponse();
+    		exit();
+    	}
+		
+		/*require_once 'Zend/Mail.php';
+		require_once 'Zend/Mail/Transport/Smtp.php';
+		require_once 'Zend/Mail/Transport/Sendmail.php';
+		require_once 'Zend/Registry.php';
+		require_once 'Zend/Validate.php';
+		
+		$config = array('auth' => 'login',
+                        'username' => 'mailer',
+                        'password' => 'Mail123');
+
+        $transport = new Zend_Mail_Transport_Smtp('mx1.advpubtech.com', $config);
+		
+        Zend_Mail::setDefaultTransport($transport);*/
+        
+		// Setup standard variables.
+        if ($this->_request->getParam('module') == 'default') {
+            $this->module = $this->config->modules->default;
+        } else {
+            $this->module = $this->_request->getParam('module');
+        }
+        
+        // Determine request type.
+		if ($this->_request->isXMLHttpRequest())
+		{
+			$this->requestType='ajax';
+		}
+		else
+		{
+			$this->requestType='page';
+		}   	
+        
+        $this->siteid   = $this->config->general->siteid;
+        Zend_Registry::set("siteid", $this->siteid);
+		$this->modelDir = $this->config->general->modulePath . '/' . $this->module . '/models/';
+
+		if(strpos($this->config->paths->application, '/prod/')) $this->environment = 'live';
+		else $this->environment = 'test';
+		
+		require_once 'Zend/Session/Namespace.php';
+		$this->session = new Zend_Session_Namespace($this->config->session->name);
+		Zend_Registry::set('session', $this->session);
+		
+		// The registry value for the view will be set later, but we must at least generate an empty variable so that the 
+		// application can load the site configuration.  It will fail if this variable is not initialized.
+		Zend_Registry::set('view', null);
+		
+		// Load the site specific configuration in to memory.
+		Zend_Loader::LoadClass('siteClass', $this->modelDir);
+    	$siteConfig = new siteClass();
+    	$this->view->site = $this->site = $siteConfig->getSite($this->config->general->siteid);
+    	    	
+		// Populate the view model.
+		require_once('Zend/View.php');
+		$this->view = new Zend_View();
+		$defaultViewDir = $this->config->general->modulePath . '/'  . $this->module . '/views';
+		
+		$this->view->customViewDir = $this->customViewDir = $customViewDir	= $this->config->general->basePath . '/sites/' . $this->site['name'] . '/'
+						. $this->module . '/views';
+		$this->view->defaultViewDir = dirname(dirname(__FILE__))."/views";
+		$this->view->addScriptPath($defaultViewDir);
+		$this->view->addScriptPath($customViewDir);
+		Zend_Registry::set('view', $this->view);		
+        
+		$this->view->cookiename = $this->config->session->name;
+		$this->view->module     = $this->module;
+        $this->view->siteName   = $this->site['name'];	
+        $this->siteName   		= $this->site['name'];		
+    	
+        if(empty($this->ident) && empty($this->session->curUser))
+        {				
+        	$this->ident = $this->auth->getIdentity();
+        }
+        elseif(!empty($this->session->curUser))
+        {
+        	$this->ident = $this->session->curUser;
+        }
+        
+        $this->view->curUser = $this->session->curUser = $this->ident;
+		//echo "<pre>".print_r($this->ident,true)."</pre>";exit();
+		
+		if(!empty($this->ident)) {
+			$this->view->eeditionURL = $this->config->cms->eedition->read_online_url.$this->ident['remote_session_id'].":0:0";
+		}
+		else {
+			$this->view->eeditionURL = "javascript:showLoginForm();";
+		}
+		
+		if($this->siteid==11 && !empty($this->config->cms->show_home_splash_page)) {
+			$controller = $this->_request->getParam('controller');
+			$action = $this->_request->getParam("action");
+			if($controller == "index" && $action == "index") {
+				$splashShown = $this->_request->getCookie('splashshown');
+				$hideSplash = $this->_request->getCookie('showsplash');
+				$disableSplash = $this->_request->getParam("disabled");
+				if(!empty($disableSplash)) {
+					setcookie("showsplash", 1, time() + (10 * 365 * 24 * 60 * 60), $_SERVER['SERVER_NAME']);
+				}
+				if(empty($hideSplash) && empty($splashShown)) {
+					if($this->_request->isPost()) setcookie("splashshown", 1, 0, $_SERVER['SERVER_NAME']);
+					else {
+						$this->showSplashScreen();
+						exit();
+					}
+				}
+			}
+		}
+		
+        require_once 'Zend/Cache.php';
+        $frontendOptions = array('lifetime' => 3600, 'automatic_serialization' => true);
+        $backendOptions = array('servers' => array(array('host' => 'localhost','port' => 11211, 'persistent' => true)));
+		$this->cache = Zend_Cache::factory('Output', 'Memcached', $frontendOptions, $backendOptions);
+		
+		if(isset($this->config->general->enable_cache) && empty($this->config->general->enable_cache))
+			$this->cleancache();
+		
+		if(!($this->lookAndFeel = $this->cache->load($this->environment."lookandfeel_cms_".$this->siteid))) {
+			$lookAndFeel  = $this->loadModel('lookandfeel');
+			$this->lookAndFeel=$lookAndFeel->getLookandfeel($this->config->general->siteid);	
+			$this->lookAndFeel['copyright'] = str_replace("{year}",date("Y"), $this->lookAndFeel['copyright']);
+			if(empty($this->config->general->enable_cache) || $this->config->general->enable_cache == 1)
+				$this->cache->save($this->lookAndFeel, $this->environment."lookandfeel_cms_".$this->siteid, array("display_cms_".$this->siteid), LOOK_AND_FEEL_CACHE);
+		}
+		$this->view->lookandfeel = $this->lookAndFeel;
+		
+		$this->view->enable_accuweater = $this->config->cms->enable_accuweater;
+		if(!empty($this->config->cms->accuweather_zipcode))
+			$this->view->zipCode = $this->config->cms->accuweather_zipcode;
+		else
+			$this->view->zipCode = "90015";
+			
+		if($this->siteid==11) {
+			$cacheWeatherFileName = $this->config->general->basePath . '/sites/' . $this->site['name'] . '/html/images/image_cache/'.$this->config->cms->weather_station.'_current.xml';
+			if(!file_exists($cacheWeatherFileName) || (time() - @filemtime($cacheWeatherFileName) > 600)) {
+				$currentsURL = "http://www.weather.gov/xml/current_obs/" . $this->config->cms->weather_station . ".xml";
+				$fileTemp = @file_get_contents($currentsURL);
+			    @file_put_contents($cacheWeatherFileName, $fileTemp);
+			    $idx = 0;
+				while(((@filesize($cacheWeatherFileName) < 500) || (substr(@file_get_contents($cacheWeatherFileName),0,5) != "<?xml")) && $idx < 10) {
+			        $fileTemp = @file_get_contents($currentsURL);
+			    	@file_put_contents($cacheWeatherFileName,$fileTemp);
+			    	$idx++;
+				}
+			}
+			$this->view->weatherInfo = @simplexml_load_file($cacheWeatherFileName);			
+		}
+		
+		if(!($this->menus = $this->cache->load($this->environment."menu_cms_".$this->siteid))) {
+			$sectionModel = $this->loadModel('section');
+			$this->menus = $sectionModel->getAreas();
+			if( empty($this->config->general->enable_cache) || $this->config->general->enable_cache == 1)	
+				$this->cache->save($this->menus, $this->environment."menu_cms_".$this->siteid, array("display_cms_".$this->siteid), LOOK_AND_FEEL_CACHE);
+		}
+		$this->view->menus = $this->menus;
+		
+		if(!($this->footerblock = $this->cache->load($this->environment."footerblock_cms_".$this->siteid))) {
+			$footer  = $this->loadModel('footer');
+			$this->footerblock=$footer->getFooter($this->config->general->siteid);	
+			if( empty($this->config->general->enable_cache) || $this->config->general->enable_cache == 1)
+				$this->cache->save($this->footerblock, $this->environment."footerblock_cms_".$this->siteid, array("display_cms_".$this->siteid), LOOK_AND_FEEL_CACHE);
+		}
+		$this->view->footerblock = $this->footerblock;
+		
+		// Check to see if site is down for maintenance.
+		if ($this->config->general->down == 1)
+		{
+			echo $this->view->render('header.tpl');
+			echo $this->view->render('down.tpl');
+			echo $this->view->render('footer.tpl');
+			exit;
+		}
+		elseif($this->config->cms->disable_cms == 1)
+		{
+			exit;
+		}
+		
+		$this->view->facebook_apps_id = $this->config->cms->facebook_apps_id;
+		
+		$this->view->baseUrl = $this->baseUrl = rtrim($this->config->general->url, '/');
+		$this->view->articleImageUrl = $this->articleImageUrl = rtrim($this->config->general->url, '/').$this->config->paths->article_url;
+		
+		if(!($this->banners = $this->cache->load($this->environment."banners_cms_".$this->siteid))) {
+			$bannerClass = $this->loadModel("banner");
+			$this->banners = $bannerClass->getBanners($this->siteid, 0);
+			if( empty($this->config->general->enable_cache) || $this->config->general->enable_cache == 1)
+				$this->cache->save($this->banners, $this->environment."banners_cms_".$this->siteid, array("banners_cms_".$this->siteid), BANNER_CACHE);
+		}
+		
+		$this->view->banners = $this->banners; 
+		
+		$this->view->enable_events_calendar = $enable_events_calendar = $this->config->cms->enable_events_calendar;
+		
+		if(!empty($enable_events_calendar) && $enable_events_calendar == '1') {
+			if(!($listEvents = $this->cache->load($this->environment."listevents_cms_".$this->siteid))) {
+				$eventTable = $this->loadModel('events');
+	    		$listEvents = $eventTable->getEvents($this->config->general->siteid);
+	    		if( empty($this->config->general->enable_cache) || $this->config->general->enable_cache == 1)
+	    			$this->cache->save($listEvents, $this->environment."listevents_cms_".$this->siteid, array("listevents_cms_".$this->siteid), BANNER_CACHE);
+	    	}
+	    	$this->view->listEvents = $listEvents;	
+		}
+		
+		$this->view->ref = $this->_request->getParam("ref");
+		
+		$useragent=$_SERVER['HTTP_USER_AGENT'];
+		if(preg_match('/android.+mobile|avantgo|bada\/|blackberry|blazer|compal|elaine|fennec|hiptop|iemobile|ip(hone|od)|iris|kindle|lge |maemo|midp|mmp|netfront|opera m(ob|in)i|palm( os)?|phone|p(ixi|re)\/|plucker|pocket|psp|symbian|treo|up\.(browser|link)|vodafone|wap|windows (ce|phone)|xda|xiino/i',$useragent)||preg_match('/1207|6310|6590|3gso|4thp|50[1-6]i|770s|802s|a wa|abac|ac(er|oo|s\-)|ai(ko|rn)|al(av|ca|co)|amoi|an(ex|ny|yw)|aptu|ar(ch|go)|as(te|us)|attw|au(di|\-m|r |s )|avan|be(ck|ll|nq)|bi(lb|rd)|bl(ac|az)|br(e|v)w|bumb|bw\-(n|u)|c55\/|capi|ccwa|cdm\-|cell|chtm|cldc|cmd\-|co(mp|nd)|craw|da(it|ll|ng)|dbte|dc\-s|devi|dica|dmob|do(c|p)o|ds(12|\-d)|el(49|ai)|em(l2|ul)|er(ic|k0)|esl8|ez([4-7]0|os|wa|ze)|fetc|fly(\-|_)|g1 u|g560|gene|gf\-5|g\-mo|go(\.w|od)|gr(ad|un)|haie|hcit|hd\-(m|p|t)|hei\-|hi(pt|ta)|hp( i|ip)|hs\-c|ht(c(\-| |_|a|g|p|s|t)|tp)|hu(aw|tc)|i\-(20|go|ma)|i230|iac( |\-|\/)|ibro|idea|ig01|ikom|im1k|inno|ipaq|iris|ja(t|v)a|jbro|jemu|jigs|kddi|keji|kgt( |\/)|klon|kpt |kwc\-|kyo(c|k)|le(no|xi)|lg( g|\/(k|l|u)|50|54|\-[a-w])|libw|lynx|m1\-w|m3ga|m50\/|ma(te|ui|xo)|mc(01|21|ca)|m\-cr|me(di|rc|ri)|mi(o8|oa|ts)|mmef|mo(01|02|bi|de|do|t(\-| |o|v)|zz)|mt(50|p1|v )|mwbp|mywa|n10[0-2]|n20[2-3]|n30(0|2)|n50(0|2|5)|n7(0(0|1)|10)|ne((c|m)\-|on|tf|wf|wg|wt)|nok(6|i)|nzph|o2im|op(ti|wv)|oran|owg1|p800|pan(a|d|t)|pdxg|pg(13|\-([1-8]|c))|phil|pire|pl(ay|uc)|pn\-2|po(ck|rt|se)|prox|psio|pt\-g|qa\-a|qc(07|12|21|32|60|\-[2-7]|i\-)|qtek|r380|r600|raks|rim9|ro(ve|zo)|s55\/|sa(ge|ma|mm|ms|ny|va)|sc(01|h\-|oo|p\-)|sdk\/|se(c(\-|0|1)|47|mc|nd|ri)|sgh\-|shar|sie(\-|m)|sk\-0|sl(45|id)|sm(al|ar|b3|it|t5)|so(ft|ny)|sp(01|h\-|v\-|v )|sy(01|mb)|t2(18|50)|t6(00|10|18)|ta(gt|lk)|tcl\-|tdg\-|tel(i|m)|tim\-|t\-mo|to(pl|sh)|ts(70|m\-|m3|m5)|tx\-9|up(\.b|g1|si)|utst|v400|v750|veri|vi(rg|te)|vk(40|5[0-3]|\-v)|vm40|voda|vulc|vx(52|53|60|61|70|80|81|83|85|98)|w3c(\-| )|webc|whit|wi(g |nc|nw)|wmlb|wonu|x700|yas\-|your|zeto|zte\-/i',substr($useragent,0,4))) $this->view->isMobile = true;
+		else $this->view->isMobile = false;
+		
+		if(!empty($_GET['src']) && $_GET['src']=='android') {
+			setcookie("isandroid", "1", time()+12*30*24*3600);
+		}
+		
+		if(!empty($_COOKIE["isandroid"]) || (!empty($_GET['src']) && $_GET['src']=='android')) {
+			$this->view->isMobile = true;
+			$this->view->isAndroid = "1";
+		}
+		
+		$this->view->allow_facebook = $this->config->socialmedia->allow_facebook;
+		$this->view->allow_twitter = $this->config->socialmedia->allow_twitter;
+		$this->view->allow_googleplus = $this->config->socialmedia->allow_googleplus;
+		
+		$this->view->rightSideBanner = $this->view->render("rightSideBanner.tpl"); 
+		$this->view->topBanner = $this->view->render("topBanner.tpl");
+		$this->view->mobileBanner = $this->view->render("mobileBanner.tpl");
+		
+		if($this->siteid==11) {
+			$cac = $this->loadModel('contentarticle');
+			if(!($newsTickers = $this->cache->load($this->environment."newsTicker_".$section_id."_cms_".$this->siteid))) {
+	    		$newsTickers = $cac->getNewsTickers($this->config->general->siteid, ((empty($this->config->cms->news_ticker_hours_to_show))?1:$this->config->cms->news_ticker_hours_to_show), ((empty($this->config->cms->news_ticker_articles_to_show))?6:$this->config->cms->news_ticker_articles_to_show));
+	    		if( empty($this->config->general->enable_cache) || $this->config->general->enable_cache == 1)
+	    			$this->cache->save($newsTickers, $this->environment."newsTicker_".$section_id."_cms_".$this->siteid, array("article_cms_".$this->siteid));
+	    	}
+	    	$this->view->newsTickers = $newsTickers;
+	    	
+			$breaking_news = $cac->getBreakingNews($this->siteid, '546, 547', ((empty($this->config->cms->breaking_news_display_in_minute))?'60':($this->config->cms->breaking_news_display_in_minute/60)));
+			$this->view->breaking_news = $breaking_news;
+			if(!empty($this->config->cms->breaking_news_rotation_in_second))
+	    		$this->view->rotation_timer = $this->config->cms->breaking_news_rotation_in_second*1000;
+	    	else
+	    		$this->view->rotation_timer = 5*1000;
+		}
+		
+		if(!empty($this->config->cms->paywall->enable)) {
+			$this->view->paywallEnable = 1;
+			$this->view->days_to_hide_initial_free_articles = $this->config->cms->paywall->days_to_hide_initial_free_articles;
+		} else
+			$this->view->paywallEnable = 0;
+		
+		$excludedCategoriesFromPaywall = array();
+		if(!empty($this->config->cms->exclude_categoryids_from_paywall)) {
+			$temp = explode(",", $this->config->cms->exclude_categoryids_from_paywall);
+			if(is_array($temp)) foreach ($temp as $catId) {
+				$catId = trim($catId);
+				$excludedCategoriesFromPaywall[] = $catId;
+			}
+		}
+		$this->view->excludedCategoriesFromPaywall = $excludedCategoriesFromPaywall;
+	}
+	
+	function copyr($source, $dest) {
+    	// Simple copy for a file
+    	if (is_file($source)) {
+        	return copy($source, $dest);
+    	}
+    	// Make destination directory
+    	if (!is_dir($dest)) {
+        	mkdir($dest);
+    	}
+    	// If the source is a symlink
+    	if (is_link($source)) {
+        	$link_dest = readlink($source);
+        	return symlink($link_dest, $dest);
+    	}
+
+    	// Loop through the folder
+    	$dir = dir($source);
+    	while (false !== ($entry = $dir->read())) {
+        	// Skip pointers
+        	if ($entry == '.' || $entry == '..') {
+            	continue;
+        	}
+        	// Deep copy directories
+        	if ($dest != "$source/$entry") {
+	            $this->copyr("$source/$entry", "$dest/$entry");
+    	    }
+    	}
+
+    	// Clean up
+    	$dir->close();
+    	return true;
+	}
+	
+	function deleter($path) {
+		if($handler = opendir($path)) {
+			while($filename = readdir($handler))  {
+				if ($filename != "." and $filename != "..")  {
+					if(is_dir($path."/".$filename)) $this->deleter($path."/".$filename);
+					else unlink($path."/".$filename);
+				}
+			}
+			closedir($handler);
+			rmdir($path);
+		}
+	}
+	
+	function createCaptcha($data = '', $img_path = '', $img_url = '', $font_path = '') { 
+		$htmlPath = rtrim($this->config->paths->html, '/');
+        $defaults = array(
+            'word'          => '',
+            'img_path'      => $htmlPath.'/captcha/',
+            'img_url'       => $this->config->general->url.'/captcha/',
+            'font_path'     => '',
+            'img_width'     => '140',
+            'img_height'    => '30',
+            'expiration'    => 3600
+        );
+        foreach ($defaults as $key => $val) {
+            if ( ! is_array($data)) {
+                if ( ! isset($$key) OR $$key == '') 
+                    $$key = $val;
+            }
+            else {
+                $$key = ( ! isset($data[$key])) ? $val : $data[$key];
+            }
+        }
+        if(!is_dir($img_path)) mkdir(rtrim($img_path,'/'));
+
+        if ($img_path == '' OR $img_url == '') return FALSE;
+        if ( ! @is_dir($img_path)) return FALSE;
+        if ( ! is_writable($img_path)) return FALSE;
+        if ( ! extension_loaded('gd')) return FALSE;
+        // -----------------------------------
+        // Remove old images
+        // -----------------------------------
+
+        list($usec, $sec) = explode(" ", microtime());
+        $now = ((float)$usec + (float)$sec);
+
+        $current_dir = @opendir($img_path);
+
+        while($filename = @readdir($current_dir)) {
+            if ($filename != "." and $filename != ".." and $filename != "index.html") {
+                $name = str_replace(".jpg", "", $filename);
+                if (($name + $expiration) < $now) {
+                    @unlink($img_path.$filename);
+                }
+            }
+        }
+        @closedir($current_dir);
+
+        // -----------------------------------
+        // Do we have a "word" yet?
+        // -----------------------------------
+
+       if ($word == '') {
+            //$pool = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+            $pool = '123456789abcdefghijkmnpqrstuvwxyz';
+            $str = '';
+            for ($i = 0; $i < 6; $i++) {
+                $str .= substr($pool, mt_rand(0, strlen($pool) -1), 1);
+            }
+            $word = $str;
+       }
+
+        // -----------------------------------
+        // Determine angle and position
+        // -----------------------------------
+
+        $length    = strlen($word);
+        $angle    = ($length >= 6) ? rand(-($length-6), ($length-6)) : 0;
+        $x_axis    = rand(6, (360/$length)-16);
+        $y_axis = ($angle >= 0 ) ? rand($img_height, $img_width) : rand(6, $img_height);
+
+        // -----------------------------------
+        // Create image
+        // -----------------------------------
+
+        $im = imagecreate($img_width, $img_height);
+
+        // -----------------------------------
+        //  Assign colors
+        // -----------------------------------
+
+        $bg_color        	= imagecolorallocate($im, 255, 255, 255);
+        $border_color    	= imagecolorallocate($im, 153, 102, 102);
+        $text_color        	= imagecolorallocate($im, 0, 0, 0);
+        $grid_color        	= imagecolorallocate($im, 255, 182, 182);
+        $shadow_color    	= imagecolorallocate($im, 255, 240, 240);
+
+        // -----------------------------------
+        //  Create the rectangle
+        // -----------------------------------
+
+        imagefilledrectangle($im, 0, 0, $img_width, $img_height, $bg_color);
+
+        // -----------------------------------
+        //  Create the spiral pattern
+        // -----------------------------------
+
+        $theta        = 1;
+        $thetac        = 7;
+        $radius        = 16;
+        $circles    = 20;
+        $points        = 32;
+
+        for ($i = 0; $i < ($circles * $points) - 1; $i++) {
+            $theta = $theta + $thetac;
+            $rad = $radius * ($i / $points );
+            $x = ($rad * cos($theta)) + $x_axis;
+            $y = ($rad * sin($theta)) + $y_axis;
+            $theta = $theta + $thetac;
+            $rad1 = $radius * (($i + 1) / $points);
+            $x1 = ($rad1 * cos($theta)) + $x_axis;
+            $y1 = ($rad1 * sin($theta )) + $y_axis;
+            imageline($im, $x, $y, $x1, $y1, $grid_color);
+            $theta = $theta - $thetac;
+        }
+
+        // -----------------------------------
+        //  Write the text
+        // -----------------------------------
+
+        $use_font = ($font_path != '' AND file_exists($font_path) AND function_exists('imagettftext')) ? TRUE : FALSE;
+
+        if ($use_font == FALSE) {
+            $font_size = 5;
+            $x = rand(0, $img_width/($length/3));
+            $y = 0;
+        }
+        else {
+            $font_size    = 16;
+            $x = rand(0, $img_width/($length/1.5));
+            $y = $font_size+2;
+        }
+
+        for ($i = 0; $i < strlen($word); $i++) {
+            if ($use_font == FALSE) {
+                $y = rand(0 , $img_height/2);
+                imagestring($im, $font_size, $x, $y, substr($word, $i, 1), $text_color);
+                $x += ($font_size*2);
+            }
+            else {
+                $y = rand($img_height/2, $img_height-3);
+                imagettftext($im, $font_size, $angle, $x, $y, $text_color, $font_path, substr($word, $i, 1));
+                $x += $font_size;
+            }
+        }
+
+
+        // -----------------------------------
+        //  Create the border
+        // -----------------------------------
+
+        imagerectangle($im, 0, 0, $img_width-1, $img_height-1, $border_color);
+
+        // -----------------------------------
+        //  Generate the image
+        // -----------------------------------
+
+        $img_name = $now.'.jpg';
+
+        imagejpeg($im, $img_path.$img_name);
+
+        imagedestroy($im);
+
+        $this->view->captcha = array('word' => $word, 'time' => $now, 'image' => array('src'=>$img_url.$img_name, 'width'=>$img_width, 'height'=>$img_height));
+	    $this->session->captchaWord = $word;
+    }
+    
+    protected function randomID($length = 30) {
+    	$password = "";
+        $possible = "0123456789abcdfghjklmnpqrstvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+        $i = 0;
+
+        while ($i < $length) {
+            $char = substr($possible, mt_rand(0, strlen($possible)-1), 1);
+            if (!strstr($password, $char)) {
+                $password .= $char;
+                $i++;
+            }
+		}
+        return $password;
+    }
+    
+    function loadModel($modelName, $modelType='model')
+    {    	
+    	require_once($this->modelDir . '/defaultClass.php');
+    	$customModelDir  = $this->config->general->basePath . '/sites/';
+    	$customModelDir .= $this->siteName . '/' . $this->module . '/models';
+      
+    	$sfname = $modelName . 'Class.php'; //standard file name
+		$sclsname = $modelName . 'Class'; //standard class name
+		$cfname = $modelName . 'customClass.php'; //custom file name
+		$cclsname = $modelName . 'customClass'; //custom class name
+    	if (file_exists($customModelDir . '/' . $cfname)) {
+    		//require base class for standard models
+    		if ($modelType=='model') {
+    			require_once($this->modelDir . $sfname);
+    		} 
+			ob_start();
+    		Zend_Loader::LoadClass($cclsname, $customModelDir);
+			ob_end_clean();
+            return (new $cclsname());
+    	} else {
+			ob_start();
+            Zend_Loader::LoadClass($sclsname, $this->modelDir);
+			ob_end_clean();
+    		return (new $sclsname());			
+    	}
+    } 
+    
+    protected function reformatQuery($content) {
+    	//$content = preg_replace("!".$this->baseUrl."/index/section/area_id/([0-9]+)/area_name/([^\"]+)/section_id/([0-9]+)/section_name/([^\"]+)/start/([0-9]+)!is", $this->baseUrl."/section/$4-$3/page/$5", $content);
+    	//$content = preg_replace("!".$this->baseUrl."/index/section/area_id/([0-9]+)/area_name/([^\"]+)/section_id/([0-9]+)/section_name/([^\"]+)!is", $this->baseUrl."/section/$4-$3", $content);    	
+    	$content = preg_replace("!".$this->baseUrl."/index/section/csa_id/([0-9]+)/section_id/([0-9]+)/section_name/([^\"]+)/start/([0-9]+)/pagesize/([0-9]+)!is", $this->baseUrl."/csa_id/$1/section/$3-$2/page/$4/$5", $content);
+    	$content = preg_replace("!".$this->baseUrl."/index/section/csa_id/([0-9]+)/section_id/([0-9]+)/section_name/([^\"]+)!is", $this->baseUrl."/csa_id/$1/section/$3-$2", $content);    	
+    	$content = preg_replace("!".$this->baseUrl."/index/area/area_id/([0-9]+)/area_name/([^\"]+)/id/([^\"]+)/start/([0-9]+)/pagesize/([0-9]+)!is", $this->baseUrl."/area/$2-$1/id/$3/page/$4/$5", $content);    	
+    	$content = preg_replace("!".$this->baseUrl."/index/area/area_id/([0-9]+)/area_name/([^\"]+)!is", $this->baseUrl."/area/$2-$1", $content);
+    	$content = preg_replace("!".$this->baseUrl."/image/getthumb/im/([^\"]+)/width/([0-9]+)/height/([0-9]+)!is", $this->baseUrl."/images/$2/$3/$1", $content);
+    	$content = preg_replace("!".$this->baseUrl."/image/getthumbbyid/im/([^\"]+)/width/([0-9]+)/height/([0-9]+)!is", $this->baseUrl."/imagesbyid/$2/$3/$1", $content);
+    	$content = preg_replace("!".$this->baseUrl."/article/view/article_id/([0-9]+)/headline/([^\"]+)/section/([^\"]+)!is", $this->baseUrl."/$3/$1/$2", $content);
+    	$content = preg_replace("!".$this->baseUrl."/gallery/view/gallery_id/([0-9]+)/title/([^\"]+)/start/([0-9]+)/pagesize/([0-9]+)!is", $this->baseUrl."/title/$2/$1/page/$3/$4", $content);
+    	$content = preg_replace("!".$this->baseUrl."/gallery/view/gallery_id/([0-9]+)/title/([^\"]+)!is", $this->baseUrl."/title/$2/$1", $content);
+    	$content = preg_replace("!".$this->baseUrl."/index/custompage/menu/([^\"]+)/id/([0-9]+)/title/([^\"]+)!is", $this->baseUrl."/cp/$1-$2/$3", $content);
+    	$content = preg_replace("!".$this->baseUrl."/index/areasection/area_id/([0-9]+)/section_id/([0-9]+)/section_name/([^\"]+)!is", $this->baseUrl."/areaid/$1/section/$3-$2", $content);    	
+    	
+    	$content = str_replace("%2F", "-", $content);
+    	
+        /*$content = str_replace(".php&amp;", ".php?", $content);
+        $content = str_replace(".php&", ".php?", $content);*/
+        return $content;
+    }
+    
+    protected function renderTemplate($template) {
+    	$this->endTime = microtime(true);
+		$this->view->renderTime = $this->endTime-$this->startTime;
+    	
+    	$output = $this->view->render('header.tpl');
+		$output .= $this->view->render($template);
+		$output .= $this->view->render('footer.tpl');
+		$output = $this->reformatQuery($output);
+		
+		ob_start();
+		echo $output;
+		ob_end_flush();
+		
+    }
+    
+    protected function generatePagingData($baseUrl, $startRec, $pageSize, $pageNumberCount, $recCount, $js=false) {
+        $credit = intval($pageNumberCount);
+		$hc = $credit/2;
+		$pagination = array();
+		$hc = ceil($hc);
+		$currentPageNo = $startRec/$pageSize+1;
+		$maxPage = intval(ceil($recCount/$pageSize));
+        $nextLink = array();
+        $prevLink = array();
+        
+        $startCredit = $currentPageNo-$hc;
+        if($startCredit < 1) $startCredit = 1;
+        $startRecofPaging = ($startCredit-1)*$pageSize;
+        for($i = $startRecofPaging, $j = $startCredit; $credit > 0 && $j <= $maxPage; $i+=$pageSize, $credit--, $j++) {
+        	if(!$js)
+        		$method = $baseUrl."/start/".$i."/pagesize/".$pageSize;
+        	else
+        		$method = str_replace("start",$i,$baseUrl);
+        		
+            $pagination[] = array(
+                "number"    => $j,
+                "startRec"  => $i,
+                "method"    => $method
+            );
+        }
+        if($credit > 0) {
+            for($i = $startRecofPaging-$pageSize, $j = $startCredit-1; $credit > 0 && $j > 0; $j--, $i-=$pageSize, $credit--){
+            if(!$js)
+        		$method = $baseUrl."/start/".$i."/pagesize/".$pageSize;
+        	else
+        		$method = str_replace("start",$i,$baseUrl);
+            	
+                $pagination[] = array(
+                    "number"    => $j,
+                    "startRec"  => $i,
+                    "method"    => $method
+                );
+            }    
+        }
+        if(!empty($pagination) && is_array($pagination))
+            sort($pagination);
+
+		if($startRec == 0 && $recCount < $pageSize) {
+			$nextLink = "";
+			$prevLink = "";
+		}
+		else if($startRec == 0 && $recCount > $pageSize) {
+			if(!$js)
+        		$method = $baseUrl."/start/".($startRec+$pageSize)."/pagesize/".$pageSize;
+        	else
+        		$method = str_replace("start",($startRec+$pageSize),$baseUrl);
+			
+			$nextLink = array(
+				"startRec"  => $startRec+$pageSize,
+				"method"    => $method
+			);
+			$prevLink = "";
+		}
+		else if($startRec+$pageSize >= $recCount && $startRec != 0) {
+			/*echo "startRec=".$startRec." pageSize=".$pageSize." recCount=".$recCount;
+			exit();*/
+			if(!$js)
+        		$method = $baseUrl."/start/".($startRec-$pageSize)."/pagesize/".$pageSize;
+        	else
+        		$method = str_replace("start",($startRec-$pageSize),$baseUrl);
+        		
+			$nextLink = "";
+			$prevLink = array(
+				"startRec"  => $startRec-$pageSize,
+				"method"    => $method
+			);
+		}
+		else if($recCount > $pageSize) {
+			if(!$js)
+			{
+        		$methodnext = $baseUrl."/start/".($startRec+$pageSize)."/pagesize/".$pageSize;
+        		$methodprev = $baseUrl."/start/".($startRec-$pageSize)."/pagesize/".$pageSize;
+			}
+        	else
+        	{
+        		$methodnext = str_replace("start",($startRec+$pageSize),$baseUrl);
+        		$methodprev = str_replace("start",($startRec-$pageSize),$baseUrl);
+        	}
+        		
+			$nextLink = array(
+				"startRec"  => $startRec+$pageSize,
+				"method"    => $methodnext
+			);
+			$prevLink = array(
+				"startRec"  => $startRec-$pageSize,
+				"method"    => $methodprev
+			);
+		}
+		$firstLink = "";
+		if($startRec > 0 && $startRec >= $pageSize) {
+			if(!$js)
+        		$method = $baseUrl."/start/0/pagesize/".$pageSize;
+        	else
+        		$method = str_replace("start","0",$baseUrl);
+        		
+			$firstLink = array(
+				"startRec"  => 0,
+				"method"    => $method //$baseUrl."/start/0"
+			);
+		}
+		$lastLink = "";
+		if ($startRec+$pageSize < $recCount) {
+			$remaining = $recCount % $pageSize;
+			if($remaining == 0) $remaining = $pageSize;
+			
+			if(!$js)
+        		$method = $baseUrl."/start/".($recCount - $remaining)."/pagesize/".$pageSize;
+        	else
+        		$method = str_replace("start",($recCount - $remaining),$baseUrl);
+			
+			$lastLink = array(
+				"startRec"  => $recCount - $remaining,
+				"method"    => $method
+			);
+		}
+		
+		$totalPage = ceil($recCount/$pageSize);
+		$curPage = floor($startRec/$pageSize)+1;
+		
+		$pagingData = array(
+			"recCount"	=> $recCount,
+			"startRec"	=> $startRec,
+			"pageSize"	=> $pageSize,
+			"curPage"	=> $curPage,
+			"totalPage" => $totalPage,
+			"pagination"=> $pagination,
+			"nextLink"	=> $nextLink,
+			"prevLink"	=> $prevLink,
+			"firstLink"	=> $firstLink,
+			"lastLink"	=> $lastLink,
+		);
+		return $pagingData;
+	}
+	
+	public function cleancache() {
+		/*$this->cache->clean(Zend_Cache::CLEANING_MODE_MATCHING_TAG,array('article_cms_'.$this->siteid));
+		$this->cache->clean(Zend_Cache::CLEANING_MODE_MATCHING_TAG,array('banners_cms_'.$this->siteid));
+		$this->cache->clean(Zend_Cache::CLEANING_MODE_MATCHING_TAG,array('display_cms_'.$this->siteid));
+		$this->cache->clean(Zend_Cache::CLEANING_MODE_MATCHING_TAG,array('events_cms_'.$this->siteid));
+		$this->cache->clean(Zend_Cache::CLEANING_MODE_MATCHING_TAG,array('gallery_cms_'.$this->siteid));
+		$this->cache->clean(Zend_Cache::CLEANING_MODE_MATCHING_TAG,array('newsSections_cms_'.$this->siteid));
+		$this->cache->clean(Zend_Cache::CLEANING_MODE_MATCHING_TAG,array('polls_cms_'.$this->siteid));
+		$this->cache->clean(Zend_Cache::CLEANING_MODE_MATCHING_TAG,array('specialsections_cms_'.$this->siteid));
+		$this->cache->clean(Zend_Cache::CLEANING_MODE_MATCHING_TAG,array('submenu_cms_'.$this->siteid));*/
+		//$this->cache->clean(Zend_Cache::CLEANING_MODE_MATCHING_TAG,array('article_cms_'.$this->siteid, 'banners_cms_'.$this->siteid, 'display_cms_'.$this->siteid, 'events_cms_'.$this->siteid, 'gallery_cms_'.$this->siteid, 'newsSections_cms_'.$this->siteid, 'polls_cms_'.$this->siteid, 'specialsections_cms_'.$this->siteid, 'submenu_cms_'.$this->siteid));
+		
+		$this->cache->clean(Zend_Cache::CLEANING_MODE_ALL);
+		
+		/*$content = $this->loadModel('content');
+		$contentAreas = $content->getContentAreas($this->siteid);		
+		foreach($contentAreas as $ca)
+		{
+			$this->cache->remove("area_".$ca["area_id"]."_cms_".$this->siteid);
+			$this->cache->remove("articleslideshow_".$ca["area_id"]."_cms_".$this->siteid);
+			$this->cache->remove("latestnews_".$ca["area_id"]."_cms_".$this->siteid);
+			$this->cache->remove("topReadPassMonth_".$ca["area_id"]."_cms_".$this->siteid);
+			$this->cache->remove("topReadPassWeek_".$ca["area_id"]."_cms_".$this->siteid);
+			$this->cache->remove("topreadtoday_".$ca["area_id"]."_cms_".$this->siteid);
+			$this->cache->remove("topReadYesterday_".$ca["area_id"]."_cms_".$this->siteid);
+		}
+		
+		$section = $this->loadModel('section');
+		$contentSections = $section->getContentSections($this->siteid);
+		foreach($contentSections as $cs)
+		{
+			$this->cache->remove("articles_".$cs["section_id"]."_cms_".$this->siteid);
+			$this->cache->remove("banners_".$cs["section_id"]."_cms_".$this->siteid);
+		}
+		
+		$article = $this->loadModel('contentarticle');
+		$contentArticle = $article->getArticlesBySite($this->siteid);
+		foreach($contentArticle as $cart)
+		{
+			$this->cache->remove("article_".$cart["article_id"]."_cms_".$this->siteid);
+			$this->cache->remove("articlephoto_".$cart["article_id"]."_cms_".$this->siteid);
+			$this->cache->remove("article_".$cart["article_id"]."_comments_cms_".$this->siteid);
+		}
+		
+		$this->cache->remove("articleslideshow_cms_".$this->siteid);
+		$this->cache->remove("audios_cms_".$this->siteid);
+		$this->cache->remove("banners_cms_".$this->siteid);
+		$this->cache->remove("events_cms_".$this->siteid);
+		$this->cache->remove("footerblock_cms_".$this->siteid);
+		$this->cache->remove("gallery_cms_".$this->siteid);
+		$this->cache->remove("latestnews_cms_".$this->siteid);
+		$this->cache->remove("latestaudios_cms_".$this->siteid);
+		$this->cache->remove("latestphotos_cms_".$this->siteid);
+		$this->cache->remove("latestslideshows_cms_".$this->siteid);
+		$this->cache->remove("latestvideos_cms_".$this->siteid);
+		$this->cache->remove("lookandfeel_cms_".$this->siteid);
+		$this->cache->remove("menu_cms_".$this->siteid);
+		$this->cache->remove("mostviewedaudios_cms_".$this->siteid);
+		$this->cache->remove("mostviewedphotos_cms_".$this->siteid);
+		$this->cache->remove("mostviewedslideshows_cms_".$this->siteid);
+		$this->cache->remove("mostviewedvideos_cms_".$this->siteid);	
+		$this->cache->remove("newsSections_cms_".$this->siteid);
+		$this->cache->remove("photos_cms_".$this->siteid);
+		$this->cache->remove("polls_cms_".$this->siteid);
+		$this->cache->remove("slideshows_cms_".$this->siteid);
+		$this->cache->remove("specialsections_cms_".$this->siteid);
+		$this->cache->remove("submenu_cms_".$this->siteid);
+		$this->cache->remove("topReadPassMonth_cms_".$this->siteid);
+		$this->cache->remove("topReadPassWeek_cms_".$this->siteid);
+		$this->cache->remove("topreadtoday_cms_".$this->siteid);
+		$this->cache->remove("topReadYesterday_cms_".$this->siteid);
+		$this->cache->remove("videos_cms_".$this->siteid);	*/
+		
+	}
+	
+	function assignImageAndVideoForArticles($articles, $smugmugURL = "") {
+		if(is_array($articles)) foreach ($articles as $key=>$article) {
+			if($article['content_gallery_type_id'] == '1') { // photo
+	    		if(!empty($this->config->gallery->use_smugmug) && !empty($article['smugmug_key'])) {
+					/*$libPath = dirname(dirname(dirname(dirname(__FILE__))));
+			    	$libPath = str_replace("\\", "/", $libPath);
+			    	$libPath = rtrim($libPath, '/');
+			    	$libPath .= '/lib';
+			    	require_once($libPath."/phpSmug.php");
+			    	$f = new phpSmug( "APIKey=".$this->config->smugmug->api_key, "AppName=".$this->config->smugmug->app_name );
+					try {								
+						$f->login( "EmailAddress=".$this->config->smugmug->email, "Password=".$this->config->smugmug->password );	
+						$smugmugImage = $f->images_getInfo('ImageID='.$article['smugmug_id'],'ImageKey='.$article['smugmug_key']);
+						$article['image_url'] = $smugmugImage['SmallURL'];
+					} catch(Exception $ex) {}*/
+					if($this->siteid==11)
+						$articles[$key]['image_url'] =$smugmugURL."/photos/i-".$article['smugmug_key']."/0/Th/i-".$article['smugmug_key']."-Th.jpg";
+					else
+						$articles[$key]['image_url'] =$smugmugURL."/photos/i-".$article['smugmug_key']."/0/S/i-".$article['smugmug_key']."-S.jpg";
+				}
+				else if(!empty($article['video_tag'])) {
+					$video = $article['video_tag']; 
+					if(strpos($video, 'youtube')) {
+						$sourceSystemId = "";
+						if(strpos(' '.$video, '<object')) {
+							if(strpos($video, 'youtube')) {
+								preg_match( '/value="([^"]*)"/i', $video, $array ) ;
+								if(!empty($array[1])) $sourceSystemId = $array[1];
+							}
+							else {
+								preg_match( '/&src=([^&]*)&/i', $video, $array ) ;
+								if(!empty($array[1])) $sourceSystemId = $array[1];
+							}
+						}
+						else {
+							preg_match( '/src="([^"]*)"/i', $video, $array ) ;
+							if(!empty($array[1])) $sourceSystemId = $array[1];
+						}
+						$sourceSystemId = basename($sourceSystemId);
+						$temp = explode("?", $sourceSystemId);
+						if(count($temp) > 1) $sourceSystemId = $temp[0];
+						if(!empty($sourceSystemId)) {
+							$articles[$key]['image_url'] = "https://img.youtube.com/vi/".$sourceSystemId."/0.jpg";
+	    					$articles[$key]['image_name'] = "0.jpg";
+						}
+					}
+					else if(strpos($video, 'brightcove') && $this->siteid==11 ) { /* using tyler token*/
+						$sourceSystemId = $article['image_name'];
+						if(!empty($sourceSystemId)) {
+							if($key < 3) {
+								$json = file_get_contents("http://api.brightcove.com/services/library?command=find_video_by_id&video_id={$sourceSystemId}&video_fields=name,THUMBNAILURL,VIDEOSTILLURL&token=".urlencode("x95LXczyNI5-G9kX0cjsHM9edPFzaKFTE4PANJ7L2rQfuF-swGUxJg.."));
+								$data = json_decode($json);
+								if(!empty($data->thumbnailURL)) {
+									$articles[$key]['image_url'] = $data->thumbnailURL;
+	    							$articles[$key]['image_name'] = basename($data->thumbnailURL);
+								}
+							}
+						}
+					}
+				}
+				else if($this->siteid != 11) {
+					$articles[$key]['image_url'] = $this->baseUrl."/image/getthumbbyid/im/".$article["content_images_id"]."/width/200/height/130";
+				}
+			} 
+			else if($article['content_gallery_type_id'] == '2' && $article['image_class_id']==1) {  // video  
+				if(!empty($this->config->video->use_youtube) && $this->config->video->use_youtube == '1' && !empty($article['youtube_id'])) {
+					try {    						
+    					$articles[$key]['image_url'] = "https://img.youtube.com/vi/".$article['youtube_id']."/0.jpg";
+    					$articles[$key]['image_name'] = "0.jpg";
+					} catch(Exception $ex) {}
+				}
+				else if(!empty($article['video_tag'])) {
+					$video = $article['video_tag']; 
+					if(strpos($video, 'youtube')) {
+						$sourceSystemId = "";
+						if(strpos(' '.$video, '<object')) {
+							if(strpos($video, 'youtube')) {
+								preg_match( '/value="([^"]*)"/i', $video, $array ) ;
+								if(!empty($array[1])) $sourceSystemId = $array[1];
+							}
+							else {
+								preg_match( '/&src=([^&]*)&/i', $video, $array ) ;
+								if(!empty($array[1])) $sourceSystemId = $array[1];
+							}
+						}
+						else {
+							preg_match( '/src="([^"]*)"/i', $video, $array ) ;
+							if(!empty($array[1])) $sourceSystemId = $array[1];
+						}
+						$sourceSystemId = basename($sourceSystemId);
+						$temp = explode("?", $sourceSystemId);
+						if(count($temp) > 1) $sourceSystemId = $temp[0];
+						if(!empty($sourceSystemId)) {
+							$articles[$key]['image_url'] = "https://img.youtube.com/vi/".$sourceSystemId."/0.jpg";
+	    					$articles[$key]['image_name'] = "0.jpg";
+						}
+					}
+					else if(strpos($video, 'brightcove') && $this->siteid==11 ) { /* using tyler token*/
+						$sourceSystemId = $article['image_name'];
+						if(!empty($sourceSystemId)) {
+							if($key < 3) {
+								$json = file_get_contents("http://api.brightcove.com/services/library?command=find_video_by_id&video_id={$sourceSystemId}&video_fields=name,THUMBNAILURL,VIDEOSTILLURL&token=".urlencode("x95LXczyNI5-G9kX0cjsHM9edPFzaKFTE4PANJ7L2rQfuF-swGUxJg.."));
+								$data = json_decode($json);
+								if(!empty($data->thumbnailURL)) {
+									$articles[$key]['image_url'] = $data->thumbnailURL;
+	    							$articles[$key]['image_name'] = basename($data->thumbnailURL);
+								}
+							}
+						}
+					}
+				}
+				else if($this->siteid != 11) {
+					$articles[$key]['video_url'] = $this->baseUrl.'/images/article_photos/'.$article['image_name'];
+				}
+			}
+		}
+		return $articles;
+	}
+	
+	function showSplashScreen() {
+		echo $this->view->render("splash-screen.tpl");
+	}
+	
+	function checkPaywallStatus($article) {
+		if(!empty($this->config->cms->paywall->enable)) {
+			$pubdateTimestamp = strtotime($article['pubdate']);
+			if(!empty($this->config->cms->paywall->days_to_hide_initial_free_articles) && $article['article_priority_id']==2) {
+				if($pubdateTimestamp < (time()-($this->config->cms->paywall->days_to_hide_initial_free_articles*24*3600))) {
+					$article['article_priority_id'] = 2;
+				}
+				else {
+					$article['article_priority_id'] = 3;
+				}
+			}
+		}
+		else {
+			$article['article_priority_id'] = 3;
+		}
+		return $article;
+	}
+}
+?>

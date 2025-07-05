@@ -1,0 +1,474 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <!--IE Compatibility modes-->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <!--Mobile first-->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Smart Reporting Tool Administrator</title>
+    
+    <meta name="description" content="Pakuwon Smart Reporting Tool Administrator">
+    <meta name="author" content="">
+    
+    <meta name="msapplication-TileColor" content="#5bc0de" />
+    <meta name="msapplication-TileImage" content="/images/pakuwon_logo_notxt.png" />
+    
+    <!-- Bootstrap -->
+    <link rel="stylesheet" href="/bootstrap/css/bootstrap.css">
+    
+    <!-- Font Awesome -->
+    <link href="/font-awesome/css/font-awesome.min.css" rel="stylesheet">
+    
+    <!-- Metis core stylesheet -->
+    <link rel="stylesheet" href="/css/main.css">
+    
+    <!-- metisMenu stylesheet -->
+    <link rel="stylesheet" href="/metismenu/metisMenu.css">
+    
+    <!-- onoffcanvas stylesheet -->
+    <link rel="stylesheet" href="/onoffcanvas/onoffcanvas.css">
+    
+    <!-- animate.css stylesheet -->
+    <link rel="stylesheet" href="/animate.css/animate.css">
+
+	<!-- style.css stylesheet -->
+    <link rel="stylesheet" href="/css/style.css">
+
+<!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+<!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
+<!--[if lt IE 9]>
+    <script src="https://oss.maxcdn.com/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+<![endif]-->
+
+	<!--jQuery -->
+	<script src="/jquery/jquery.js"></script>
+
+
+	<!--Bootstrap -->
+	<script src="/bootstrap/js/bootstrap.js"></script>
+	<!-- MetisMenu -->
+	<script src="/metismenu/metisMenu.js"></script>
+	<!-- onoffcanvas -->
+	<script src="/onoffcanvas/onoffcanvas.js"></script>
+
+
+	<!-- Metis core scripts -->
+	<script src="/js/core.js"></script>
+	<!-- Metis demo scripts -->
+	<script src="/js/app.js"></script>
+
+  </head>
+
+        <body class="  ">
+            <div class="bg-dark dk" id="wrap">
+                <div id="top">
+                    <!-- .navbar -->
+                    <nav class="navbar navbar-inverse navbar-static-top">
+                        <div class="container-fluid">
+                    
+                    
+                            <!-- Brand and toggle get grouped for better mobile display -->
+                            <header class="navbar-header">
+                    
+                                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse">
+                                    <span class="sr-only">Toggle navigation</span>
+                                    <span class="icon-bar"></span>
+                                    <span class="icon-bar"></span>
+                                    <span class="icon-bar"></span>
+                                </button>
+                                <a href="index.html" class="navbar-brand"><img src="/images/pakuwon_logo_notxt.png" alt="" width="40" style="margin:5px;"></a>
+                    
+                            </header>
+                    
+                    
+                    
+                            <div class="topnav">
+                                <div class="btn-group">
+                                    <a href="/admin/user/logout" data-toggle="tooltip" data-original-title="Logout" data-placement="bottom"
+                                       class="btn btn-metis-1 btn-sm">
+                                        <i class="fa fa-power-off"></i>
+                                    </a>
+                                </div>                                
+                    
+                            </div>
+                    
+                    
+                    
+                    
+                            <div class="collapse navbar-collapse navbar-ex1-collapse">
+									<h1 style="font-size:24px; margin-top:10px; padding-left:45px;">Pakuwon Smart Reporting Tool Administrator</h1>									  
+                            </div>
+                        </div>
+                        <!-- /.container-fluid -->
+                    </nav>
+                    <!-- /.navbar -->
+                </div>
+                <!-- /#top -->
+                    <div id="left">
+                        <!-- #menu -->
+                        <ul id="menu" class="bg-blue dker">
+                                  <li class="nav-header">Menu</li>
+                                  <li class="nav-divider" style="height: 50px; text-align: center; padding-top: 5px; color: lightcoral; font-weight: 600;"><?php echo "Welcome ".$this->username."<br/>".$this->company; ?></li>
+                                  <li class="">
+                                    <a href="/admin/index/index">
+                                      <i class="fa fa-dashboard"></i><span class="link-title">&nbsp;Dashboard</span>
+                                    </a>
+                                  </li>
+								              <?php if($this->site_id > 0) { ?>
+                                  <li class="">
+                                    <a href="/admin/user/view"  aria-expanded="false">
+                                      <i class="fa fa-user "></i>
+                                      <span class="link-title">Users</span>
+                                    </a>
+                                  </li> 
+								  <?php /*<li class="">
+                                    <a href="/admin/user/viewrole">
+                                      <i class="fa fa-suitcase "></i>
+                                      <span class="link-title">User Role</span>
+                                    </a>
+                                  </li>*/ ?>
+								  <li class="">
+                      <a href="javascript:;"  class="has-arrow"   aria-expanded="false">
+                        <i class="fa fa-shield "></i>
+                        <span class="link-title">Security</span>
+                      </a>
+                        <ul class="collapse">
+                          <li class="">
+                          <a href="/admin/setting/viewchiefreportingtime">
+                            <i class="fa fa-cog "></i>
+                            <span class="link-title">Reporting Time</span>
+                          </a>
+                          </li>
+                          <li class="">
+                          <a href="/admin/vendor/viewsecurityvendor">
+                            <i class="fa fa-cog "></i>
+                            <span class="link-title">Vendor</span>
+                          </a>
+                          </li>
+                                            <li class="">
+                          <a href="/admin/equipment/viewsecurityequipment">
+                            <i class="fa fa-cog "></i>
+                            <span class="link-title">Equipment</span>
+                          </a>
+                          </li>
+                          <li class="">
+                          <a href="/admin/training/viewsecuritytrainingactivity">
+                            <i class="fa fa-cog "></i>
+                            <span class="link-title">Training Activity</span>
+                          </a>
+                          </li>			
+                          <li class="">
+                            <a href="/admin/issuefinding/viewsecuritykejadian">
+                              <i class="fa fa-cog "></i>
+                              <span class="link-title">Incident</span>
+                            </a>
+                          </li>			
+                          <li class="">
+                            <a href="/admin/issuefinding/viewsecuritymodus">
+                              <i class="fa fa-cog "></i>
+                              <span class="link-title">Modus</span>
+                            </a>
+                          </li>	
+                          <li class="">
+                            <a href="/admin/issuefinding/viewsecurityfloor">
+                              <i class="fa fa-cog "></i>
+                              <span class="link-title">Floor</span>
+                            </a>
+                          </li>	
+                          <li class="">
+                            <a href="/admin/actionplan/viewmodule/c/1">
+                              <i class="fa fa-cog "></i>
+                              <span class="link-title">Action Plan Module</span>
+                            </a>
+                          </li>	
+                          <li class="">
+                            <a href="/admin/actionplan/viewtarget/c/1">
+                              <i class="fa fa-cog "></i>
+                              <span class="link-title">Action Plan Target</span>
+                            </a>
+                          </li>	
+                          <li class="">
+                            <a href="/admin/actionplan/viewactivity/c/1">
+                              <i class="fa fa-cog "></i>
+                              <span class="link-title">Action Plan Activity</span>
+                            </a>
+                          </li>	
+                          <li class="">
+                            <a href="/admin/actionplan/reminder/c/1">
+                              <i class="fa fa-cog "></i>
+                              <span class="link-title">Action Plan Reminder Email</span>
+                            </a>
+                          </li>	
+                          <li>
+                            <a href="/admin/kpi/viewachievementcategorymodule/c/1">
+                              <i class="fa fa-cog"></i>&nbsp; Keterangan Hasil Capaian KPI </a>
+                          </li>
+                          <li>
+                            <a href="/admin/kpi/viewusers/c/1">
+                              <i class="fa fa-cog"></i>&nbsp; KPI users </a>
+                          </li>
+                          <?php /*<li class="">
+                            <a href="/admin/issuefinding/viewsecuritygenerallocation">
+                              <i class="fa fa-cog "></i>
+                              <span class="link-title">General Location</span>
+                            </a>
+                          </li>		*/ ?>					  
+                        </ul>
+                  </li>
+								  <li class="">
+                                    <a href="javascript:;"  class="has-arrow"   aria-expanded="false">
+                                      <i class="fa fa-exclamation-triangle"></i>
+                                      <span class="link-title">Safety</span>
+                                    </a>
+									<ul class="collapse">
+                                      <li>
+                                        <a href="/admin/setting/viewsafetyreportingtime">
+                                          <i class="fa fa-cog"></i>&nbsp; Reporting Time </a>
+                                      </li>
+									  <li>
+                                        <a href="/admin/equipment/viewsafetyequipment">
+                                          <i class="fa fa-cog"></i>&nbsp; Equipment </a>
+                                      </li>
+									  									  <li>
+                                        <a href="/admin/equipment/viewsafetyequipmentitems">
+                                          <i class="fa fa-cog"></i>&nbsp; Equipment Items </a>
+                                      </li>
+                                      <li>
+                                        <a href="/admin/equipment/viewbuildingprotectionequipmenttype">
+                                          <i class="fa fa-cog"></i>&nbsp; Jenis Peralatan Proteksi Gedung </a>
+                                      </li>
+                                      <li>
+                                        <a href="/admin/equipment/viewbuildingprotectionequipment">
+                                          <i class="fa fa-cog"></i>&nbsp; Peralatan Proteksi Gedung </a>
+                                      </li>
+                                      <li>
+                                        <a href="/admin/equipment/viewfireaccidentequipment">
+                                          <i class="fa fa-cog"></i>&nbsp; Perlengkapan Penanggulangan Kebakaran dan Kecelakaan Gedung </a>
+                                      </li>
+									                    <li>
+                                        <a href="/admin/training/viewsafetytrainingactivity">
+                                          <i class="fa fa-cog"></i>&nbsp; Training Activity </a>
+                                      </li>
+                                      <li class="">
+                                      <a href="/admin/issuefinding/viewsafetykejadian">
+                                        <i class="fa fa-cog "></i>
+                                        <span class="link-title">Incident</span>
+                                      </a>
+                                    </li>			
+                                    <li class="">
+                                      <a href="/admin/issuefinding/viewsafetymodus">
+                                        <i class="fa fa-cog "></i>
+                                        <span class="link-title">Modus</span>
+                                      </a>
+                                    </li>	
+                                    <li class="">
+                                      <a href="/admin/issuefinding/viewsafetyfloor">
+                                        <i class="fa fa-cog "></i>
+                                        <span class="link-title">Floor</span>
+                                      </a>
+                                    </li>	
+                                    <li class="">
+                                      <a href="/admin/actionplan/viewmodule/c/3">
+                                        <i class="fa fa-cog "></i>
+                                        <span class="link-title">Action Plan Module</span>
+                                      </a>
+                                    </li>	
+                                    <li class="">
+                                      <a href="/admin/actionplan/viewtarget/c/3">
+                                        <i class="fa fa-cog "></i>
+                                        <span class="link-title">Action Plan Target</span>
+                                      </a>
+                                    </li>	
+                                    <li class="">
+                                      <a href="/admin/actionplan/viewactivity/c/3">
+                                        <i class="fa fa-cog "></i>
+                                        <span class="link-title">Action Plan Activity</span>
+                                      </a>
+                                    </li>	
+                                    <li class="">
+                                        <a href="/admin/actionplan/reminder/c/3">
+                                          <i class="fa fa-cog "></i>
+                                          <span class="link-title">Action Plan Reminder Email</span>
+                                        </a>
+                                      </li>	
+                                    <li>
+                                      <a href="/admin/kpi/viewachievementcategorymodule/c/3">
+                                        <i class="fa fa-cog"></i>&nbsp; Keterangan Hasil Capaian KPI </a>
+                                    </li>
+                                    <li>
+                                      <a href="/admin/kpi/viewusers/c/3">
+                                        <i class="fa fa-cog"></i>&nbsp; KPI users </a>
+                                    </li>
+                                   <?php /* <li class="">
+                                      <a href="/admin/issuefinding/viewsafetygenerallocation">
+                                        <i class="fa fa-cog "></i>
+                                        <span class="link-title">General Location</span>
+                                      </a>
+                                    </li>	*/ ?>
+                                    </ul>
+                                  </li>
+								  <li class="">
+                                    <a href="javascript:;"  class="has-arrow"   aria-expanded="false">
+                                      <i class="fa fa-car"></i>
+                                      <span class="link-title">Parking &amp; Traffic</span>
+                                    </a>
+									<ul class="collapse">
+                                      <li>
+                                        <a href="/admin/setting/viewparkingreportingtime">
+                                          <i class="fa fa-cog"></i>&nbsp; Reporting Time </a>
+                                      </li>
+									   <li>
+                                        <a href="/admin/equipment/viewparkingequipment1">
+                                          <i class="fa fa-cog"></i>&nbsp; Equipment </a>
+                                      </li>
+									  <li>
+                                        <a href="/admin/equipment/viewparkingequipment2">
+                                          <i class="fa fa-cog"></i>&nbsp; Parking Equipment </a>
+                                      </li>
+									  <li>
+                                        <a href="/admin/training/viewparkingtrainingactivity">
+                                          <i class="fa fa-cog"></i>&nbsp; Training Activity </a>
+                                      </li>
+                                      <li class="">
+                                        <a href="/admin/issuefinding/viewparkingkejadian">
+                                          <i class="fa fa-cog "></i>
+                                          <span class="link-title">Incident</span>
+                                        </a>
+                                      </li>			
+                                      <li class="">
+                                        <a href="/admin/issuefinding/viewparkingmodus">
+                                          <i class="fa fa-cog "></i>
+                                          <span class="link-title">Modus</span>
+                                        </a>
+                                      </li>	
+                                      <li class="">
+                                        <a href="/admin/issuefinding/viewparkingfloor">
+                                          <i class="fa fa-cog "></i>
+                                          <span class="link-title">Floor</span>
+                                        </a>
+                                      </li>	
+                                      <li class="">
+                                        <a href="/admin/actionplan/viewmodule/c/5">
+                                          <i class="fa fa-cog "></i>
+                                          <span class="link-title">Action Plan Module</span>
+                                        </a>
+                                      </li>	
+                                      <li class="">
+                                        <a href="/admin/actionplan/viewtarget/c/5">
+                                          <i class="fa fa-cog "></i>
+                                          <span class="link-title">Action Plan Target</span>
+                                        </a>
+                                      </li>	
+                                      <li class="">
+                                        <a href="/admin/actionplan/viewactivity/c/5">
+                                          <i class="fa fa-cog "></i>
+                                          <span class="link-title">Action Plan Activity</span>
+                                        </a>
+                                      </li>	
+                                      <li class="">
+                                        <a href="/admin/actionplan/reminder/c/5">
+                                          <i class="fa fa-cog "></i>
+                                          <span class="link-title">Action Plan Reminder Email</span>
+                                        </a>
+                                      </li>	
+                                      <li>
+                                        <a href="/admin/kpi/viewachievementcategorymodule/c/5">
+                                          <i class="fa fa-cog"></i>&nbsp; Keterangan Hasil Capaian KPI </a>
+                                      </li>
+                                      <li>
+                                        <a href="/admin/kpi/viewusers/c/5">
+                                          <i class="fa fa-cog"></i>&nbsp; KPI users </a>
+                                      </li>
+                                      <?php /*<li class="">
+                                        <a href="/admin/issuefinding/viewparkinggenerallocation">
+                                          <i class="fa fa-cog "></i>
+                                          <span class="link-title">General Location</span>
+                                        </a>
+                                      </li>*/ ?>
+                                    </ul>
+                                  </li>								  
+								  <li class="">
+                                    <a href="javascript:;"  class="has-arrow"   aria-expanded="false">
+                                      <i class="fa fa-recycle"></i>
+                                      <span class="link-title">Housekeeping</span>
+                                    </a>
+									<ul class="collapse">
+                                      <li>
+                                        <a href="/admin/setting/viewhousekeepingreportingtime">
+                                          <i class="fa fa-cog"></i>&nbsp; Reporting Time </a>
+                                      </li>
+									  <li>
+                                        <a href="/admin/tangkapan/viewhousekeepinghasiltangkapan">
+                                          <i class="fa fa-cog"></i>&nbsp; Hasil Tangkapan </a>
+                                      </li>
+                                      <li class="">
+                                    <a href="/admin/actionplan/viewmodule/c/2">
+                                      <i class="fa fa-cog "></i>
+                                      <span class="link-title">Action Plan Module</span>
+                                    </a>
+                                  </li>	
+                                  <li class="">
+                                    <a href="/admin/actionplan/viewtarget/c/2">
+                                      <i class="fa fa-cog "></i>
+                                      <span class="link-title">Action Plan Target</span>
+                                    </a>
+                                  </li>	
+                                  <li class="">
+                                    <a href="/admin/actionplan/viewactivity/c/2">
+                                      <i class="fa fa-cog "></i>
+                                      <span class="link-title">Action Plan Activity</span>
+                                    </a>
+                                  </li>	
+                                  <li class="">
+                                    <a href="/admin/actionplan/reminder/c/2">
+                                      <i class="fa fa-cog "></i>
+                                      <span class="link-title">Action Plan Reminder Email</span>
+                                    </a>
+                                  </li>	
+                                    </ul>
+                                  </li>
+                                  
+								    <li class="">
+                      <a href="javascript:;"  class="has-arrow"   aria-expanded="false">
+                        <i class="fa fa-hourglass"></i>
+                        <span class="link-title">Manager On Duty</span>
+                      </a>
+                      <ul class="collapse">
+                        <?php /*<li>
+                          <a href="/admin/mod/viewstaffcondition">
+                            <i class="fa fa-angle-right"></i>&nbsp; Staff Condition </a>
+                        </li>*/ ?>
+                      <li>
+                          <a href="/admin/equipment/viewmodequipment">
+                            <i class="fa fa-cog"></i>&nbsp; Equipment </a>
+                        </li>
+                      </ul>
+                    </li>
+
+                    <li class="">
+                      <a href="javascript:;"  class="has-arrow"   aria-expanded="false">
+                        <i class="fa fa-star"></i>
+                        <span class="link-title">KPI</span>
+                      </a>
+                      <ul class="collapse">
+                        <li>
+                          <a href="/admin/kpi/viewrating">
+                            <i class="fa fa-cog"></i>&nbsp; Rating </a>
+                        </li>
+                        <li>
+                          <a href="/admin/kpi/viewachievementcategory">
+                            <i class="fa fa-cog"></i>&nbsp; Kategori Capaian Kinerja Kesimpulan </a>
+                        </li>
+                      </ul>
+                    </li>
+                    
+								  <?php if($this->userid == '1') { ?><?php } ?>
+								  <?php } ?>
+                                </ul>
+                        <!-- /#menu -->
+                    </div>
+                    <!-- /#left -->

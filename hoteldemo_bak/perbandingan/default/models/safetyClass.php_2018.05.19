@@ -1,0 +1,180 @@
+<?php
+
+require_once('defaultClass.php');
+require_once('dbClass.php');
+
+class safetyClass extends defaultClass
+{	
+	function saveReport($params) {
+		$safetyReportTable = new safety_daily_report(array('db'=>'db'));
+		
+		$data = array(
+			"site_id" => $this->site_id,
+			"user_id" => $params["user_id"],
+			"man_power_afternoon" => $params["man_power_afternoon"],
+			"man_power_night" => $params["man_power_night"],
+			"man_power_morning" => $params["man_power_morning"],
+			"briefing1" => $params["briefing1"],
+			"briefing2" => $params["briefing2"],
+			"briefing3" => $params["briefing3"],
+			"sop1" => $params["sop1"],
+			"sop2" => $params["sop2"],
+			"sop3" => $params["sop3"],
+			"created_date" => date("Y-m-d H:i:s")
+		);
+		if(empty($params['safety_report_id']))
+		{
+			$safetyReportTable->insert($data);
+			return $this->db->lastInsertId();
+		}
+		else
+		{
+			unset($data['created_date']);
+			$where = $safetyReportTable->getAdapter()->quoteInto('report_id = ?', $params['safety_report_id']);
+			$safetyReportTable->update($data, $where);
+			return $params['safety_report_id'];
+		}
+	}
+	
+	function getReports() {
+		$safetyReportTable = new safety_daily_report(array('db'=>'db'));
+		$select = $safetyReportTable->select()->where('site_id = ?', $this->site_id)->order('created_date desc');
+		$safety = $safetyReportTable->getAdapter()->fetchAll($select);
+		return $safety;
+	}
+	
+	function getReportById($id) {
+		$safetyReportTable = new safety_daily_report(array('db'=>'db'));
+		
+		$select = $safetyReportTable->getAdapter()->select();
+		$select->from(array("s"=>"safety_daily_report"), array("s.*"));
+		$select->joinLeft(array("u"=>"users"), "u.user_id = s.user_id", array("u.name"));
+		$select->where('s.report_id = ?', $id);
+		$safety = $safetyReportTable->getAdapter()->fetchRow($select);
+
+		return $safety;
+	}
+	
+	function deleteReportById($id)
+	{
+		$safetyReportTable = new safety_daily_report(array('db'=>'db'));
+		
+		if ( is_numeric($id) && $id > 0 )
+		{		
+			$where = $safetyReportTable->getAdapter()->quoteInto('report_id = ?', $id);
+			$safetyReportTable->delete($where);
+		}
+	}
+	
+	
+	function addSpecificReport($params) {
+		$specificReportTable = new safety_specific_report(array('db'=>'db'));
+		
+		$data = array(
+			"safety_report_id" => intval($params["safety_report_id"]),
+			"issue_type" => intval($params["issue_type"]),
+			"detail" => $params["detail"],
+			"status" => $params["status"],
+			"created_date" => date("Y-m-d H:i:s"),
+			"issue_id" => intval($params["issue_id"])
+		);
+		$specificReportTable->insert($data);
+		return $this->db->lastInsertId();
+	}
+	
+	function deleteSpecificReportBySafetyId($safety_id)
+	{
+		$specificReportTable = new safety_specific_report(array('db'=>'db'));
+		
+		if ( is_numeric($safety_id) && $safety_id > 0 )
+		{		
+			$where = $specificReportTable->getAdapter()->quoteInto('safety_report_id = ?', $safety_id);
+			$specificReportTable->delete($where);
+		}
+	}
+	
+	function getSpecificReportBySafetyReport($safety_report_id) {
+		$specificReportTable = new safety_specific_report(array('db'=>'db'));
+		
+		$select = $specificReportTable->getAdapter()->select();
+		$select->from(array("ssr"=>"safety_specific_report"), array("ssr.*"));
+		$select->joinLeft(array("it"=>"issue_type"), "it.issue_type_id = ssr.issue_type", array("it.issue_type_id","it.issue_type as issue_type_name"));
+		$select->where('ssr.safety_report_id = ?', $safety_report_id);
+		$specific_reports = $specificReportTable->getAdapter()->fetchAll($select);
+		return $specific_reports;
+	}
+	
+	function getSpecificReportById($safety_report_id) {
+		$specificReportTable = new safety_specific_report(array('db'=>'db'));
+		
+		$select = $specificReportTable->getAdapter()->select();
+		$select->from(array("ssr"=>"safety_specific_report"), array("ssr.*"));
+		$select->joinLeft(array("it"=>"issue_type"), "it.issue_type_id = ssr.issue_type", array("it.issue_type_id","it.issue_type as issue_type_name"));
+		$select->joinLeft(array("i"=>"issues"), "i.issue_id = ssr.issue_id", array("i.issue_date","i.description"));
+		if($safety_report_id > 0) $select->orwhere('ssr.safety_report_id = ?', $safety_report_id);
+		$specific_reports = $specificReportTable->getAdapter()->fetchAll($select);
+		return $specific_reports;
+	}
+	
+	
+	
+	function getSecurityReportByShift($date, $shift) {
+		$securityTable= new security(array('db'=>'db'));
+		
+		$select = $securityTable->getAdapter()->select();
+		$select->from(array("s"=>"security"), array("s.*"));
+		$select->joinLeft(array("u"=>"users"), "u.user_id = s.user_id", array("u.name"));
+		$select->where('s.shift = ?', $shift);
+		$select->where('date(s.created_date) = ?', $date);
+		$security = $securityTable->getAdapter()->fetchRow($select);
+		return $security;
+	}
+	
+	function getGlitchByDate($date)
+	{
+		$securityTable= new security(array('db'=>'db'));
+		$select = $securityTable->getAdapter()->select();
+		$select = "select * from security_glitch sg left join security s  on sg.security_id = s.security_id where  date(created_date) = '".$date."'";
+		$security_glitch = $securityTable->getAdapter()->fetchRow($select);
+		return $security_glitch;
+	}
+	
+	function getIncidentByDate($date)
+	{
+		$securityTable= new security(array('db'=>'db'));
+		$select = $securityTable->getAdapter()->select();
+		$select = "select * from security_incident sg left join security s  on sg.security_id = s.security_id where  date(created_date) = '".$date."'";
+		$security_glitch = $securityTable->getAdapter()->fetchRow($select);
+		return $security_glitch;
+	}
+	
+	function getLostFound($date)
+	{
+		$securityTable= new security(array('db'=>'db'));
+		$select = $securityTable->getAdapter()->select();
+		$select = "select * from security_lost_found sg left join security s  on sg.security_id = s.security_id where  date(created_date) = '".$date."'";
+		$security_glitch = $securityTable->getAdapter()->fetchRow($select);
+		return $security_glitch;
+	}
+	
+	function getDefectListByIds($ids) {
+		$select = "select *, 4 as issue_type_id from security_defect_list where security_id in (".$ids.")";
+		$issues = $this->db->fetchAll($select);
+		return $issues;
+	}
+	
+	function getSpecificReportBySecurityIdIssueType($security_id, $issue_type) {
+		$specificReportTable = new security_specific_report(array('db'=>'db'));
+		$select = $specificReportTable->getAdapter()->select();
+		$select->from(array("ssr"=>"security_specific_report"), array("ssr.*"));
+		$select->joinLeft(array("it"=>"issue_type"), "it.issue_type_id = ssr.issue_type", array("it.issue_type_id","it.issue_type as issue_type_name"));
+		$select->joinLeft(array("i"=>"issues"), "i.issue_id = ssr.issue_id", array("i.issue_date","i.description"));
+		$select->where('ssr.security_id = ?', $security_id);
+		$select->where("ssr.issue_type = ?", $issue_type);
+		$specific_reports = $specificReportTable->getAdapter()->fetchAll($select);
+		return $specific_reports;
+	}
+	
+	
+}
+?>

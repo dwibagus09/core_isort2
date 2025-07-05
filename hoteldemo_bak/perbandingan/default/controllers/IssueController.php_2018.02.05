@@ -1,0 +1,185 @@
+<?php
+require_once('actionControllerBase.php');
+class IssueController extends actionControllerBase
+{
+	function submitissueAction()
+	{
+		set_time_limit(7200);
+		$params = $this->_getAllParams();
+		
+		$magickPath = "/usr/bin/convert";
+		
+		
+		$file = $_FILES['picture'];
+		if ($file["error"] > 0) {
+			$this->view->msg = "Submitting issue failed, please try again";
+			$this->renderTemplate('index.tpl');
+		}
+		else {					
+			$baseDir = dirname(dirname(dirname(dirname(__FILE__))));
+			$baseDir = str_replace("\\", "/", $baseDir);
+			$baseDir = rtrim($baseDir, "/");
+			$baseDir = $baseDir."/sites/default/html/images/issues";
+			if(!is_dir($baseDir)) mkdir($baseDir);
+			$datafolder = $baseDir;
+			
+			$origFileName = $file["name"];
+			$temp = explode(".", $origFileName);
+			$ext = $temp[count($temp)-1];
+			$ext = strtolower($ext);
+				
+			$curDate = 	date("Ymd_his");
+			$fileName = $curDate.'.'.$ext;
+			
+			if (move_uploaded_file($file["tmp_name"],$datafolder."/".$fileName)){
+				$params['picture'] = $fileName;
+				Zend_Loader::LoadClass('issueClass', $this->modelDir);
+				$issueClass = new issueClass();
+				$params['user_id'] = $this->ident['user_id'];
+				$id = $issueClass->saveIssue($params);
+				
+				$new_file_thumb = $curDate."_thumb.".$ext;
+				$new_file_large = $curDate."_large.".$ext;
+				/*** create thumbnail image ***/
+				exec($magickPath . ' ' . $datafolder."/".$fileName . ' -resize 5% ' . $datafolder."/".$new_file_thumb);
+				/*** create medium image ***/
+				exec($magickPath . ' ' . $datafolder."/".$fileName . ' -resize 25% ' . $datafolder."/".$new_file_large);
+				
+				imagedestroy($datafolder."/".$fileName);
+				unlink($datafolder."/".$fileName);
+				
+				if($params['sendwa'] == 1) $id = "/id/".$id;
+				else $id="";
+				
+				$this->view->msg = "Issue successfully submitted";
+				$this->getResponse()->setRedirect($this->config->general->url."/issue/listissues/s/1".$id);
+				$this->getResponse()->sendResponse();
+				exit;
+			}	
+			else {
+				$this->getResponse()->setRedirect($this->config->general->url."/index/index/err/1");
+				$this->getResponse()->sendResponse();
+				exit;			
+			}
+		}
+	}
+	
+	function listissuesAction()
+	{
+		$params = $this->_getAllParams();
+		$this->view->ident = $this->ident;
+		Zend_Loader::LoadClass('issueClass', $this->modelDir);
+    	$issueClass = new issueClass();
+		$issues = $issueClass->getIssues();
+		$category = $this->loadModel('category');
+		$newIssue=array();
+		foreach($issues as &$issue)
+		{
+			$pic = explode(".", $issue['picture']);
+			$issue['large_pic'] = $pic[0]."_large.".$pic[1];
+			$issue['thumb_pic'] = $pic[0]."_thumb.".$pic[1];
+			if(!empty($issue['category_id'])) {
+				$issue['category'] = $category->getCategoryById($issue['category_id']);				
+			}
+			if($issue['issue_id'] == $params['id']) $newIssue = $issue;
+		}
+		
+		if(!empty($newIssue))
+		{			
+			$pic_url = $this->config->general->url."/images/issues/".$newIssue['large_pic'] ;
+			$this->view->txt = urlencode('*[NEW ISSUE]* Image : '.$pic_url.' Category : _'.$newIssue['category']['category_name'].'_, Location : _'.$newIssue['location'].'_, Discussion : _'.$newIssue['description']).'_';
+			$this->view->phone = '6285885556333'; //'6282260400777'; //'6282111508181';
+		}
+		
+		$this->view->issues = $issues;
+		$this->renderTemplate('list_issues.tpl');	
+	}
+	
+	function whatsappAction()
+    {
+		$config['webpassword'] = 'srt_pakuwon';
+		$config['Emma'] = array(
+			'fromNumber'    => '6282260400777',
+			'nick'          => 'Emma',
+			'waPassword'    => '23January2011'
+		);
+		require_once 'whatsapp/whatsprot.class.php';
+		$username = "6282260400777";
+		$password = "23January2011";
+		$w = new WhatsProt($username, "0", "Emma", true); //Name your application by replacing “WhatsApp Messaging”
+		$w->connect();
+		$w->loginWithPassword($password);
+		$target = '6282111508181'; //Target Phone,reciever phone
+		$message = 'Test messagge';
+		$w->SendPresenceSubscription($target); //Let us first send presence to user
+		$w->sendMessage($target,$message ); // Send Message
+		echo "Message Sent Successfully"; exit();
+    }
+	
+	function registrationAction() {
+		require_once('whatsapp/Registration.php');
+ 
+		$debug = false;
+		$username = "6282260400777"; // Phone number with country code but without '+' or '00', ie: 34123456789
+		 
+		if(empty($username)){ 
+		echo "Mobile Number can't be Empty"; 
+		exit(0);
+		}
+		if (!preg_match('!^\d+$!', $username))
+		{
+		  echo "Wrong number. Do NOT use '+' or '00' before your number\n";
+		  exit(0);
+		}
+		$w = new Registration($username, $debug);
+		  try {
+			$resp = $w->checkCredentials();
+			print_r($resp); exit();
+			echo "Verification Code Sent via SMS";
+		  } catch(Exception $e) {
+			echo $e->getMessage();
+			exit(0);
+		 }
+	}
+	
+	function getwhatsapppasswordAction() {
+		require_once('whatsapp/Registration.php');
+		 
+		$debug = false;
+		$username = "6282260400777";   
+		$code = ""; // Received Verification Code
+		 
+		if(empty($username)){ 
+			echo "Mobile Number can't be Empty"; 
+			exit(0);
+		}
+		if (!preg_match('!^\d+$!', $username))
+		{
+		  echo "Wrong number. Do NOT use '+' or '00' before your number\n";
+		  exit(0);
+		}
+		 
+		$identityExists = file_exists("whatsapp/wadata/id.$username.dat");
+		 
+		$w = new Registration($username, $debug);
+		 
+		if (!$identityExists)
+		{
+		echo "Identity Doesn't Exists";
+		}
+		else
+		{	
+		 
+		  try {
+			$result = $w->codeRegister($code);
+			echo "Your username is: ".$result->login."<BR>";
+			echo "Your password is: ".$result->pw."<BR>";
+		  } catch(Exception $e) {
+			echo $e->getMessage();
+			exit(0);
+		  }
+		  
+		}
+	}
+}
+?>

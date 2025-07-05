@@ -1,0 +1,407 @@
+<!-- Magnific Popup core CSS file -->
+<link rel="stylesheet" href="/css/magnific-popup.css">
+
+<?php 
+if(empty($this->security['created_date'])) $cur_date = date("Y-m-d");
+else {
+	$cur_report_date = explode(" ",$this->security['created_date']);
+	$cur_date = $cur_report_date[0];
+}
+?>
+
+<!-- page content -->
+<div class="right_col" role="main">
+  <div class="">
+	<div class="row">
+	  <div class="col-md-12 col-sm-12 col-xs-12">
+		<div class="x_panel">
+			<?php if(!empty($this->message)) { ?><div class="err-msg"><?php echo $this->message; ?></div><?php } ?>
+		  <div class="x_title">
+			<h2><?php echo $this->title; ?></h2>
+			<div class="clearfix"></div>
+		  </div>
+		  <div class="x_content">
+
+			<form class="form-horizontal form-label-left" action="/default/security/insert" method="POST" enctype="multipart/form-data">
+				<input type="hidden" id="security_id" name="security_id" class="form-control col-md-7 col-xs-12" value="<?php echo $this->security['security_id']; ?>">
+			  <span class="section">Date / Shift</span>
+			  <div class="item form-group">
+				<label class="control-label col-md-3 col-sm-3 col-xs-12" for="name">Day / Date
+				</label>
+				<div class="col-md-6 col-sm-6 col-xs-12 " style="padding-top:4px;">
+					<?php if(!empty($this->security['report_date'])) echo $this->security['report_date']; else echo date("l, F j, Y"); ?>
+				</div>
+			  </div>
+			  <div class="item form-group">
+				<label class="control-label col-md-3 col-sm-3 col-xs-12" for="shift">Shift
+				</label>
+				<div class="col-md-6 col-sm-6 col-xs-12">
+					<select id="shift" name="shift" class="form-control" required>
+					<?php if(!empty($this->shift)) {
+						foreach($this->shift as $shift) { ?>
+						<option value="<?php echo $shift['shift_id']; ?>" <?php if($this->security['shift'] == $shift['shift_id']) echo "selected"; ?>><?php echo $shift['shift_name']; ?></option>
+						<?php } } ?>
+					  </select>
+				</div>
+			  </div>
+			  
+			  <span class="section">Man Power</span>
+			  <fieldset>
+				<legend>In House</legend>
+				  <div class="item form-group">
+					<label class="control-label col-md-3 col-sm-3 col-xs-12" for="supervisor-inhouse">Supervisor
+					</label>
+					<div class="col-md-6 col-sm-6 col-xs-12">
+					  <input id="supervisor-inhouse" class="form-control col-md-7 col-xs-12" name="supervisor-inhouse" type="text" value="<?php echo $this->security['supervisor']; ?>" required>
+					</div>
+				  </div>
+				  <div class="item form-group">
+					<label class="control-label col-md-3 col-sm-3 col-xs-12" for="staff-posko-inhouse">Staff Posko
+					</label>
+					<div class="col-md-6 col-sm-6 col-xs-12">
+					  <input type="text" id="staff-posko-inhouse" name="staff-posko-inhouse" class="form-control col-md-7 col-xs-12" value="<?php echo $this->security['staff_posko']; ?>" required>
+					</div>
+				  </div>
+				  <div class="item form-group">
+					<label class="control-label col-md-3 col-sm-3 col-xs-12" for="staff-cctv-inhouse">Staff CCTV
+					</label>
+					<div class="col-md-6 col-sm-6 col-xs-12">
+					  <input type="text" id="staff-cctv-inhouse" name="staff-cctv-inhouse"  class="form-control col-md-7 col-xs-12" value="<?php echo $this->security['staff_cctv']; ?>" required>
+					</div>
+				  </div>
+				  <div class="item form-group">
+					<label class="control-label col-md-3 col-sm-3 col-xs-12" for="safety-inhouse">Safety
+					</label>
+					<div class="col-md-6 col-sm-6 col-xs-12">
+					  <input type="text" id="safety-inhouse" name="safety-inhouse" class="form-control col-md-7 col-xs-12" value="<?php echo $this->security['safety']; ?>" required>
+					</div>
+				  </div>
+			</fieldset>
+			<fieldset>
+				<legend>Vendor</legend>
+					<h4><?php echo strtoupper($this->vendor[0]); ?></h4>
+				  <div class="item form-group">
+					<label class="control-label col-md-3 col-sm-3 col-xs-12" for="chief-spd">Chief / Waka
+					</label>
+					<div class="col-md-6 col-sm-6 col-xs-12">
+					  <input id="chief-spd" class="form-control col-md-7 col-xs-12" name="chief-spd" type="text" value="<?php echo $this->security['chief_spd']; ?>" required>
+					</div>
+				  </div>
+				  <div class="item form-group">
+					<label class="control-label col-md-3 col-sm-3 col-xs-12" for="panwas-spd">Panwas
+					</label>
+					<div class="col-md-6 col-sm-6 col-xs-12">
+					  <input type="text" id="panwas-spd" name="panwas-spd" class="form-control col-md-7 col-xs-12" value="<?php echo $this->security['panwas_spd']; ?>" required>
+					</div>
+				  </div>
+				  <div class="item form-group">
+					<label class="control-label col-md-3 col-sm-3 col-xs-12" for="danton-spd">Danton
+					</label>
+					<div class="col-md-6 col-sm-6 col-xs-12">
+					  <input type="text" id="danton-spd" name="danton-spd" class="form-control col-md-7 col-xs-12" value="<?php echo $this->security['danton_spd']; ?>" required>
+					</div>
+				  </div>
+				  <div class="item form-group">
+					<label class="control-label col-md-3 col-sm-3 col-xs-12" for="jumlah-spd">Jumlah
+					</label>
+					<div class="col-md-6 col-sm-6 col-xs-12">
+					  <input type="text" id="jumlah-spd" name="jumlah-spd" class="form-control col-md-7 col-xs-12" value="<?php echo $this->security['jumlah_spd']; ?>" required>
+					</div>
+				  </div>
+				  
+				  <h4><?php echo strtoupper($this->vendor[1]); ?></h4>
+				  <div class="item form-group">
+					<label class="control-label col-md-3 col-sm-3 col-xs-12" for="name">Chief / Waka
+					</label>
+					<div class="col-md-6 col-sm-6 col-xs-12">
+					  <input id="chief-army" class="form-control col-md-7 col-xs-12" name="chief-army" type="text" value="<?php echo $this->security['chief_army']; ?>" required>
+					</div>
+				  </div>
+				  <div class="item form-group">
+					<label class="control-label col-md-3 col-sm-3 col-xs-12" for="panwas-army">Panwas
+					</label>
+					<div class="col-md-6 col-sm-6 col-xs-12">
+					  <input type="text" id="panwas-army" name="panwas-army" class="form-control col-md-7 col-xs-12" value="<?php echo $this->security['panwas_army']; ?>" required>
+					</div>
+				  </div>
+				  <div class="item form-group">
+					<label class="control-label col-md-3 col-sm-3 col-xs-12" for="danton-army">Danton
+					</label>
+					<div class="col-md-6 col-sm-6 col-xs-12">
+					  <input type="text" id="danton-army" name="danton-army" class="form-control col-md-7 col-xs-12" value="<?php echo $this->security['danton_army']; ?>" required>
+					</div>
+				  </div>
+				  <div class="item form-group">
+					<label class="control-label col-md-3 col-sm-3 col-xs-12" for="jumlah-army">Jumlah
+					</label>
+					<div class="col-md-6 col-sm-6 col-xs-12">
+					  <input type="text" id="jumlah-army" name="jumlah-army" class="form-control col-md-7 col-xs-12" value="<?php echo $this->security['jumlah_army']; ?>" required>
+					</div>
+				  </div>
+			</fieldset>
+			  
+			  <span class="section">Briefing</span>
+				<div class="col-md-4 col-sm-4 col-xs-12">
+				  <textarea id="briefing" name="briefing" class="form-control col-md-4 col-xs-12" style="height:150px; margin-bottom:5px;" required><?php echo str_replace("<br>","&#13;",$this->security['briefing']); ?></textarea>
+				</div>
+				<div class="col-md-4 col-sm-4 col-xs-12">
+				  <textarea id="briefing2" name="briefing2" class="form-control col-md-4 col-xs-12" style="height:150px; margin-bottom:5px;" disabled><?php echo $this->security['briefing2']; ?></textarea>
+				</div>
+				<div class="col-md-4 col-sm-4 col-xs-12">
+				  <textarea id="briefing3" name="briefing3" class="form-control col-md-4 col-xs-12" style="height:150px; margin-bottom:5px;" disabled><?php echo $this->security['briefing3']; ?></textarea>
+				</div>
+			  
+			  <span class="section">Defect List &nbsp;<a id="add-defect-list" ><i class="fa fa-plus-square"></i></a></span>
+			  <table id="defect-list-table" class="table">
+			  <thead>
+				<tr>
+				  <th class="id-hidden"></th>
+				  <th>Area</th>
+				  <th>Detil</th>
+				  <th>Follow up</th>
+				  <th width="30"></th>
+				</tr>
+			  </thead>
+			  <tbody>
+				<?php if(!empty($this->security['defect_list'])) {
+						foreach($this->security['defect_list'] as $defect_list) {
+				?>
+				<tr>
+				  <td class="id-hidden"><input type="hidden" id="id-defect-list" name="id-defect-list[]" value="<?php echo $defect_list['sdl_id']; ?>"></td>
+				  <td><input id="area-defect-list" class="form-control col-md-7 col-xs-12" name="area-defect-list[]" type="text" value="<?php echo $defect_list['area']; ?>" required></td>
+				  <td><input id="detil-defect-list" class="form-control col-md-7 col-xs-12" name="detil-defect-list[]" type="text" value="<?php echo $defect_list['detail']; ?>" required></td>
+				  <td><input id="followup-defect-list" class="form-control col-md-7 col-xs-12" name="followup-defect-list[]" type="text" value="<?php echo $defect_list['status']; ?>" required></td>
+				  <td align="center" style="vertical-align:middle;"><i class="fa fa-trash remove-issue" onclick="$(this).closest('tr').remove();"></i></td>
+				</tr>
+				<?php } 
+				} ?>
+			  </tbody>
+			</table>
+			  
+			  <span class="section">Incident Report &nbsp;<a id="add-incident-report" href="#issues-table-form"><i class="fa fa-plus-square"></i></a></span>
+			  <table id="incident-table" class="table">
+			  <thead>
+				<tr>
+			      <th class="id-hidden"></th>
+				  <th width="100">Time</th>
+				  <th>Description</th>
+				  <th width="150">Status</th>
+				  <th width="30"></th>
+				</tr>
+			  </thead>
+			  <tbody>
+				<?php if(!empty($this->security['incident'])) {
+						foreach($this->security['incident'] as $incident) {
+							$issue_date_time = explode(" ",$incident['issue_date']);
+				?>
+				<tr id="incident<?php echo $incident['incident_id']; ?>">
+				  <td class="id-hidden"><input type="hidden" id="id-incident" name="id-incident[]" value="<?php echo $incident['issue_id']; ?>"></td>
+				  <td><textarea id="time-incident" name="time-incident[]" class="form-control col-md-7 col-xs-12" style="height:50px;" disabled><?php echo $issue_date_time[1]; ?></textarea></td>
+				  <td><textarea id="description-incident" name="description-incident[]" class="form-control col-md-7 col-xs-12" style="height:50px;" disabled><?php echo $incident['description']; ?></textarea></td>
+				  <td><textarea id="status-incident" name="status-incident[]" class="form-control col-md-7 col-xs-12" style="height:50px;" required><?php echo $incident['status']; ?></textarea></td>
+				  <td align="center" style="vertical-align:middle;"><i class="fa fa-trash remove-issue" data-id="incident<?php echo $incident['incident_id']; ?>"></i></td>
+				</tr>
+				<?php } 
+				} ?>
+			  </tbody>
+			</table>
+			  
+			  <span class="section">Glitch &nbsp;<a id="add-glitch" href="#issues-table-form"><i id="add-glitch" class="fa fa-plus-square"></i></a></span>
+			  <table id="glitch-table" class="table">
+			  <thead>
+				<tr>
+				  <th class="id-hidden"></th>
+				  <th width="100">Time</th>
+				  <th>Description</th>
+				  <th width="150">Status</th>
+				  <th width="30"></th>
+				</tr>
+			  </thead>
+			  <tbody>
+				<?php if(!empty($this->security['glitch'])) {
+						foreach($this->security['glitch'] as $glitch) {
+							$issue_date_time = explode(" ",$glitch['issue_date']);
+				?>
+				<tr id="glitch<?php echo $glitch['glitch_id']; ?>">
+				  <td class="id-hidden"><input type="hidden" id="id-glitch" name="id-glitch[]" value="<?php echo $glitch['issue_id']; ?>"></td>
+				  <td><textarea id="time-glitch" name="time-glitch[]" class="form-control col-md-7 col-xs-12" style="height:50px;" disabled><?php echo $issue_date_time[1]; ?></textarea></td>
+				  <td><textarea id="description-glitch" name="description-glitch[]" class="form-control col-md-7 col-xs-12" style="height:50px;" disabled><?php echo $glitch['description']; ?></textarea></td>
+				  <td><textarea id="status-glitch" name="status-glitch[]" class="form-control col-md-7 col-xs-12" style="height:50px;" required><?php echo $glitch['status']; ?></textarea></td>
+				  <td align="center" style="vertical-align:middle;"><i class="fa fa-trash remove-issue" data-id="glitch<?php echo $glitch['glitch_id']; ?>"></i></td>
+				</tr>
+				<?php } 
+				}  ?>
+			  </tbody>
+			</table>
+			  
+			  <span class="section">Lost &amp; Found &nbsp;<a id="add-lost-found" href="#issues-table-form"><i id="add-lost-found" class="fa fa-plus-square"></i></a></span>
+			  <table id="lost-found-table" class="table">
+			  <thead>
+				<tr>
+				  <th class="id-hidden"></th>
+				  <th width="100">Time</th>
+				  <th>Description</th>
+				  <th width="150">Status</th>
+				  <th width="30"></th>
+				</tr>
+			  </thead>
+			  <tbody>
+				<?php if(!empty($this->security['lost_found'])) {
+						foreach($this->security['lost_found'] as $lost_found) {
+							$issue_date_time = explode(" ",$lost_found['issue_date']);
+				?>
+				<tr id="lost-found<?php echo $lost_found['lost_found_id']; ?>">
+				  <td class="id-hidden"><input type="hidden" id="id-lost-found" name="id-lost-found[]" value="<?php echo $lost_found['issue_id']; ?>"></td>
+				  <td><textarea id="time-lost-found" name="time-lost-found[]" class="form-control col-md-7 col-xs-12" style="height:50px;" disabled><?php echo $issue_date_time[1]; ?></textarea></td>
+				  <td><textarea id="description-lost-found" name="description-lost-found[]" class="form-control col-md-7 col-xs-12" style="height:50px;" disabled><?php echo $lost_found['description']; ?></textarea></td>
+				  <td><textarea id="status-lost-found" name="status-lost-found[]" class="form-control col-md-7 col-xs-12" style="height:50px;" required><?php echo $lost_found['status']; ?></textarea></td>
+				  <td align="center" style="vertical-align:middle;"><i class="fa fa-trash remove-issue" data-id="lost-found<?php echo $lost_found['lost_found_id']; ?>"></i></td>
+				</tr>
+				<?php } 
+				} ?>
+			  </tbody>
+			</table>
+			  
+			  <div class="ln_solid"></div>
+			  <div class="form-group">
+				<div class="col-md-12" style="text-align:center;">
+				  <button id="send" type="submit" class="btn btn-success" style="width:200px;">Simpan</button>
+				</div>
+			  </div>
+			</form>
+		  </div>
+		</div>
+	  </div>
+	</div>
+  </div>
+</div>
+<!-- /page content -->
+
+<!-- Incident, glitch, lost&found form -->
+  <form action="" id="issues-table-form" class="mfp-hide white-popup-block" >
+	<div id="issues-table"></div>
+	<div class="add-btn"><input type="submit" id="add-issue-submit" name="add-issue-submit" value="Add"></div>
+  </form>
+<!-- End of Incident, glitch, lost&found form -->
+
+<!-- Magnific Popup core JS file -->
+<script src="/js/jquery.magnific-popup.min.js"></script>
+ 
+<script type="text/javascript">
+$(document).ready(function() {
+	$( "#add-defect-list" ).click(function() {
+	  $( "#defect-list-table").append('<tr><td class="id-hidden"><input type="hidden" id="id-defect-list" name="id-defect-list[]"></td><td><input id="area-defect-list" class="form-control col-md-7 col-xs-12" name="area-defect-list[]" type="text"></td><td><input id="detil-defect-list" class="form-control col-md-7 col-xs-12" name="detil-defect-list[]" type="text"></td><td><input id="followup-defect-list" class="form-control col-md-7 col-xs-12" name="followup-defect-list[]" type="text"></td><td align="center" style="vertical-align:middle;"><i class="fa fa-trash remove-issue" onclick="$(this).closest(\'tr\').remove();"></i></td></tr>');
+	});
+	
+	$('#add-incident-report').magnificPopup({
+		type: 'inline',
+		preloader: false,
+		callbacks: {
+			open: function() {
+			  $.ajax({
+					url: "/default/issue/getissuebytype",
+					data: { id : '1', cat_id:1, report_date:'<?php echo $cur_date; ?>' }
+				}).done(function(response) {
+					$( "#issues-table" ).html(response);
+					/*$('.image-popup-vertical-fit').magnificPopup({
+						type: 'image',
+						closeOnContentClick: true,
+						mainClass: 'mfp-img-mobile',
+						image: {
+							verticalFit: true
+						}
+					});*/
+				});	
+			},
+			close: function() {	
+				$( "#issues-table").html("");
+			}
+		}
+	});
+	
+	$('#add-glitch').magnificPopup({
+		type: 'inline',
+		preloader: false,
+		callbacks: {
+			open: function() {
+			  $.ajax({
+					url: "/default/issue/getissuebytype",
+					data: { id : '2', cat_id:1, report_date:'<?php echo $cur_date; ?>' }
+				}).done(function(response) {
+					$( "#issues-table" ).html(response);
+				});				
+			},
+			close: function() {	
+				$( "#issues-table").html("");
+			}
+		}
+	});
+	
+	$('#add-lost-found').magnificPopup({
+		type: 'inline',
+		preloader: false,
+		callbacks: {
+			open: function() {
+			  $.ajax({
+					url: "/default/issue/getissuebytype",
+					data: { id : '3', cat_id:1, report_date:'<?php echo $cur_date; ?>' }
+				}).done(function(response) {
+					$( "#issues-table" ).html(response);
+				});				
+			},
+			close: function() {	
+				$( "#issues-table").html("");
+			}
+		}
+	});
+	
+	$('#issues-table-form').on('submit', function(event){
+		event.preventDefault(); 
+		var data;
+		var issue_type;
+		$.each( $( this ).serializeArray(), function( i, field ) {
+			if(field.name == 'type_id') 
+			{
+				if(field.value == '1') issue_type = 'incident';
+				if(field.value == '2') issue_type = 'glitch';
+				if(field.value == '3') issue_type = 'lost-found';
+			}
+			if(field.name == 'chk_issue_id')
+			{
+				$.ajax({
+					url: "/default/issue/getissuebyid",
+					data: { id : field.value }
+				}).done(function(response) {
+					var issue = $.parseJSON(response);
+					var issuedate = issue.issue_date;
+					var issuetime = issuedate.split(" ");
+					data = '<tr id="'+issue_type+issue.issue_id+'"><td class="id-hidden"><input type="hidden" id="id-'+ issue_type+'" name="id-'+ issue_type+'[]" value="'+issue.issue_id+'"></td><td><textarea id="time-'+ issue_type+'" name="time-'+ issue_type+'[]" class="form-control col-md-7 col-xs-12" style="height:50px;" disabled>'+issuetime[1]+'</textarea></td><td><textarea id="description-'+ issue_type+'" name="description-'+ issue_type+'[]" class="form-control col-md-7 col-xs-12" style="height:50px;" disabled>'+issue.description+'</textarea></td><td><textarea id="status-'+ issue_type+'" name="status-'+ issue_type+'[]" class="form-control col-md-7 col-xs-12" style="height:50px;"></textarea></td><td align="center"  style="vertical-align:middle;"><i class="fa fa-trash remove-issue" data-id="'+issue_type+issue.issue_id+'"></i></td></tr>';					
+					$( "#"+issue_type+"-table").append(data);
+					$(".remove-issue").click(function() {
+						$("#"+this.dataset.id).remove();
+					});
+				});
+			}
+		});
+		$.magnificPopup.close();
+	});
+	
+	$(".remove-issue").click(function() {
+		$("#"+this.dataset.id).remove();
+	});
+	
+	$("#add-attachment").click(function() {
+		var row;
+		var table_name;
+		
+		row = '<tr>
+				<td><input type="hidden" name="attachment_id[]" class="form-control col-md-7 col-xs-12" required></td>									
+				<td align="center"><input type="file" name="attachment_file[]" accept="image/jpeg"></td>
+				<td><input type="text" name="attachment-description[]" class="form-control col-md-7 col-xs-12" required /></td>
+				<td><i class="fa fa-trash remove-issue" onclick="$(this).closest(\'tr\').remove();"></i></td>
+			</tr>';		
+		
+		$( "#attachment-table").append(row);
+	});
+});	
+</script>

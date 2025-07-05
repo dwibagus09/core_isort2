@@ -1,0 +1,116 @@
+/* style sheets */
+.ui-chatbox {
+    position: fixed;
+    bottom:15px;
+    padding: 2px;
+    background:  #333333;
+    width: 265px;
+    font-family:calibri;
+}
+
+.ui-chatbox-titlebar {
+    padding: 3px;
+    height: 20px;
+    cursor: pointer;
+}
+
+.ui-chatbox-content {
+    padding: 0px;
+    margin: 0px;
+    border: 0px;
+    font-family:calibri!important;
+}
+
+.ui-chatbox-log {
+    padding: 3px;
+    max-height: 100px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background: #FFFFFF;
+}
+
+.ui-chatbox-input {
+    padding: 3px;
+    border-top: 1px solid grey;
+    overflow: hidden;
+}
+
+.ui-chatbox-input-box {
+    margin: 5px;
+    border: 2px solid lightgrey;/* #6699FF */
+    padding: 2px;
+    height: 100px;
+	width: 240px;
+}
+
+.ui-chatbox-icon {
+    float: right;
+}
+
+.ui-chatbox-input-focus {
+    border-color: #6699FF;
+}
+
+.ui-chatbox-msg {
+    margin-top: 10px;
+    float: left;
+    clear: both;
+    /* Source: http://snipplr.com/view/10979/css-cross-browser-word-wrap */
+    white-space: pre-wrap;      /* CSS3 */
+    white-space: -moz-pre-wrap; /* Firefox */
+    white-space: -pre-wrap;     /* Opera <7 */
+    white-space: -o-pre-wrap;   /* Opera 7 */
+    word-wrap: break-word;      /* IE */
+}
+
+.ui-widget-header {
+	border: 1px solid #333333;
+	background: #333333;
+	color: #FFF;
+	font-weight:bold;
+}
+
+.ui-widget-header .ui-icon {
+    background-image: url("images/ui-icons_ffffff_256x240.png");
+}
+
+.ui-chatbox-titlebar {
+	height:auto;
+}
+
+.ui-state-hover {
+	background:none;
+}
+
+.ui-chatbox-minimize-icon-only {
+	background: #333333;
+	border-radius: 50%;
+	bottom:15px;
+	right:15px!important;
+	box-shadow: 0 3px 10px 0 rgba(0, 0, 0, 0.3), 0 3px 20px 0 rgba(0, 0, 0, 0.3);
+}
+
+.ui-chatbox-submit-button {
+	width: 240px;
+	display: block;
+	text-align: center;
+	margin: 0 auto;
+	background: #333333;
+	color: white;
+	font-weight: bold;
+	border-radius: 5px;
+	padding: 2px;
+	font-family:calibri!important;
+}
+
+.ui-chatbox-uploader-box {
+	margin:4px;
+	border:none;
+	font-family:calibri!important;
+	font-size:14px!important;
+}
+
+.ui-chatbox-minimize-icon-only {
+    width:40px!important;   
+}
+}
