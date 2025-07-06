@@ -3,10 +3,13 @@ namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\Auth;
 use App\Models\Department;
+use App\Models\Access_Control_Module;
+use App\Models\Access_Control;
 
 
 class MenuController extends Controller
 {
+    
 public static function getMenu()
 {
     // Ambil role user yang login
@@ -68,5 +71,44 @@ public static function getMenu()
 
     return $formattedMenu;
 }
+
+public static function getMenuUsers()
+{
+    // Ambil user yang sedang login
+    $currentUser = Auth::user();
+    
+    // Debugging: Pastikan user ditemukan
+    if (!$currentUser) {
+        return []; // Mengembalikan array kosong jika user tidak ditemukan
+    }
+
+    // Jika role adalah Super Admin, tampilkan semua menu
+    if ($currentUser->role->role === 'Super Admin') {
+        $modules = Access_Control_Module::all();
+    } else {
+        // Ambil modul yang memiliki read_access = 1 untuk role user yang login
+        $modules = Access_Control::where('role_id', $currentUser->role_id)
+            ->where('read_access', 1)
+            ->with('module') // Pastikan relasi 'module' sudah didefinisikan di model AccessControl
+            ->get()
+            ->pluck('module')
+            ->filter(); // Filter untuk menghapus nilai null jika ada
+    }
+
+    // Formatkan hasil untuk menu
+    $formattedMenu = $modules->map(function ($module) {
+        return [
+            'id' => $module->module_id,
+            'menu_name' => $module->menu_name,
+            'submenu_name' => $module->submenu_name,
+            'url' => $module->url,
+            // Anda bisa menambahkan icon jika diperlukan
+            'icon_name' => 'circle', // Default icon, bisa disesuaikan
+        ];
+    });
+
+    return $formattedMenu;
+}
+
 }
 ?>

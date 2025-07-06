@@ -22,6 +22,7 @@
 			<ul class="side-menu" style="margin-left:15px !important;">
 				@php
 				$menus = \App\Http\Controllers\MenuController::getMenu();
+				$menusUsers = \App\Http\Controllers\MenuController::getMenuUsers();
 				@endphp
 
 				<li class="slide">
@@ -31,19 +32,14 @@
 					</a>
 				</li>
 
-				<li class="slide">
-					<a class="side-menu__item" href="{{ route('kaizen.open') }}" style="padding:8px 5px !important">
-						<i class="side-menu__icon fe fe-book"></i>
-						<span class="side-menu__label">Open Kaizen</span>
-					</a>
-				</li>
-
-				<li class="slide">
-					<a class="side-menu__item" href="{{ route('kaizen.close') }}" style="padding:8px 5px !important">
-						<i class="side-menu__icon fe fe-book"></i>
-						<span class="side-menu__label">Closed Kaizen</span>
-					</a>
-				</li>
+				@foreach($menusUsers as $menu)
+                    <li class="slide">
+                        <a class="side-menu__item" href="{{ $menu['url'] }}" style="padding:8px 5px !important">
+                            <i class="side-menu__icon fe fe-{{ $menu['icon_name'] ?? 'circle' }}"></i>
+                            <span class="side-menu__label">{{ $menu['menu_name'] }}</span>
+                        </a>
+                    </li>
+                @endforeach
 
 				<!--	<li class="slide">-->
 				<!--	<a class="side-menu__item" data-bs-toggle="slide" href="javascript:void(0);"><i class="side-menu__icon fe fe-settings"></i><span-->
