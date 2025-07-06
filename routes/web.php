@@ -293,6 +293,25 @@ Route::put('/admin/digitalchecklist/subcategory/{id}', [DigitalChecklistControll
 Route::post('/admin/digitalchecklist/subcategory/delete/', [DigitalChecklistController::class, 'destroysubcategory'])->name('subcategorydc.delete');
 
 
+//enduser DigitalChecklistController
+// Digital Checklist Routes
+Route::prefix('digital-checklist')->group(function () {
+    Route::get('/', [DigitalChecklistController::class, 'indexenduser'])->name('digital-checklist.index');
+    Route::get('/create', [DigitalChecklistController::class, 'createdcenduser'])->name('digital-checklist.create');
+    Route::post('/', [DigitalChecklistController::class, 'store'])->name('digital-checklist.store');
+    Route::get('/{id}', [DigitalChecklistController::class, 'show'])->name('digital-checklist.show');
+    Route::get('/{id}/edit', [DigitalChecklistController::class, 'edit'])->name('digital-checklist.edit');
+    Route::put('/{id}', [DigitalChecklistController::class, 'update'])->name('digital-checklist.update');
+    Route::delete('/{id}', [DigitalChecklistController::class, 'destroy'])->name('digital-checklist.destroy');
+});
+
+// Room Status Routes (you might want to create a separate controller for this)
+Route::prefix('room-status')->group(function () {
+    Route::get('/', [RoomStatusController::class, 'index'])->name('room-status.index');
+    // Add other room status routes as needed
+});
+
+
 //Fitur Logout
 Route::post('/logout', function (Request $request) {
     Auth::logout();

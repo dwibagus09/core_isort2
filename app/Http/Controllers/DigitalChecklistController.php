@@ -767,5 +767,17 @@ public function getDatatemplatelist(){
 
 //============= End Category Digital Checklist Template ================================
 
+//================ Start Digital Checklist End User =====================================
+public function indexenduser()
+    {
+        return view('pages.digital_checklist.enduser.index');
+    }
+    
+public function createdcenduser()
+    {
+        return view('pages.digital_checklist.enduser.add');
+    }
 
+
+//================ Enda Digital Checklist End User =====================================
 }
